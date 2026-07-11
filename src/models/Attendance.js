@@ -18,6 +18,10 @@ const Attendance = sequelize.define('Attendance', {
   status: {
     type: DataTypes.ENUM('hadir', 'izin', 'sakit', 'alpa'),
     allowNull: false
+  },
+  device_fingerprint: {
+    type: DataTypes.STRING(64),
+    allowNull: true
   }
 }, {
   tableName: 'attendances',

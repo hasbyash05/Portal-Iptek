@@ -1,8 +1,11 @@
 require('dotenv').config();
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const path = require('path');
 const { sequelize, User } = require('../models');
+
+const BCRYPT_SALT_ROUNDS = 10;
 
 const generateRandomPassword = (length = 8) => {
   const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -150,9 +153,10 @@ const seedDatabase = async () => {
     const createdPengurus = {};
     for (const p of daftarPengurus) {
       const pPass = fixedPasswords[p.username] || generateRandomPassword(8);
+      const hashedPassword = await bcrypt.hash(pPass, BCRYPT_SALT_ROUNDS);
       const user = await User.create({
         username: p.username,
-        password_hash: pPass,
+        password_hash: hashedPassword,
         nama_lengkap: p.nama,
         role: 'pengurus',
         divisi: p.divisi
@@ -236,9 +240,10 @@ const seedDatabase = async () => {
     for (const item of daftarAnggotaDivisi) {
       const username = generateUsernameFromName(item.nama, existingUsernames);
       const aPass = fixedPasswords[username] || generateRandomPassword(8);
+      const hashedPassword = await bcrypt.hash(aPass, BCRYPT_SALT_ROUNDS);
       const user = await User.create({
         username: username,
-        password_hash: aPass,
+        password_hash: hashedPassword,
         nama_lengkap: item.nama,
         role: 'anggota',
         divisi: item.divisi
@@ -256,10 +261,11 @@ const seedDatabase = async () => {
     for (const nama of daftarAnggota) {
       const username = generateUsernameFromName(nama, existingUsernames);
       const aPass = fixedPasswords[username] || generateRandomPassword(8);
+      const hashedPassword = await bcrypt.hash(aPass, BCRYPT_SALT_ROUNDS);
       const isKoord = nama.includes('(Koordinator)');
       const user = await User.create({
         username: username,
-        password_hash: aPass,
+        password_hash: hashedPassword,
         nama_lengkap: nama,
         role: 'anggota',
         divisi: null

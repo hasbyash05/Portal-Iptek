@@ -1,13 +1,34 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { sequelize, User } = require('./models');
 const apiRoutes = require('./routes');
 
 const app = express();
 
-// Middleware
+// Helmet: HTTP security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Dimatikan agar frontend statis tidak terblokir
+  crossOriginEmbedderPolicy: false
+}));
+
+// Rate limiting khusus endpoint login (maks 10 percobaan per 15 menit per IP)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    status: 'error',
+    message: 'Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.'
+  }
+});
+app.use('/api/auth/login', loginLimiter);
+
+// CORS
 app.use(cors({
   origin: process.env.CLIENT_ORIGIN || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -23,6 +44,7 @@ app.use('/asset', express.static(path.join(__dirname, '../asset')));
 
 // Routes
 app.use('/api', apiRoutes);
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {

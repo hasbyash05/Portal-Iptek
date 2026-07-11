@@ -1,3 +1,90 @@
+// === DEVICE FINGERPRINTING ===
+// Menghasilkan sidik jari unik perangkat untuk anti-titip absen
+
+async function generateDeviceFingerprint() {
+  // Cek cache di localStorage
+  const cached = localStorage.getItem('iptek_device_fp');
+  if (cached) return cached;
+
+  const components = [];
+
+  // 1. User Agent
+  components.push(navigator.userAgent || '');
+
+  // 2. Screen properties
+  components.push(`${screen.width}x${screen.height}x${screen.colorDepth}`);
+  components.push(`${screen.availWidth}x${screen.availHeight}`);
+
+  // 3. Timezone
+  components.push(Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+  components.push(String(new Date().getTimezoneOffset()));
+
+  // 4. Language
+  components.push(navigator.language || '');
+  components.push((navigator.languages || []).join(','));
+
+  // 5. Platform
+  components.push(navigator.platform || '');
+  components.push(String(navigator.hardwareConcurrency || ''));
+  components.push(String(navigator.maxTouchPoints || 0));
+
+  // 6. Canvas fingerprint
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 50;
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(40, 0, 80, 25);
+    ctx.fillStyle = '#069';
+    ctx.fillText('IPTEK-FP-2026', 2, 15);
+    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+    ctx.fillText('IPTEK-FP-2026', 4, 17);
+    components.push(canvas.toDataURL());
+  } catch (e) {
+    components.push('canvas-unavailable');
+  }
+
+  // 7. WebGL renderer
+  try {
+    const glCanvas = document.createElement('canvas');
+    const gl = glCanvas.getContext('webgl') || glCanvas.getContext('experimental-webgl');
+    if (gl) {
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        components.push(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || '');
+        components.push(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '');
+      }
+    }
+  } catch (e) {
+    components.push('webgl-unavailable');
+  }
+
+  // Hash semua komponen menggunakan SHA-256
+  const raw = components.join('|||');
+  const encoder = new TextEncoder();
+  const data = encoder.encode(raw);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const fingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+  // Cache fingerprint
+  localStorage.setItem('iptek_device_fp', fingerprint);
+  return fingerprint;
+}
+
+function getDeviceInfo() {
+  return JSON.stringify({
+    userAgent: navigator.userAgent,
+    platform: navigator.platform,
+    screen: `${screen.width}x${screen.height}`,
+    language: navigator.language,
+    touchPoints: navigator.maxTouchPoints || 0
+  });
+}
+
 const API_BASE = '/api';
 
 // Initialize App
@@ -73,10 +160,16 @@ async function handleLogin(e) {
   btnLogin.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memvalidasi...`;
 
   try {
+    const fingerprint = await generateDeviceFingerprint();
     const res = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: usernameInput, password: passwordInput })
+      body: JSON.stringify({
+        username: usernameInput,
+        password: passwordInput,
+        device_fingerprint: fingerprint,
+        device_info: getDeviceInfo()
+      })
     });
     const data = await res.json();
 
@@ -347,14 +440,326 @@ async function submitLaporan(e) {
 }
 
 async function loadPengurusMateri() {
+  loadInstructors();
+  loadSchedules();
+  loadMateriList('list-pengurus-materi', true);
+  loadDocumentTemplates('list-pengurus-templates', true);
+}
+
+function getAuthTokenParam() {
+  const token = localStorage.getItem('iptek_token');
+  return token ? `?token=${encodeURIComponent(token)}` : '';
+}
+
+async function loadDocumentTemplates(containerId, showActions) {
   try {
-    const res = await fetchAuth(`${API_BASE}/materials`);
+    const res = await fetchAuth(`${API_BASE}/templates`);
     const data = await res.json();
-    const container = document.getElementById('list-pengurus-materi');
+    const container = document.getElementById(containerId);
+    if (!container) return;
     const items = data.data || [];
 
     if (items.length === 0) {
-      container.innerHTML = `<p class="text-muted">Belum ada bahan ajar yang diunggah.</p>`;
+      container.innerHTML = '<p class="text-muted">Belum ada template dokumen yang diunggah.</p>';
+    } else {
+      container.innerHTML = items.map(t => `
+        <div class="materi-item" style="border: 1px solid #e4e4e7; padding: 1.2rem; border-radius: 8px; margin-bottom: 1rem; background: #ffffff;">
+          <div class="materi-content">
+            <span style="font-size: 0.75rem; font-weight: 700; background: #f4f4f5; color: #27272a; padding: 3px 8px; border-radius: 4px; text-transform: uppercase;">${t.category}</span>
+            <h4 style="margin-top: 0.5rem; margin-bottom: 0.3rem; font-size: 1.05rem; color: #18181b;">${t.title}</h4>
+            <p style="color: #4b5563; font-size: 0.88rem; margin-bottom: 0.8rem;">${t.description || 'Tidak ada deskripsi'}</p>
+            <div class="materi-meta" style="font-size: 0.78rem; color: #71717a;">
+              <span><i class="fa-solid fa-user"></i> Diunggah oleh: ${t.uploaded_by}</span>
+            </div>
+          </div>
+          <div class="materi-actions" style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+            <a href="${t.download_url}${getAuthTokenParam()}" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-download"></i> Unduh Dokumen</a>
+            ${showActions ? `<button onclick="deleteDocumentTemplate(${t.id})" class="btn btn-logout btn-sm"><i class="fa-solid fa-trash"></i> Hapus</button>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('Gagal memuat template dokumen:', err);
+  }
+}
+
+async function submitDocumentTemplate(e) {
+  e.preventDefault();
+  const title = document.getElementById('template-title').value;
+  const category = document.getElementById('template-category').value;
+  const desc = document.getElementById('template-desc').value;
+  const fileInput = document.getElementById('template-file');
+
+  if (!fileInput.files[0]) {
+    alert('Silakan pilih file template dokumen terlebih dahulu.');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('category', category);
+  formData.append('description', desc);
+  formData.append('template_file', fileInput.files[0]);
+
+  try {
+    const res = await fetchAuth(`${API_BASE}/templates`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal mengunggah template dokumen');
+
+    alert('Template dokumen berhasil diunggah!');
+    document.getElementById('template-title').value = '';
+    document.getElementById('template-category').value = '';
+    document.getElementById('template-desc').value = '';
+    fileInput.value = '';
+    loadDocumentTemplates('list-pengurus-templates', true);
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+async function deleteDocumentTemplate(id) {
+  if (!confirm('Apakah Anda yakin ingin menghapus template dokumen ini?')) return;
+  try {
+    const res = await fetchAuth(`${API_BASE}/templates/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Gagal menghapus template dokumen');
+    alert('Template dokumen berhasil dihapus.');
+    loadDocumentTemplates('list-pengurus-templates', true);
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+async function loadInstructors() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/materials/instructors`);
+    const data = await res.json();
+    const select = document.getElementById('jadwal-instructor');
+    if (!select) return;
+    const items = data.data || [];
+    select.innerHTML = '<option value="">-- Pilih Pemateri --</option>' +
+      items.map(i => `<option value="${i.id}">${i.nama_lengkap}${i.divisi ? ' (' + i.divisi + ')' : ''}</option>`).join('') +
+      '<option value="other" style="font-weight: bold; color: #18181b;">+ Pemateri Lainnya / Dosen Pembimbing...</option>';
+  } catch (err) {
+    console.error('Gagal memuat daftar pemateri:', err);
+  }
+}
+
+function toggleCustomInstructor(val) {
+  const groupEl = document.getElementById('group-instructor-other');
+  const inputEl = document.getElementById('jadwal-instructor-other');
+  if (!groupEl) return;
+  if (val === 'other') {
+    groupEl.style.display = 'block';
+    if (inputEl) inputEl.required = true;
+  } else {
+    groupEl.style.display = 'none';
+    if (inputEl) {
+      inputEl.required = false;
+      inputEl.value = '';
+    }
+  }
+}
+
+async function loadSchedules() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/materials/schedules`);
+    const data = await res.json();
+    const items = data.data || [];
+
+    // Render tabel Pengurus
+    const tbody = document.getElementById('table-jadwal');
+    if (tbody) {
+      if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Belum ada jadwal pertemuan.</td></tr>';
+      } else {
+        tbody.innerHTML = items.map(s => {
+          const dateFormatted = new Date(s.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          const materialsList = s.materials || [];
+          const materialsBadge = materialsList.map(m => `
+            <span style="display: inline-flex; align-items: center; gap: 6px; background: #f4f4f5; border: 1px solid #e4e4e7; padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; margin: 2px;">
+              <a href="/api/materials/download/${m.id}${getAuthTokenParam()}" target="_blank" style="color: #18181b; text-decoration: none; font-weight: 600;"><i class="fa-solid fa-download"></i> ${m.title}</a>
+              <button onclick="unlinkMaterial(${s.id}, ${m.id})" style="background: none; border: none; color: #dc2626; cursor: pointer; font-size: 0.85rem;" title="Lepas file ini">&times;</button>
+            </span>
+          `).join('');
+          const materialCell = `
+            <div style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+              ${materialsBadge}
+              <button onclick="showLinkMaterial(${s.id})" class="btn btn-outline btn-sm" style="padding: 3px 8px; font-size: 0.78rem;"><i class="fa-solid fa-plus"></i> ${materialsList.length > 0 ? 'Tambah Materi' : 'Tautkan Materi'}</button>
+            </div>`;
+          return `
+            <tr>
+              <td><strong>${dateFormatted}</strong></td>
+              <td>${s.topic}${s.description ? '<br><small style="color: #71717a;">' + s.description + '</small>' : ''}</td>
+              <td>${s.instructor ? s.instructor.nama_lengkap : '-'}${s.instructor && s.instructor.divisi ? '<br><small style="color: #71717a;">' + s.instructor.divisi + '</small>' : ''}</td>
+              <td>${materialCell}</td>
+              <td><button onclick="deleteSchedule(${s.id})" class="btn btn-logout btn-sm"><i class="fa-solid fa-trash"></i></button></td>
+            </tr>`;
+        }).join('');
+      }
+    }
+
+    // Render tabel Anggota
+    const tbodyAnggota = document.getElementById('table-jadwal-anggota');
+    if (tbodyAnggota) {
+      if (items.length === 0) {
+        tbodyAnggota.innerHTML = '<tr><td colspan="4" class="text-center">Belum ada jadwal pertemuan.</td></tr>';
+      } else {
+        tbodyAnggota.innerHTML = items.map(s => {
+          const dateFormatted = new Date(s.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          const materialsList = s.materials || [];
+          const materialCell = materialsList.length === 0
+            ? '<span style="color: #71717a;">Belum ada materi</span>'
+            : `<div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                ${materialsList.map(m => `
+                  <a href="/api/materials/download/${m.id}${getAuthTokenParam()}" target="_blank" class="btn btn-outline btn-sm" style="padding: 3px 8px; font-size: 0.8rem;"><i class="fa-solid fa-download"></i> ${m.title}</a>
+                `).join('')}
+               </div>`;
+          return `
+            <tr>
+              <td><strong>${dateFormatted}</strong></td>
+              <td>${s.topic}${s.description ? '<br><small style="color: #71717a;">' + s.description + '</small>' : ''}</td>
+              <td>${s.instructor ? s.instructor.nama_lengkap : '-'}</td>
+              <td>${materialCell}</td>
+            </tr>`;
+        }).join('');
+      }
+    }
+  } catch (err) {
+    console.error('Gagal memuat jadwal:', err);
+  }
+}
+
+async function unlinkMaterial(scheduleId, materialId) {
+  if (!confirm('Apakah Anda yakin ingin melepaskan materi ini dari jadwal?')) return;
+  try {
+    const res = await fetchAuth(`${API_BASE}/materials/schedules/${scheduleId}/link/${materialId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Gagal melepaskan materi');
+    loadSchedules();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+async function submitJadwal(e) {
+  e.preventDefault();
+  const date = document.getElementById('jadwal-date').value;
+  const topic = document.getElementById('jadwal-topic').value;
+  const description = document.getElementById('jadwal-desc').value;
+  const instructorSelect = document.getElementById('jadwal-instructor').value;
+  const instructorOther = document.getElementById('jadwal-instructor-other') ? document.getElementById('jadwal-instructor-other').value : '';
+
+  const payload = { date, topic, description };
+  if (instructorSelect === 'other') {
+    if (!instructorOther || !instructorOther.trim()) {
+      alert('Silakan masukkan nama pemateri / dosen pembimbing.');
+      return;
+    }
+    payload.instructor_name = instructorOther.trim();
+  } else {
+    payload.instructor_id = parseInt(instructorSelect);
+  }
+
+  try {
+    const res = await fetchAuth(`${API_BASE}/materials/schedules`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal menyimpan jadwal');
+
+    alert('Jadwal pertemuan berhasil dibuat!');
+    document.getElementById('jadwal-date').value = '';
+    document.getElementById('jadwal-topic').value = '';
+    document.getElementById('jadwal-desc').value = '';
+    document.getElementById('jadwal-instructor').value = '';
+    toggleCustomInstructor('');
+    loadSchedules();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+async function deleteSchedule(id) {
+  if (!confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) return;
+  try {
+    const res = await fetchAuth(`${API_BASE}/materials/schedules/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Gagal menghapus jadwal');
+    alert('Jadwal berhasil dihapus.');
+    loadSchedules();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+async function showLinkMaterial(scheduleId) {
+  try {
+    const res = await fetchAuth(`${API_BASE}/materials`);
+    const data = await res.json();
+    const items = data.data || [];
+
+    if (items.length === 0) {
+      alert('Belum ada materi yang diunggah. Silakan upload materi terlebih dahulu.');
+      return;
+    }
+
+    document.getElementById('link-schedule-id').value = scheduleId;
+    const select = document.getElementById('link-materi-select');
+    select.innerHTML = '<option value="">-- Pilih Materi Pembelajaran --</option>' +
+      items.map(m => `<option value="${m.id}">${m.title} (Minggu ke-${m.week_number})</option>`).join('');
+
+    const modal = document.getElementById('link-materi-modal');
+    modal.style.display = 'flex';
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+function closeLinkMaterialModal() {
+  const modal = document.getElementById('link-materi-modal');
+  if (modal) modal.style.display = 'none';
+}
+
+async function submitLinkMaterial(e) {
+  e.preventDefault();
+  const scheduleId = document.getElementById('link-schedule-id').value;
+  const materialId = document.getElementById('link-materi-select').value;
+
+  if (!materialId) {
+    alert('Silakan pilih materi terlebih dahulu.');
+    return;
+  }
+
+  try {
+    const linkRes = await fetchAuth(`${API_BASE}/materials/schedules/${scheduleId}/link`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ material_id: parseInt(materialId) })
+    });
+    const linkData = await linkRes.json();
+    if (!linkRes.ok) throw new Error(linkData.message || 'Gagal menautkan materi');
+
+    closeLinkMaterialModal();
+    alert(linkData.message);
+    loadSchedules();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+async function loadMateriList(containerId, showActions) {
+  try {
+    const res = await fetchAuth(`${API_BASE}/materials`);
+    const data = await res.json();
+    const container = document.getElementById(containerId);
+    const items = data.data || [];
+
+    if (items.length === 0) {
+      container.innerHTML = '<p class="text-muted">Belum ada materi yang diunggah.</p>';
     } else {
       container.innerHTML = items.map(m => `
         <div class="materi-item">
@@ -367,8 +772,8 @@ async function loadPengurusMateri() {
             </div>
           </div>
           <div class="materi-actions">
-            <a href="${m.download_url}" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-download"></i> Download</a>
-            <button onclick="deleteMateri(${m.id})" class="btn btn-logout btn-sm"><i class="fa-solid fa-trash"></i></button>
+            <a href="${m.download_url}${getAuthTokenParam()}" target="_blank" class="btn btn-outline btn-sm"><i class="fa-solid fa-download"></i> Download</a>
+            ${showActions ? `<button onclick="deleteMateri(${m.id})" class="btn btn-logout btn-sm"><i class="fa-solid fa-trash"></i></button>` : ''}
           </div>
         </div>
       `).join('');
@@ -399,7 +804,7 @@ async function submitMateri(e) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengunggah materi');
 
-    alert('Bahan ajar berhasil diunggah!');
+    alert('Materi berhasil diunggah!');
     document.getElementById('materi-title').value = '';
     document.getElementById('materi-desc').value = '';
     fileInput.value = '';
@@ -410,12 +815,75 @@ async function submitMateri(e) {
 }
 
 async function deleteMateri(id) {
-  if (!confirm('Apakah Anda yakin ingin menghapus bahan ajar ini?')) return;
+  if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return;
   try {
     const res = await fetchAuth(`${API_BASE}/materials/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Gagal menghapus materi');
-    alert('Bahan ajar dihapus.');
+    alert('Materi dihapus.');
     loadPengurusMateri();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+// === SESI PRESENSI (Pengurus buka/tutup manual) ===
+
+async function loadSessionStatus() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/attendance/session/status`);
+    const data = await res.json();
+    const isActive = data.data && data.data.is_active;
+
+    // Update badge Pengurus
+    const badge = document.getElementById('session-status-badge');
+    const btnOpen = document.getElementById('btn-open-session');
+    const btnClose = document.getElementById('btn-close-session');
+
+    if (badge) {
+      if (isActive) {
+        badge.textContent = 'SESI AKTIF';
+        badge.style.background = 'transparent';
+        badge.style.color = '#18181b';
+      } else {
+        badge.textContent = 'SESI DITUTUP';
+        badge.style.background = 'transparent';
+        badge.style.color = '#71717a';
+      }
+    }
+    if (btnOpen) btnOpen.style.display = isActive ? 'none' : 'inline-flex';
+    if (btnClose) btnClose.style.display = isActive ? 'inline-flex' : 'none';
+
+    // Update status di sisi Anggota
+    const anggotaStatus = document.getElementById('anggota-session-status');
+    const btnSubmit = document.getElementById('btn-submit-absensi');
+
+    if (anggotaStatus) {
+      if (isActive) {
+        const activator = data.data.session && data.data.session.activator ? data.data.session.activator.nama_lengkap : 'Pengurus';
+        anggotaStatus.style.background = '#f0fdf4';
+        anggotaStatus.innerHTML = `<p style="color: #166534; font-size: 0.95rem; margin: 0; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Sesi presensi sedang <strong>DIBUKA</strong> oleh ${activator}. Anda dapat melakukan absensi sekarang.</p>`;
+      } else {
+        anggotaStatus.style.background = '#fef2f2';
+        anggotaStatus.innerHTML = `<p style="color: #991b1b; font-size: 0.95rem; margin: 0; font-weight: 600;"><i class="fa-solid fa-circle-xmark"></i> Sesi presensi sedang <strong>DITUTUP</strong>. Silakan tunggu Pengurus membuka sesi presensi.</p>`;
+      }
+    }
+    if (btnSubmit) btnSubmit.disabled = !isActive;
+
+    return isActive;
+  } catch (err) {
+    console.error('Gagal memuat status sesi:', err);
+    return false;
+  }
+}
+
+async function toggleSession(action) {
+  const endpoint = action === 'open' ? '/attendance/session/open' : '/attendance/session/close';
+  try {
+    const res = await fetchAuth(`${API_BASE}${endpoint}`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal mengubah status sesi');
+    alert(data.message);
+    loadSessionStatus();
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
@@ -423,6 +891,8 @@ async function deleteMateri(id) {
 
 async function loadPengurusAbsensi(query = '') {
   try {
+    loadSessionStatus();
+
     const res = await fetchAuth(`${API_BASE}/attendance/report${query}`);
     const data = await res.json();
     const tbody = document.getElementById('table-rekap-absensi');
@@ -445,6 +915,7 @@ async function loadPengurusAbsensi(query = '') {
     console.error('Gagal memuat absensi:', err);
   }
 }
+
 
 function filterAbsensi(e) {
   e.preventDefault();
@@ -587,6 +1058,9 @@ function openAdminBuktiModal(pEncoded) {
 
 function closeAdminBuktiModal() {
   const modal = document.getElementById('admin-bukti-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
 }
 
 
@@ -636,6 +1110,7 @@ async function checkKasAndUnlockAttendance() {
         history.replaceState(null, null, '#absensi');
       }
       loadAnggotaAttendance();
+      loadSessionStatus();
     } else {
       // Belum bayar kas atau masih pending -> Tampilkan Modal Pengunci!
       const statusBox = document.getElementById('qris-modal-status-box');
@@ -709,34 +1184,8 @@ function closeLockModalAndGoHome() {
 }
 
 async function loadAnggotaMateri() {
-  try {
-    const res = await fetchAuth(`${API_BASE}/materials`);
-    const data = await res.json();
-    const container = document.getElementById('list-anggota-materi');
-    const items = data.data || [];
-
-    if (items.length === 0) {
-      container.innerHTML = `<p class="text-muted">Belum ada bahan ajar yang tersedia.</p>`;
-    } else {
-      container.innerHTML = items.map(m => `
-        <div class="materi-item">
-          <div class="materi-content">
-            <h4><i class="fa-solid fa-file-lines"></i> ${m.title}</h4>
-            <p>${m.description || 'Tidak ada deskripsi'}</p>
-            <div class="materi-meta">
-              <span><i class="fa-solid fa-user-tie"></i> Diunggah oleh: ${m.uploaded_by}</span>
-              <span><i class="fa-solid fa-calendar-week"></i> Minggu ke-${m.week_number} (${m.year})</span>
-            </div>
-          </div>
-          <div class="materi-actions">
-            <a href="${m.download_url}" target="_blank" class="btn btn-primary btn-sm"><i class="fa-solid fa-download"></i> Unduh Materi</a>
-          </div>
-        </div>
-      `).join('');
-    }
-  } catch (err) {
-    console.error('Gagal memuat materi anggota:', err);
-  }
+  loadSchedules();
+  loadDocumentTemplates('list-anggota-templates', false);
 }
 
 async function submitAbsensiAnggota(e) {
@@ -801,16 +1250,17 @@ async function submitAbsensiAnggota(e) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c; // dalam meter
 
-    if (distance > 10) {
-      throw new Error(`Gagal presensi: Lokasi Anda (${distance.toFixed(1)} meter) berada di luar radius maksimal 10 meter dari titik pertemuan.`);
+    if (distance > 100) {
+      throw new Error(`Gagal presensi: Lokasi Anda (${distance.toFixed(1)} meter) berada di luar radius maksimal 100 meter dari titik pertemuan.`);
     }
 
     if (submitBtn) submitBtn.textContent = 'Mengirim Presensi...';
 
+    const fingerprint = await generateDeviceFingerprint();
     const res = await fetchAuth(`${API_BASE}/attendance`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, latitude, longitude })
+      body: JSON.stringify({ status, latitude, longitude, device_fingerprint: fingerprint })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mencatat presensi');

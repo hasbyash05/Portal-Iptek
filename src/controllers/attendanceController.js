@@ -1,10 +1,10 @@
-const { Attendance, User, Payment } = require('../models');
+const { Attendance, User, Payment, UserDevice } = require('../models');
 const { getJakartaDateString } = require('../utils/dateHelper');
 const { Op } = require('sequelize');
 
 const submitAttendance = async (req, res) => {
   try {
-    const { status, latitude, longitude } = req.body;
+    const { status, latitude, longitude, device_fingerprint } = req.body;
     if (status !== 'hadir') {
       return res.status(400).json({
         status: 'error',
@@ -16,6 +16,15 @@ const submitAttendance = async (req, res) => {
       return res.status(400).json({
         status: 'error',
         message: 'Gagal absensi: Koordinat lokasi GPS (latitude & longitude) wajib dikirimkan untuk verifikasi radius pertemuan.'
+      });
+    }
+
+    // Validasi device fingerprint wajib
+    if (!device_fingerprint) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Gagal absensi: Identifikasi perangkat (device fingerprint) wajib dikirimkan.',
+        code: 'DEVICE_FINGERPRINT_REQUIRED'
       });
     }
 
@@ -32,10 +41,10 @@ const submitAttendance = async (req, res) => {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
 
-    if (distance > 10) {
+    if (distance > 100) {
       return res.status(403).json({
         status: 'error',
-        message: `Gagal presensi: Lokasi Anda (${distance.toFixed(1)} meter) berada di luar batas radius maksimal 10 meter dari titik koordinat pertemuan UKM Iptek (7°02'02.4"S 110°22'07.8"E).`
+        message: `Gagal presensi: Lokasi Anda (${distance.toFixed(1)} meter) berada di luar batas radius maksimal 100 meter dari titik koordinat pertemuan UKM Iptek (7\u00b002'02.4"S 110\u00b022'07.8"E).`
       });
     }
 
@@ -62,6 +71,28 @@ const submitAttendance = async (req, res) => {
       });
     }
 
+    // Anti-Titip Absen: Cek apakah perangkat ini sudah digunakan user lain hari ini
+    const deviceUsedByOther = await Attendance.findOne({
+      where: {
+        device_fingerprint,
+        date: dateStr,
+        user_id: { [Op.ne]: userId }
+      },
+      include: [{
+        model: User,
+        as: 'user',
+        attributes: ['nama_lengkap']
+      }]
+    });
+
+    if (deviceUsedByOther) {
+      return res.status(403).json({
+        status: 'error',
+        message: 'Presensi DITOLAK: Perangkat ini sudah digunakan oleh anggota lain untuk absensi pada sesi hari ini. Setiap anggota wajib menggunakan perangkat masing-masing.',
+        code: 'DEVICE_ALREADY_USED'
+      });
+    }
+
     const existing = await Attendance.findOne({
       where: {
         user_id: userId,
@@ -80,7 +111,8 @@ const submitAttendance = async (req, res) => {
     const attendance = await Attendance.create({
       user_id: userId,
       date: dateStr,
-      status
+      status,
+      device_fingerprint
     });
 
     return res.status(201).json({

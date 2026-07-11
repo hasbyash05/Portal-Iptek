@@ -14,6 +14,8 @@ const storage = multer.diskStorage({
     let folder = 'public/uploads/misc';
     if (file.fieldname === 'material_file' || req.baseUrl.includes('materials')) {
       folder = 'public/uploads/materials';
+    } else if (file.fieldname === 'template_file' || req.baseUrl.includes('templates')) {
+      folder = 'public/uploads/templates';
     } else if (file.fieldname === 'attachment' || req.baseUrl.includes('reports')) {
       folder = 'public/uploads/reports';
     } else if (file.fieldname === 'proof_file' || req.baseUrl.includes('payments')) {
@@ -32,8 +34,13 @@ const storage = multer.diskStorage({
 const fileFilter = (req, file, cb) => {
   const allowedTypes = [
     'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'application/vnd.ms-powerpoint',
     'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/zip',
     'video/mp4',
     'image/jpeg',
     'image/png',
