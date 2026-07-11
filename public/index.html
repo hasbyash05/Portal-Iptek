@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Informasi Manajemen IPTEK - STIKES Semarang</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap"
+    rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <header class="header-nav" id="main-header" style="display: none;">
+    <nav class="navbar">
+      <div class="nav-brand" onclick="switchNavTab('overview')">
+        <div class="brand-icon">
+          <img src="/img/logo.jpg" alt="Logo UKM IPTEK STIKES Semarang" class="brand-logo-img">
+        </div>
+        <div class="brand-divider"></div>
+        <div class="brand-text">
+          <div class="brand-title">UNIT KEGIATAN MAHASISWA</div>
+          <div class="brand-subtitle">ILMU PENGETAHUAN DAN TEKNOLOGI</div>
+        </div>
+      </div>
+
+      <ul class="nav-menu" id="navMenu">
+        <li class="nav-item">
+          <a class="nav-link active" data-tab="overview" onclick="switchNavTab('overview')">Beranda</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="materi" onclick="switchNavTab('materi')">Bahan Ajar</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="absensi" onclick="switchNavTab('absensi')">Presensi</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-tab="kas" onclick="switchNavTab('kas')">Uang Kas</a>
+        </li>
+        <li class="nav-item" id="nav-item-laporan">
+          <a class="nav-link" data-tab="laporan" onclick="switchNavTab('laporan')">Laporan</a>
+        </li>
+        <li class="nav-item dropdown" id="nav-item-akun" style="margin-left: auto;">
+          <a class="nav-link" onclick="toggleAccountMenu(event)" style="cursor: pointer;">
+            <i class="fa-solid fa-circle-user" style="font-size: 1.1rem;"></i> <span id="nav-username">Akun</span> <i class="fa-solid fa-chevron-down nav-chevron"></i>
+          </a>
+          <ul class="dropdown-menu" id="accountDropdown" style="right: 0; left: auto; padding: 0.8rem 1rem; min-width: 220px;">
+            <li style="padding: 0.2rem 0 0.6rem 0; border-bottom: 1px solid var(--border-color); margin-bottom: 0.6rem; cursor: default;" onclick="event.stopPropagation()">
+              <strong id="nav-fullname" style="display: block; font-size: 0.9rem; color: #18181b; line-height: 1.3;">Nama Lengkap</strong>
+              <small id="nav-divisi" style="font-size: 0.75rem; color: #71717a; display: block; margin-top: 2px;">Divisi</small>
+            </li>
+            <li>
+              <button class="btn btn-logout btn-block" onclick="logout()" style="width: 100%; justify-content: center; padding: 0.55rem 0.8rem; font-size: 0.85rem;">
+                <i class="fa-solid fa-right-from-bracket"></i> Keluar
+              </button>
+            </li>
+          </ul>
+        </li>
+      </ul>
+
+      <div class="nav-actions">
+        <div class="mobile-toggle" id="mobileToggle" onclick="toggleMobileMenu()" aria-label="Buka menu navigasi"
+          aria-expanded="false" role="button" tabindex="0">
+          <i class="fa-solid fa-bars"></i>
+        </div>
+      </div>
+    </nav>
+    <div class="nav-backdrop" id="navBackdrop" onclick="toggleMobileMenu(false)"></div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="main-container">
+
+    <!-- ============================================== -->
+    <!-- LOGIN VIEW -->
+    <!-- ============================================== -->
+    <section id="login-view" class="view-section active">
+      <div class="login-container">
+        <div class="login-card">
+          <div class="login-header">
+            <div class="login-logo">
+              <img src="/img/logo.jpg" alt="Logo UKM IPTEK STIKES Semarang" class="brand-logo-img">
+            </div>
+            <h2>Portal Manajemen IPTEK</h2>
+            <p>Silakan masuk menggunakan username dan password yang telah diberikan oleh admin.</p>
+          </div>
+          <div id="login-alert" class="alert" style="display: none;"></div>
+          <form id="login-form" onsubmit="handleLogin(event)">
+            <div class="form-group">
+              <label for="username">Username</label>
+              <div class="input-with-icon">
+
+                <input type="text" id="username" placeholder="Masukkan username Anda..." required
+                  autocomplete="username">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <div class="input-with-icon">
+
+                <input type="password" id="password" placeholder="Masukkan password Anda..." required
+                  autocomplete="current-password">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block" id="btn-login">
+              <span>Masuk ke Portal</span>
+            </button>
+          </form>
+          <div class="login-footer">
+            <p>Hanya admin yang berhak mereset kata sandi.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================== -->
+    <!-- DASHBOARD PENGURUS VIEW -->
+    <!-- ============================================== -->
+    <section id="pengurus-view" class="view-section" style="display: none;">
+      <!-- PENGURUS TAB 1: OVERVIEW -->
+      <div id="p-tab-overview" class="tab-content active">
+        <div class="clean-hero-header">
+          <div class="clean-hero-top">UNIT KEGIATAN MAHASISWA</div>
+          <h1 class="clean-hero-main">ILMU PENGETAHUAN DAN TEKNOLOGI</h1>
+          <div class="clean-hero-sub">BERSINERGI, CERDAS, BERKUALITAS</div>
+          <div class="clean-hero-org"></div>
+        </div>
+        <!-- 2. SEKILAS PORTAL -->
+        <div class="home-section">
+          <div
+            style="width: 100%; max-width: 1400px; margin: 0 auto; padding-left: 5%; padding-right: 3%; text-align: left;">
+            <span
+              style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.5rem;">Pusat
+              Koordinasi</span>
+            <h2
+              style="font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 2.8vw, 2.2rem); font-weight: 800; color: #18181b; line-height: 1.25; margin-bottom: 1rem;">
+              Manajemen Operasional & Pelayanan Anggota Terpadu</h2>
+            <p style="color: #4b5563; font-size: 1.05rem; line-height: 1.7; margin-bottom: 0; max-width: 100%;">
+              Portal internal resmi UKM Ilmu Pengetahuan dan Teknologi (IPTEK) STIKES Semarang yang dirancang untuk
+              mengelola kedisiplinan absensi pertemuan rutin, distribusi bahan ajar mingguan, rekapitulasi kas anggota,
+              serta pelaporan kinerja pengurus secara transparan dan terukur.
+            </p>
+            <span onclick="switchNavTab('laporan')" class="clean-text-cta">Kelola Laporan Mingguan</span>
+          </div>
+        </div>
+
+        <!-- 3. PILAR & MODUL LAYANAN -->
+        <div class="home-section">
+          <div style="width: 100%; max-width: 100%;">
+            <div style="text-align: center; max-width: 700px; margin: 0 auto 2.5rem auto;">
+              <span
+                style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.5rem;">Fokus
+                Operasional</span>
+              <h2
+                style="font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 2.8vw, 2.2rem); font-weight: 800; color: #18181b; line-height: 1.25;">
+                Pilar Manajemen & Layanan Internal</h2>
+            </div>
+            <div class="home-pillars-grid">
+              <div class="home-pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-num">01</span>
+                </div>
+                <h3 class="pillar-title">Bahan Ajar & Kurikulum</h3>
+                <p class="pillar-desc">Akses dan distribusi materi pelatihan rutin mingguan, modul teknologi medis, dan
+                  referensi ilmiah organisasi.</p>
+                <button onclick="switchNavTab('materi')" class="pillar-cta">Kelola Repositori Materi </button>
+              </div>
+              <div class="home-pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-num">02</span>
+                </div>
+                <h3 class="pillar-title">Presensi Pertemuan</h3>
+                <p class="pillar-desc">Gerbang kedisiplinan pertemuan rutin mingguan yang dijaga dengan otentikasi kas
+                  bulanan serta rekapitulasi kehadiran.</p>
+                <button onclick="switchNavTab('absensi')" class="pillar-cta">Pantau Rekap Presensi </button>
+              </div>
+              <div class="home-pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-num">03</span>
+                </div>
+                <h3 class="pillar-title">Verifikasi & Uang Kas QRIS</h3>
+                <p class="pillar-desc">Mekanisme iuran kas wajib Rp 10.000/bulan secara instan menggunakan QRIS dengan
+                  verifikasi lunas otomatis.</p>
+                <button onclick="switchNavTab('kas')" class="pillar-cta">Cek Laporan Keuangan </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. DASBOR STATISTIK & AKTIVITAS -->
+        <div class="home-section">
+          <div style="width: 100%; max-width: 100%;">
+            <div style="margin-bottom: 2rem;">
+              <span
+                style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.5rem;">Statistik
+                Organisasi</span>
+              <h2
+                style="font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 2.8vw, 2.2rem); font-weight: 800; color: #18181b; line-height: 1.25;">
+                Sorotan Kinerja & Rekapitulasi</h2>
+            </div>
+
+            <div class="stats-grid" style="gap: 3rem; margin-top: 1.5rem;">
+              <div class="stat-card">
+                <div class="stat-info">
+                  <span class="stat-label">Total Anggota</span>
+                  <h3 class="stat-value" id="stat-total-anggota">0</h3>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-info">
+                  <span class="stat-label">Total Pengurus</span>
+                  <h3 class="stat-value" id="stat-total-pengurus">0</h3>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-info">
+                  <span class="stat-label">Kas Lunas Bulan Ini</span>
+                  <h3 class="stat-value" id="stat-lunas-kas">0</h3>
+                </div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-info">
+                  <span class="stat-label">Status Mingguan</span>
+                  <h3 class="stat-value" id="stat-report-badge">Belum Cek</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. AKTIVITAS & ATURAN OPERASIONAL -->
+        <div class="home-section">
+          <div style="width: 100%; max-width: 100%;">
+            <div class="grid-2col" style="gap: 4rem;">
+              <div>
+                <span
+                  style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.12em; display: block; margin-bottom: 0.5rem;">Aktivitas
+                  Terkini</span>
+                <h3
+                  style="font-family: 'Outfit', sans-serif; font-size: clamp(1.3rem, 2vw, 1.6rem); font-weight: 800; color: #18181b; line-height: 1.3; margin-bottom: 1.2rem;">
+                  Laporan Kegiatan Terbaru</h3>
+                <div id="recent-reports-list" class="list-group">
+                  <p style="color: #71717a; font-size: 1.05rem;">Belum ada aktivitas dilaporkan.</p>
+                </div>
+              </div>
+              <div>
+                <span
+                  style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.12em; display: block; margin-bottom: 0.5rem;">Protokol
+                  & Ketentuan</span>
+                <h3
+                  style="font-family: 'Outfit', sans-serif; font-size: clamp(1.3rem, 2vw, 1.6rem); font-weight: 800; color: #18181b; line-height: 1.3; margin-bottom: 1.5rem;">
+                  Aturan Operasional Sistem</h3>
+                <div style="margin-bottom: 2rem;">
+                  <span
+                    style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.3rem;">01
+                    / Presensi Pertemuan</span>
+                  <h4
+                    style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #18181b; margin-bottom: 0.5rem;">
+                    Jadwal Wajib Hari Selasa</h4>
+                  <p style="color: #4b5563; font-size: 1.05rem; line-height: 1.7; margin-bottom: 0;">Pencatatan
+                    kehadiran hanya dibuka pada hari <strong style="color: #18181b;">Selasa</strong> sesuai zona waktu
+                    WIB. Anggota wajib melunasi kas bulanan terlebih dahulu agar gerbang presensi terbuka.</p>
+                </div>
+                <div>
+                  <span
+                    style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.3rem;">02
+                    / Keuangan Organisasi</span>
+                  <h4
+                    style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #18181b; margin-bottom: 0.5rem;">
+                    Iuran Kas Rutin Rp 10.000</h4>
+                  <p style="color: #4b5563; font-size: 1.05rem; line-height: 1.7; margin-bottom: 0;">Nominal iuran kas
+                    ditetapkan sebesar <strong style="color: #18181b;">Rp 10.000 / bulan</strong> dengan metode
+                    pembayaran instan via QRIS dan verifikasi lunas otomatis oleh sistem.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PENGURUS TAB 2: LAPORAN MINGGUAN DIVISI -->
+      <div id="p-tab-laporan" class="tab-content" style="display: none;">
+        <div class="grid-2col">
+          <div class="card">
+            <div class="card-header">
+              <h3>Input Laporan Kegiatan Divisi</h3>
+            </div>
+            <div class="card-body">
+              <div id="laporan-status-box" class="alert alert-info mb-3">Memeriksa status minggu ini...</div>
+              <form id="form-laporan" onsubmit="submitLaporan(event)">
+                <div class="form-group">
+                  <label for="laporan-activity">Laporan Kegiatan Divisi (Hari / Minggu Ini)</label>
+                  <textarea id="laporan-activity" rows="4"
+                    placeholder="Jelaskan aktivitas, kegiatan hari ini, progres program kerja, atau hasil rapat dari divisi Anda..."
+                    required></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="laporan-file">Lampiran (Opsional - PDF/Gambar)</label>
+                  <input type="file" id="laporan-file" class="file-input">
+                </div>
+                <button type="submit" class="btn btn-primary">Kirim Laporan</button>
+              </form>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Rekap Laporan Kegiatan Seluruh Divisi</h3>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Periode</th>
+                      <th>Divisi & Pelapor</th>
+                      <th>Laporan Kegiatan</th>
+                      <th>Lampiran</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-my-reports">
+                    <tr>
+                      <td colspan="4" class="text-center">Memuat...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PENGURUS TAB 3: BAHAN AJAR -->
+      <div id="p-tab-materi" class="tab-content" style="display: none;">
+        <div class="grid-2col">
+          <div class="card">
+            <div class="card-header">
+              <h3>Upload Bahan Ajar Baru</h3>
+            </div>
+            <div class="card-body">
+              <form id="form-materi" onsubmit="submitMateri(event)">
+                <div class="form-group">
+                  <label for="materi-title">Judul Materi</label>
+                  <input type="text" id="materi-title" placeholder="Contoh: Pengantar React.js & State Management"
+                    required>
+                </div>
+                <div class="form-group">
+                  <label for="materi-desc">Deskripsi Singkat</label>
+                  <textarea id="materi-desc" rows="3" placeholder="Ringkasan isi materi minggu ini..."></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="materi-file">File Materi (Wajib - PDF/PPT/Video)</label>
+                  <input type="file" id="materi-file" class="file-input" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Unggah Materi</button>
+              </form>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Daftar Semua Bahan Ajar</h3>
+            </div>
+            <div class="card-body">
+              <div id="list-pengurus-materi" class="materi-grid">
+                <p class="text-muted">Memuat data materi...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PENGURUS TAB 4: REKAP ABSENSI -->
+      <div id="p-tab-absensi" class="tab-content" style="display: none;">
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3>Filter Rekapitulasi Kehadiran</h3>
+          </div>
+          <div class="card-body">
+            <form id="form-filter-absensi" class="filter-form" onsubmit="filterAbsensi(event)">
+              <div class="form-group">
+                <label>Dari Tanggal</label>
+                <input type="date" id="filter-start-date">
+              </div>
+              <div class="form-group">
+                <label>Sampai Tanggal</label>
+                <input type="date" id="filter-end-date">
+              </div>
+              <div class="form-group">
+                <label>Divisi</label>
+                <select id="filter-divisi">
+                  <option value="">Semua Divisi</option>
+                  <option value="Inti Organisasi">Inti Organisasi</option>
+                  <option value="Akademik">Akademik</option>
+                  <option value="Operasional">Operasional</option>
+                  <option value="Komunikasi & Informasi">Kominfo</option>
+                </select>
+              </div>
+              <div class="form-group align-self-end">
+                <button type="submit" class="btn btn-primary">Tampilkan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Data Kehadiran Pertemuan Selasa</h3>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Nama Anggota</th>
+                    <th>Role</th>
+                    <th>Divisi</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="table-rekap-absensi">
+                  <tr>
+                    <td colspan="5" class="text-center">Memuat...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PENGURUS TAB 5: VERIFIKASI KAS -->
+      <div id="p-tab-kas" class="tab-content" style="display: none;">
+        <!-- Card Upload QRIS Bendahara -->
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3>Pengaturan QRIS Bendahara</h3>
+          </div>
+          <div class="card-body">
+            <div class="grid-2col" style="gap: 2rem; align-items: start;">
+              <div>
+                <p style="color: #4b5563; font-size: 0.95rem; line-height: 1.7; margin-bottom: 1rem;">Unggah gambar QRIS statis dari rekening pribadi Bendahara. Gambar ini akan ditampilkan kepada seluruh anggota saat melakukan pembayaran kas.</p>
+                <form id="form-upload-qris" onsubmit="uploadQrisImage(event)">
+                  <div class="form-group">
+                    <label>File Gambar QRIS (JPEG/PNG/WebP, maks 5MB)</label>
+                    <input type="file" id="qris-file-input" accept="image/jpeg,image/png,image/webp" required style="padding: 0.6rem;">
+                  </div>
+                  <button type="submit" class="btn btn-primary" id="btn-upload-qris">Unggah dan Aktifkan QRIS</button>
+                </form>
+              </div>
+              <div style="text-align: center;">
+                <p style="font-size: 0.8rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">QRIS Aktif Saat Ini</p>
+                <div id="qris-preview-admin" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 200px;">
+                  <p style="color: #71717a; font-size: 0.9rem;">Memuat...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3>Filter Tagihan Kas</h3>
+          </div>
+          <div class="card-body">
+            <div class="filter-buttons">
+              <button class="btn btn-outline active" onclick="loadKasReport('')">Semua Status</button>
+              <button class="btn btn-outline" onclick="loadKasReport('pending')">Pending (Need Confirm)</button>
+              <button class="btn btn-outline" onclick="loadKasReport('lunas')">Lunas</button>
+              <button class="btn btn-outline" onclick="loadKasReport('ditolak')">Ditolak</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Daftar Pembayaran Uang Kas (Rp 10.000 / bln)</h3>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Periode</th>
+                    <th>Nama Anggota</th>
+                    <th>Nominal</th>
+                    <th>Bukti Transfer</th>
+                    <th>Status</th>
+                    <th>Aksi Verifikasi</th>
+                  </tr>
+                </thead>
+                <tbody id="table-rekap-kas">
+                  <tr>
+                    <td colspan="6" class="text-center">Memuat...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ============================================== -->
+    <!-- DASHBOARD ANGGOTA VIEW -->
+    <!-- ============================================== -->
+    <section id="anggota-view" class="view-section" style="display: none;">
+      <!-- ANGGOTA TAB 0: OVERVIEW (BERANDA) -->
+      <div id="a-tab-overview" class="tab-content active">
+        <div class="clean-hero-header">
+          <div class="clean-hero-top">UNIT KEGIATAN MAHASISWA</div>
+          <h1 class="clean-hero-main">ILMU PENGETAHUAN DAN TEKNOLOGI</h1>
+          <div class="clean-hero-sub">BERSINERGI, CERDAS, BERKUALITAS</div>
+          <div class="clean-hero-org"></div>
+        </div>
+        <!-- 2. SEKILAS PORTAL -->
+        <div class="home-section">
+          <div
+            style="width: 100%; max-width: 1400px; margin: 0 auto; padding-left: 5%; padding-right: 3%; text-align: left;">
+            <span
+              style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.5rem;">Selamat
+              Datang</span>
+            <h2
+              style="font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 2.8vw, 2.2rem); font-weight: 800; color: #18181b; line-height: 1.25; margin-bottom: 1rem;">
+              Portal Operasional & Pelatihan Mahasiswa</h2>
+            <p style="color: #4b5563; font-size: 1.05rem; line-height: 1.7; margin-bottom: 0; max-width: 100%;">
+              Sebagai anggota aktif UKM Ilmu Pengetahuan dan Teknologi (IPTEK) STIKES Semarang, Anda mendapatkan akses
+              eksklusif ke modul pelatihan mingguan, pencatatan absensi pertemuan rutin setiap hari Selasa, serta
+              verifikasi iuran kas bulanan secara cepat dan terintegrasi.
+            </p>
+            <span onclick="switchNavTab('materi')" class="clean-text-cta">Mulai Belajar Sekarang</span>
+          </div>
+        </div>
+
+        <!-- 3. PILAR & MODUL LAYANAN -->
+        <div class="home-section">
+          <div style="width: 100%; max-width: 100%;">
+            <div style="text-align: center; max-width: 700px; margin: 0 auto 2.5rem auto;">
+              <span
+                style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.5rem;">Akses
+                Layanan</span>
+              <h2
+                style="font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 2.8vw, 2.2rem); font-weight: 800; color: #18181b; line-height: 1.25;">
+                Modul Utama Keanggotaan</h2>
+            </div>
+            <div class="home-pillars-grid">
+              <div class="home-pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-num">01</span>
+                </div>
+                <h3 class="pillar-title">Bahan Ajar & Modul</h3>
+                <p class="pillar-desc">Unduh materi presentasi, bahan ajar mingguan, dan panduan praktikum teknologi
+                  medis dari pengurus.</p>
+                <button onclick="switchNavTab('materi')" class="pillar-cta">Buka Repositori Materi </button>
+              </div>
+              <div class="home-pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-num">02</span>
+                </div>
+                <h3 class="pillar-title">Presensi Pertemuan</h3>
+                <p class="pillar-desc">Catat kehadiran Anda pada pertemuan rutin mingguan setiap hari Selasa setelah
+                  uang kas terverifikasi lunas.</p>
+                <button onclick="switchNavTab('absensi')" class="pillar-cta">Buka Gerbang Presensi </button>
+              </div>
+              <div class="home-pillar-card">
+                <div class="pillar-header">
+                  <span class="pillar-num">03</span>
+                </div>
+                <h3 class="pillar-title">Uang Kas QRIS Instan</h3>
+                <p class="pillar-desc">Penuhi kewajiban iuran rutin Rp 10.000/bulan dengan pembayaran QRIS yang
+                  diverifikasi otomatis.</p>
+                <button onclick="switchNavTab('kas')" class="pillar-cta">Bayar Kas Sekarang </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. PANDUAN & PENGINGAT -->
+        <div class="home-section">
+          <div style="width: 100%; max-width: 100%;">
+            <div style="margin-bottom: 2rem;">
+              <span
+                style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.5rem;">Informasi
+                Penting</span>
+              <h2
+                style="font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 2.8vw, 2.2rem); font-weight: 800; color: #18181b; line-height: 1.25;">
+                Aturan & Kedisiplinan UKM</h2>
+            </div>
+            <div class="grid-2col" style="gap: 3.5rem; margin-top: 1rem;">
+              <div>
+                <span
+                  style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.12em; display: block; margin-bottom: 0.5rem;">01
+                  / Jadwal Pertemuan Wajib</span>
+                <h3
+                  style="font-family: 'Outfit', sans-serif; font-size: clamp(1.3rem, 2vw, 1.6rem); font-weight: 800; color: #18181b; line-height: 1.3; margin-bottom: 0.8rem;">
+                  Setiap Hari Selasa (WIB)</h3>
+                <p style="color: #4b5563; font-size: 1.05rem; line-height: 1.7; margin-bottom: 0;">Seluruh kegiatan
+                  rutin dan pembukaan sistem presensi pertemuan mingguan hanya aktif pada hari <strong
+                    style="color: #18181b;">Selasa</strong> sesuai zona waktu Waktu Indonesia Barat (WIB).</p>
+              </div>
+              <div>
+                <span
+                  style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.12em; display: block; margin-bottom: 0.5rem;">02
+                  / Mekanisme Pengunci</span>
+                <h3
+                  style="font-family: 'Outfit', sans-serif; font-size: clamp(1.3rem, 2vw, 1.6rem); font-weight: 800; color: #18181b; line-height: 1.3; margin-bottom: 0.8rem;">
+                  Gerbang Presensi Terintegrasi QRIS</h3>
+                <p style="color: #4b5563; font-size: 1.05rem; line-height: 1.7; margin-bottom: 0;">Sistem secara
+                  otomatis mengunci tombol presensi apabila kas bulan berjalan (Rp 10.000) belum dilunasi. Lakukan
+                  pembayaran QRIS agar gerbang presensi terbuka secara instan.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANGGOTA TAB 1: BAHAN AJAR -->
+      <div id="a-tab-materi" class="tab-content" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <h3>Materi Pembelajaran Mingguan</h3>
+          </div>
+          <div class="card-body">
+            <div id="list-anggota-materi" class="materi-grid">
+              <p class="text-muted">Memuat materi...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANGGOTA TAB 2: ABSENSI -->
+      <div id="a-tab-absensi" class="tab-content" style="display: none;">
+        <div class="grid-2col">
+          <div class="card">
+            <div class="card-header">
+              <h3>Presensi Pertemuan (Khusus Selasa)</h3>
+            </div>
+            <div class="card-body">
+              <div style="margin-bottom: 2rem;">
+                <span
+                  style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.3rem;">Ketentuan
+                  Kehadiran</span>
+                <h4
+                  style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #18181b; margin-bottom: 0.5rem;">
+                  Verifikasi GPS (Maks. 10 Meter)</h4>
+                <p style="color: #4b5563; font-size: 1.05rem; line-height: 1.7; margin-bottom: 0;">Presensi hanya dibuka
+                  pada hari <strong style="color: #18181b;">Selasa</strong>. Sistem secara otomatis memeriksa GPS, Anda
+                  harus berada dalam radius maksimal <strong style="color: #18181b;">10 meter</strong> dari titik
+                  pertemuan.</p>
+              </div>
+              <form id="form-absensi-anggota" onsubmit="submitAbsensiAnggota(event)">
+                <div class="form-group">
+                  <label>Status Kehadiran</label>
+                  <select id="anggota-status-absen" class="select-input" required>
+                    <option value="hadir">Hadir (Verifikasi GPS Radius 10m)</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.5rem;">Kirim Presensi
+                  Sekarang</button>
+              </form>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Riwayat Kehadiran Saya</h3>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Tanggal</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-my-attendance">
+                    <tr>
+                      <td colspan="2" class="text-center">Memuat...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANGGOTA TAB 3: PEMBAYARAN KAS (QRIS INSTAN) -->
+      <div id="a-tab-kas" class="tab-content" style="display: none;">
+        <div class="grid-2col">
+          <div class="card">
+            <div class="card-header">
+              <h3>Bayar Iuran Kas Bulanan via QRIS</h3>
+            </div>
+            <div class="card-body text-center">
+              <div class="amount-badge mb-3">
+                <span>Nominal Wajib:</span>
+                <h2>Rp 10.000 / bulan</h2>
+              </div>
+              <div class="qris-box mb-3"
+                style="background: #f8f9fa; border: none; padding: 1.5rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                <h4 style="color: #18181b; font-weight: 800; margin-bottom: 8px;">QRIS UKM IPTEK STIKES SEMARANG</h4>
+                <div id="qris-image-kas" style="margin: 10px 0; min-height: 180px; display: flex; align-items: center; justify-content: center;">
+                  <p style="color: #71717a; font-size: 0.9rem;">Memuat QRIS...</p>
+                </div>
+                <small id="qris-nmid-kas" class="text-muted">Memuat info merchant...</small>
+              </div>
+              <form id="form-kas-anggota" onsubmit="submitKasQris(event)">
+                <div class="grid-2col mb-3" style="gap: 10px; text-align: left;">
+                  <div class="form-group mb-0">
+                    <label for="kas-month">Bulan</label>
+                    <select id="kas-month" class="select-input" required>
+                      <option value="1">Januari</option>
+                      <option value="2">Februari</option>
+                      <option value="3">Maret</option>
+                      <option value="4">April</option>
+                      <option value="5">Mei</option>
+                      <option value="6">Juni</option>
+                      <option value="7" selected>Juli</option>
+                      <option value="8">Agustus</option>
+                      <option value="9">September</option>
+                      <option value="10">Oktober</option>
+                      <option value="11">November</option>
+                      <option value="12">Desember</option>
+                    </select>
+                  </div>
+                  <div class="form-group mb-0">
+                    <label for="kas-year">Tahun</label>
+                    <input type="number" id="kas-year" value="2026" required>
+                  </div>
+                </div>
+                <div class="form-group mb-3" style="text-align: left;">
+                  <label for="kas-proof">Unggah Bukti Pembayaran QRIS (Opsional / Dianjurkan)</label>
+                  <input type="file" id="kas-proof" accept="image/*,.pdf" class="file-input" style="padding: 0.5rem; background: white; border: 1px solid #d4d4d8; border-radius: 6px; width: 100%;">
+                  <small style="color: #71717a; display: block; margin-top: 4px;">Lampirkan screenshot/foto bukti transfer agar proses verifikasi Bendahara lebih cepat.</small>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" id="btn-pay-qris"
+                  style="background: #18181b; font-size: 1rem; padding: 0.8rem;">
+                  Scan & Bayar QRIS Rp 10.000 Sekarang
+                </button>
+                <p class="text-muted mt-2" style="font-size: 0.8rem;">Pembayaran Anda akan diverifikasi secara manual oleh Pengurus bagian Bendahara.</p>
+              </form>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h3>Riwayat Pembayaran Kas Saya</h3>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Periode</th>
+                      <th>Nominal</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-my-kas">
+                    <tr>
+                      <td colspan="3" class="text-center">Memuat...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================== -->
+    <!-- MODAL GERBANG KUNCI QRIS (TIDAK BISA DITUTUP) -->
+    <!-- ============================================== -->
+    <div id="qris-lock-modal" class="modal-overlay"
+      style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(24, 24, 27, 0.95); z-index: 9999; align-items: center; justify-content: center;">
+      <div class="modal-content card"
+        style="max-width: 480px; width: 90%; padding: 2.5rem; text-align: center; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <div
+          style="width: 64px; height: 64px; background: #f8f9fa; color: #18181b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1rem;">
+
+        </div>
+        <h2 style="color: #18181b; margin-bottom: 0.5rem;">GERBANG PRESENSI TERKUNCI</h2>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
+          Anda belum melunasi uang kas bulan ini (<strong>Rp 10.000</strong>). Sesuai aturan organisasi, Anda
+          <strong>wajib membayar kas via QRIS</strong> sebelum dapat membuka laman presensi pertemuan.
+        </p>
+
+        <div class="qris-box mb-3"
+          style="background: #f8f9fa; border: none; padding: 1rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+          <h4 style="color: #18181b; font-weight: 800; font-size: 0.9rem;">QRIS INSTANT PAYMENT</h4>
+          <div id="qris-image-modal" style="margin: 8px 0; min-height: 150px; display: flex; align-items: center; justify-content: center;">
+            <p style="color: #71717a; font-size: 0.9rem;">Memuat QRIS...</p>
+          </div>
+          <strong style="color: #18181b; font-size: 1.2rem;">Rp 10.000</strong>
+        </div>
+
+        <div style="text-align: left; background: #f8f9fa; padding: 1rem 1.2rem; border-radius: 8px; margin-bottom: 1rem;">
+          <p style="font-size: 0.85rem; font-weight: 700; color: #18181b; margin-bottom: 0.5rem;">Langkah Pembayaran:</p>
+          <ol style="font-size: 0.8rem; color: #4b5563; margin: 0; padding-left: 1.2rem; line-height: 1.8;">
+            <li>Buka aplikasi bank/e-wallet di HP Anda</li>
+            <li>Pilih menu <strong>Scan QR / QRIS</strong></li>
+            <li>Arahkan kamera ke QR Code di atas</li>
+            <li>Bayar sebesar <strong>Rp 10.000</strong></li>
+            <li>Setelah uang terkirim, tekan tombol di bawah ini</li>
+          </ol>
+        </div>
+
+        <div style="text-align: left; margin-bottom: 1rem;">
+          <label for="modal-kas-proof" style="font-size: 0.85rem; font-weight: 700; color: #18181b; display: block; margin-bottom: 4px;">Unggah Bukti Pembayaran QRIS (Opsional / Dianjurkan):</label>
+          <input type="file" id="modal-kas-proof" accept="image/*,.pdf" class="file-input" style="padding: 0.4rem; background: white; border: 1px solid #d4d4d8; border-radius: 6px; width: 100%; font-size: 0.8rem;">
+          <small style="color: #71717a; display: block; margin-top: 4px; font-size: 0.75rem;">Lampirkan screenshot/foto bukti transfer agar verifikasi lebih cepat.</small>
+        </div>
+
+        <div id="qris-modal-status-box"></div>
+
+        <button onclick="payQrisFromModal()" id="btn-modal-qris" class="btn btn-primary btn-block"
+          style="background: #18181b; color: #ffffff; font-size: 1rem; padding: 0.9rem; margin-top: 1rem;">
+          Bayar QRIS Rp 10.000 Sekarang
+        </button>
+
+        <button onclick="closeLockModalAndGoHome()" class="btn btn-outline btn-block"
+          style="margin-top: 0.8rem; border-color: #d4d4d8; color: #4b5563;">
+          Kembali ke Beranda
+        </button>
+
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+          <p style="font-size: 0.75rem; color: #4b5563; font-weight: 600;">
+            Gerbang Presensi terbuka otomatis setelah pembayaran kas diverifikasi Lunas oleh Bendahara.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN BUKTI & VERIFIKASI MODAL -->
+    <div id="admin-bukti-modal" class="modal-overlay"
+      style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(24, 24, 27, 0.85); z-index: 10000; align-items: center; justify-content: center;">
+      <div class="modal-content card"
+        style="max-width: 550px; width: 92%; padding: 2.5rem; text-align: left; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1); background: #ffffff; max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e4e4e7; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+          <h3 style="color: #18181b; margin: 0; font-size: 1.25rem;">Bukti Pembayaran Kas</h3>
+          <button onclick="closeAdminBuktiModal()" style="background: none; border: none; font-size: 1.5rem; color: #71717a; cursor: pointer;">&times;</button>
+        </div>
+        <div id="admin-bukti-modal-body"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="main-footer">
+    <div class="footer-content">
+      <p>&copy; 2026 Unit Kegiatan Mahasiswa IPTEK STIKES Semarang. BERSINERGI, CERDAS, BERKUALITAS.</p>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+</body>
+
+</html>
