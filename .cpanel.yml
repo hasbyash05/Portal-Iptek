@@ -2,4 +2,8 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/u5cfvtpd/public_html/gate.ukmiptek.org/
+    - /bin/rm -rf $DEPLOYPATH/node_modules
     - /bin/cp -R * $DEPLOYPATH
+    - cd $DEPLOYPATH && npm ci --only=production
+    - cd $DEPLOYPATH && touch database.sqlite
+    - cd $DEPLOYPATH && chmod 666 database.sqlite
