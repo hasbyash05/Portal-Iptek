@@ -3,7 +3,7 @@ name: Deploy Node.js Backend to cPanel
 on:
   push:
     branches:
-      - main # Ubah ke 'master' jika default branch adalah master
+      - master
 
 jobs:
   web-deploy:
