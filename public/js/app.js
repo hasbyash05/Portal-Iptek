@@ -64,11 +64,18 @@ async function generateDeviceFingerprint() {
 
   // Hash semua komponen menggunakan SHA-256
   const raw = components.join('|||');
-  const encoder = new TextEncoder();
-  const data = encoder.encode(raw);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const fingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  let fingerprint;
+  if (crypto && crypto.subtle) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(raw);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    fingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } else {
+    // Fallback sederhana jika diakses via HTTP (karena crypto.subtle butuh HTTPS)
+    fingerprint = btoa(unescape(encodeURIComponent(raw))).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+  }
 
   // Cache fingerprint
   localStorage.setItem('iptek_device_fp', fingerprint);
