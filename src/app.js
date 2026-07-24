@@ -85,8 +85,7 @@ const startServer = async () => {
   }
 };
 
-if (require.main === module) {
-  startServer();
-}
+// Start server di cPanel (Passenger) atau lokal
+startServer();
 
 module.exports = app;
