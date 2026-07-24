@@ -1,0 +1,31 @@
+name: Deploy Node.js Backend to cPanel
+
+on:
+  push:
+    branches:
+      - main # Ubah ke 'master' jika default branch adalah master
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+    steps:
+    - name: 🚚 Get latest code
+      uses: actions/checkout@v4
+    
+    - name: 📂 Sync files
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_SERVER }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        server-dir: /public_html/gate.ukmiptek.org/
+        # Mengecualikan folder dan file agar tidak menimpa data di server
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          .env
+          database.sqlite
+          login_credentials.json
+          belajar.zip
