@@ -58,34 +58,34 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 4000;
 
-// Start server function
-const startServer = async () => {
-  try {
-    await sequelize.authenticate();
+// Inisialisasi Database (berjalan di background tanpa menahan proses start server)
+sequelize.authenticate()
+  .then(async () => {
     console.log('✅ Koneksi ke database berhasil.');
-
-    // Auto sync tables in development
     if (process.env.NODE_ENV === 'development') {
       await sequelize.sync({ alter: false });
       console.log('✅ Database tersinkronisasi.');
-
       const userCount = await User.count();
       if (userCount === 0) {
-        console.log('⚠️ Database kosong. Mengisi data awal (seeding) secara otomatis dengan password tetap...');
+        console.log('⚠️ Database kosong. Mengisi data awal (seeding)...');
         const { seedDatabase } = require('./seeders/seed');
         await seedDatabase();
       }
     }
+  })
+  .catch((error) => {
+    console.error('❌ Gagal menginisialisasi database:', error.message);
+  });
 
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server berjalan di http://localhost:${PORT} dan siap diakses via Wi-Fi!`);
-    });
-  } catch (error) {
-    console.error('❌ Gagal menginisialisasi server:', error.message);
-  }
-};
-
-// Start server di cPanel (Passenger) atau lokal
-startServer();
+// Deteksi jika berjalan di cPanel (Phusion Passenger)
+if (typeof PhusionPassenger !== 'undefined') {
+  // Passenger akan otomatis mengambil server dari sini
+  app.listen('passenger'); 
+} else {
+  // Berjalan di komputer lokal (Development)
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;
