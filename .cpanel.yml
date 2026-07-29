@@ -7,3 +7,4 @@ deployment:
     - /bin/cp -R asset $DEPLOYPATH
     - /bin/cp package.json $DEPLOYPATH
     - /bin/cp package-lock.json $DEPLOYPATH
+    - cd $DEPLOYPATH && /opt/cpanel/ea-nodejs18/bin/npm install --production

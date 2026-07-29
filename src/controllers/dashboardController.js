@@ -22,7 +22,7 @@ const getDashboardStats = async (req, res) => {
     const pendingPayments = await Payment.count({ where: { status: 'pending' } });
 
     // 3. Attendance chart (count by date for recent Tuesday meetings)
-    // In SQLite/PostgreSQL we group by date
+    // Group attendance by date (MySQL)
     const attendanceChart = await Attendance.findAll({
       attributes: [
         'date',

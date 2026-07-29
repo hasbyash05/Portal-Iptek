@@ -6,8 +6,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "node --watch src/app.js",
-    "seed": "node src/seeders/seed.js",
-    "studio": "drizzle-kit studio"
+    "seed": "node src/seeders/seed.js"
   },
   "keywords": [
     "iptek",
@@ -32,7 +31,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "pptxgenjs": "^3.12.0",
-    "sequelize": "^6.37.3",
-    "sqlite3": "^5.1.7"
+    "mysql2": "^3.11.0",
+    "sequelize": "^6.37.3"
   }
 }
