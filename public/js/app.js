@@ -976,13 +976,13 @@ function filterAbsensi(e) {
 
 async function loadKasReport(statusFilter = '') {
   // Update button active states
-  document.querySelectorAll('#p-tab-kas .filter-buttons .btn').forEach(btn => {
+  document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
     btn.classList.remove('active');
   });
-  if (!statusFilter) document.querySelectorAll('#p-tab-kas .filter-buttons .btn')[0].classList.add('active');
-  if (statusFilter === 'pending') document.querySelectorAll('#p-tab-kas .filter-buttons .btn')[1].classList.add('active');
-  if (statusFilter === 'lunas') document.querySelectorAll('#p-tab-kas .filter-buttons .btn')[2].classList.add('active');
-  if (statusFilter === 'ditolak') document.querySelectorAll('#p-tab-kas .filter-buttons .btn')[3].classList.add('active');
+  if (!statusFilter) document.querySelectorAll('.filter-buttons .btn')[0].classList.add('active');
+  if (statusFilter === 'pending') document.querySelectorAll('.filter-buttons .btn')[1].classList.add('active');
+  if (statusFilter === 'lunas') document.querySelectorAll('.filter-buttons .btn')[2].classList.add('active');
+  if (statusFilter === 'ditolak') document.querySelectorAll('.filter-buttons .btn')[3].classList.add('active');
 
   try {
     const query = statusFilter ? `?status=${statusFilter}` : '';
@@ -1039,7 +1039,7 @@ async function confirmKas(id, status) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal memverifikasi');
     alert(`Pembayaran kas berhasil diubah menjadi ${status}`);
-    const activeBtn = document.querySelector('#p-tab-kas .filter-buttons .btn.active');
+    const activeBtn = document.querySelector('.filter-buttons .btn.active');
     let filterVal = '';
     if (activeBtn) {
       const txt = activeBtn.textContent.toLowerCase();
@@ -2147,13 +2147,13 @@ function filterAbsensi(e) {
 
 async function loadKasReport(statusFilter = '') {
   // Update button active states
-  document.querySelectorAll('#p-tab-kas .filter-buttons .btn').forEach(btn => {
+  document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
     btn.classList.remove('active');
   });
-  if (!statusFilter) document.querySelectorAll('#p-tab-kas .filter-buttons .btn')[0].classList.add('active');
-  if (statusFilter === 'pending') document.querySelectorAll('#p-tab-kas .filter-buttons .btn')[1].classList.add('active');
-  if (statusFilter === 'lunas') document.querySelectorAll('#p-tab-kas .filter-buttons .btn')[2].classList.add('active');
-  if (statusFilter === 'ditolak') document.querySelectorAll('#p-tab-kas .filter-buttons .btn')[3].classList.add('active');
+  if (!statusFilter) document.querySelectorAll('.filter-buttons .btn')[0].classList.add('active');
+  if (statusFilter === 'pending') document.querySelectorAll('.filter-buttons .btn')[1].classList.add('active');
+  if (statusFilter === 'lunas') document.querySelectorAll('.filter-buttons .btn')[2].classList.add('active');
+  if (statusFilter === 'ditolak') document.querySelectorAll('.filter-buttons .btn')[3].classList.add('active');
 
   try {
     const query = statusFilter ? `?status=${statusFilter}` : '';
@@ -2210,7 +2210,7 @@ async function confirmKas(id, status) {
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal memverifikasi');
     alert(`Pembayaran kas berhasil diubah menjadi ${status}`);
-    const activeBtn = document.querySelector('#p-tab-kas .filter-buttons .btn.active');
+    const activeBtn = document.querySelector('.filter-buttons .btn.active');
     let filterVal = '';
     if (activeBtn) {
       const txt = activeBtn.textContent.toLowerCase();
