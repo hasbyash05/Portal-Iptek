@@ -2658,7 +2658,7 @@ async function loadAnggotaList() {
             <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
               ${isAdminUser ? `
                 <button onclick="showEditUserModal(${u.id})" title="Edit" style="background:none; border:1px solid #e4e4e7; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#4b5563; font-size:0.8rem;"><i class="fa-solid fa-pen-to-square"></i></button>
-                <button onclick="resetUserPassword(${u.id})" title="Reset Password" style="background:none; border:1px solid #e4e4e7; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#4b5563; font-size:0.8rem;"><i class="fa-solid fa-key"></i></button>
+                <button onclick="showResetPasswordModal(${u.id})" title="Reset Password" style="background:none; border:1px solid #e4e4e7; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#4b5563; font-size:0.8rem;"><i class="fa-solid fa-key"></i></button>
                 ${u.id !== currentUser.id ? `<button onclick="showDeleteUserModal(${u.id}, '${escapeHtml(u.nama_lengkap).replace(/'/g, "\\'")}')" title="Hapus (Pengurangan)" style="background:none; border:1px solid #fecaca; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#dc2626; font-size:0.8rem;"><i class="fa-solid fa-trash"></i></button>` : ''}
               ` : `<span style="font-size:0.75rem; color:#a1a1aa;"><i class="fa-solid fa-lock" style="font-size:0.7rem;"></i> Khusus Admin</span>`}
             </div>
