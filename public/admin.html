@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Portal - SIM Internal UKM IPTEK STIKES Semarang</title>
+  
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- FontAwesome Professional Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- CSS Utama -->
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <style>
+    body {
+      background-color: #f8f9fa;
+      color: #18181b;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .admin-header {
+      background: #ffffff;
+      border-bottom: 1px solid #e4e4e7;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: #18181b;
+    }
+    .admin-badge {
+      background: #18181b;
+      color: #ffffff;
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .admin-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+    .admin-card {
+      background: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      padding: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ADMIN LOGIN VIEW -->
+  <div id="admin-login-view" style="display: flex; min-height: 100vh; align-items: center; justify-content: center; background: #f8f9fa;">
+    <div style="background: #ffffff; padding: 2.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); width: 100%; max-width: 400px;">
+      <div style="text-align: center; margin-bottom: 2rem;">
+        <div class="admin-badge" style="display: inline-block; margin-bottom: 0.5rem;">System Administrator</div>
+        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; color: #18181b; margin: 0;">Portal Admin SIM IPTEK</h2>
+        <p style="color: #71717a; font-size: 0.85rem; margin-top: 0.4rem;">Masuk dengan kredensial administrator</p>
+      </div>
+
+      <form id="admin-login-form" onsubmit="handleAdminLogin(event)">
+        <div style="margin-bottom: 1.2rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #4b5563; margin-bottom: 0.4rem;">Username Admin</label>
+          <input type="text" id="admin-username" required style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box;">
+        </div>
+        <div style="margin-bottom: 1.5rem;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; color: #4b5563; margin-bottom: 0.4rem;">Password</label>
+          <input type="password" id="admin-password" required style="width: 100%; padding: 0.65rem 0.85rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.9rem; box-sizing: border-box;">
+        </div>
+        <button type="submit" id="btn-admin-login" class="btn btn-primary" style="width: 100%; padding: 0.75rem; font-size: 0.9rem; font-weight: 600; justify-content: center;">
+          <i class="fa-solid fa-lock"></i> Masuk Administrator
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN DASHBOARD VIEW -->
+  <div id="admin-dashboard-view" style="display: none;">
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div class="admin-brand">
+        <img src="/img/logo.jpg" alt="Logo UKM IPTEK" style="height: 32px; border-radius: 4px;">
+        <span>SIM IPTEK</span>
+        <span class="admin-badge">Admin Control Panel</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <span style="font-size: 0.85rem; color: #4b5563;" id="admin-user-display">Administrator</span>
+        <button onclick="adminLogout()" class="btn" style="background: #f4f4f5; color: #18181b; border: 1px solid #e4e4e7; padding: 0.4rem 0.8rem; font-size: 0.8rem; font-weight: 500;">
+          <i class="fa-solid fa-right-from-bracket"></i> Keluar
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN DASHBOARD -->
+    <div class="admin-container">
+      <div class="admin-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.6rem; font-weight: 700; color: #18181b; margin: 0;">Manajemen Pengguna Organization</h1>
+            <p style="color: #71717a; font-size: 0.9rem; margin: 0.25rem 0 0 0;">Tambah, ubah role/divisi, reset password, dan kelola seluruh akun SIM IPTEK</p>
+          </div>
+          <button class="btn btn-primary" onclick="showAddUserModal()" style="white-space: nowrap;">
+            <i class="fa-solid fa-user-plus"></i> Tambah Anggota / Pengurus
+          </button>
+        </div>
+
+        <!-- FILTER & SEARCH -->
+        <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+          <select id="filter-user-role" onchange="loadUserList()" style="padding: 0.55rem 0.85rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.85rem; background: #fff; color: #18181b; min-width: 150px;">
+            <option value="">Semua Role</option>
+            <option value="pengurus">Pengurus</option>
+            <option value="anggota">Anggota</option>
+            <option value="admin">Admin</option>
+          </select>
+          <input type="text" id="search-user" placeholder="Cari berdasarkan nama atau username..." oninput="loadUserList()" style="padding: 0.55rem 0.85rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.85rem; flex: 1; min-width: 240px; color: #18181b;">
+        </div>
+
+        <!-- TABEL USER -->
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Nama Lengkap</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Divisi</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="table-users">
+              <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p id="users-count" style="color: #71717a; font-size: 0.85rem; margin-top: 1rem;"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Tambah/Edit User -->
+  <div id="modal-user-form" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:8px; padding:2rem; width:90%; max-width:480px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.12);">
+      <h3 id="modal-user-title" style="font-family:'Outfit',sans-serif; font-size:1.2rem; font-weight:700; color:#18181b; margin:0 0 1.5rem 0;">Tambah Akun Baru</h3>
+      <input type="hidden" id="edit-user-id">
+      
+      <div style="margin-bottom:1rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Nama Lengkap</label>
+        <input type="text" id="form-user-nama" placeholder="Masukkan nama lengkap" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+      </div>
+      
+      <div style="margin-bottom:1rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Username</label>
+        <input type="text" id="form-user-username" placeholder="Masukkan username" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+      </div>
+      
+      <div id="form-user-password-group" style="margin-bottom:1rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Password <small style="color:#a1a1aa;">(kosongkan untuk generate otomatis)</small></label>
+        <input type="text" id="form-user-password" placeholder="Password (opsional)" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+      </div>
+      
+      <div style="margin-bottom:1rem;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Role</label>
+        <select id="form-user-role" onchange="toggleDivisiField()" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; background:#fff; box-sizing:border-box;">
+          <option value="anggota">Anggota</option>
+          <option value="pengurus">Pengurus</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      
+      <div id="form-user-divisi-group" style="margin-bottom:1.5rem; display:none;">
+        <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Divisi (Khusus Pengurus)</label>
+        <input type="text" id="form-user-divisi" placeholder="Contoh: Ketua, Bendahara, Kominfo" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+      </div>
+      
+      <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+        <button class="btn" onclick="closeUserModal()" style="background:#f4f4f5; color:#4b5563; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Batal</button>
+        <button class="btn btn-primary" onclick="submitUserForm()" style="padding:0.55rem 1.2rem; font-size:0.85rem;">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Konfirmasi Hapus -->
+  <div id="modal-delete-user" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:8px; padding:2rem; width:90%; max-width:400px; box-shadow:0 8px 30px rgba(0,0,0,0.12); text-align:center;">
+      <div style="width:48px; height:48px; background:#fef2f2; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem auto;">
+        <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:1.2rem;"></i>
+      </div>
+      <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0 0 0.5rem 0;">Hapus Akun</h3>
+      <p id="delete-user-msg" style="color:#4b5563; font-size:0.9rem; margin:0 0 1.5rem 0;">Yakin ingin menghapus akun ini?</p>
+      <input type="hidden" id="delete-user-id">
+      <div style="display:flex; gap:0.75rem; justify-content:center;">
+        <button class="btn" onclick="closeDeleteModal()" style="background:#f4f4f5; color:#4b5563; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Batal</button>
+        <button class="btn" onclick="confirmDeleteUser()" style="background:#dc2626; color:#fff; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: Hasil Reset Password -->
+  <div id="modal-reset-result" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:8px; padding:2rem; width:90%; max-width:400px; box-shadow:0 8px 30px rgba(0,0,0,0.12); text-align:center;">
+      <div style="width:48px; height:48px; background:#f0fdf4; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem auto;">
+        <i class="fa-solid fa-key" style="color:#16a34a; font-size:1.2rem;"></i>
+      </div>
+      <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0 0 0.5rem 0;">Password Baru</h3>
+      <p style="color:#4b5563; font-size:0.85rem; margin:0 0 0.5rem 0;">Password berhasil direset untuk:</p>
+      <p id="reset-result-name" style="font-weight:600; color:#18181b; margin:0 0 0.75rem 0;"></p>
+      <div style="background:#f8f9fa; border:1px solid #e4e4e7; border-radius:6px; padding:0.75rem; margin-bottom:0.5rem;">
+        <code id="reset-result-password" style="font-size:1.1rem; font-weight:700; color:#18181b; letter-spacing:0.05em;"></code>
+      </div>
+      <p style="color:#dc2626; font-size:0.75rem; margin:0 0 1.25rem 0;">Salin password ini sekarang. Tidak bisa dilihat lagi setelah ditutup.</p>
+      <button class="btn btn-primary" onclick="closeResetResultModal()" style="padding:0.55rem 1.5rem; font-size:0.85rem;">Tutup</button>
+    </div>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

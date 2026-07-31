@@ -18,6 +18,9 @@ const generateRandomPassword = (length = 8) => {
 };
 
 const fixedPasswords = {
+  // Admin System Permanen
+  admin: 'iptekadmin2026',
+
   // Pengurus
   hasby: 'pu5my3h8',
   wafiq: '2a5hqzxg',
@@ -135,6 +138,24 @@ const seedDatabase = async () => {
 
     console.log('[INFO] Membuat akun user resmi UKM IPTEK STIKES Semarang...');
     const generatedCredentials = [];
+
+    // 0. Akun Admin Permanen System
+    const adminPassword = fixedPasswords.admin || generateRandomPassword(10);
+    const adminHash = await bcrypt.hash(adminPassword, BCRYPT_SALT_ROUNDS);
+    await User.create({
+      username: 'admin',
+      password_hash: adminHash,
+      nama_lengkap: 'System Administrator',
+      role: 'admin',
+      divisi: null
+    });
+    generatedCredentials.push({
+      nama_lengkap: 'System Administrator',
+      username: 'admin',
+      password: adminPassword,
+      role: 'admin',
+      divisi: '-'
+    });
 
     // 1. Struktur Resmi Pengurus UKM IPTEK STIKES Semarang
     const daftarPengurus = [

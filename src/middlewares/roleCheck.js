@@ -1,3 +1,13 @@
+const isAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Akses ditolak. Endpoint ini khusus untuk role Admin.'
+    });
+  }
+  next();
+};
+
 const isPengurus = (req, res, next) => {
   if (!req.user || req.user.role !== 'pengurus') {
     return res.status(403).json({
@@ -18,4 +28,5 @@ const isAnggota = (req, res, next) => {
   next();
 };
 
-module.exports = { isPengurus, isAnggota };
+module.exports = { isAdmin, isPengurus, isAnggota };
+

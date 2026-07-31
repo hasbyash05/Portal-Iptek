@@ -21,7 +21,7 @@ const User = sequelize.define('User', {
     allowNull: false
   },
   role: {
-    type: DataTypes.ENUM('pengurus', 'anggota'),
+    type: DataTypes.ENUM('admin', 'pengurus', 'anggota'),
     allowNull: false
   },
   divisi: {

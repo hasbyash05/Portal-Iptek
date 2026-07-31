@@ -123,14 +123,18 @@ function checkAuth() {
   if (user.role === 'pengurus') {
     showView('pengurus-view');
     if (navLaporan) navLaporan.style.display = 'block';
+    const navAnggota = document.getElementById('nav-item-anggota');
+    if (navAnggota) navAnggota.style.display = 'block';
   } else {
     showView('anggota-view');
     if (navLaporan) navLaporan.style.display = 'none';
+    const navAnggota = document.getElementById('nav-item-anggota');
+    if (navAnggota) navAnggota.style.display = 'none';
   }
 
   // Cek adakah hash di URL saat refresh atau awal load
   const hashTab = window.location.hash.replace('#', '');
-  const validTabsPengurus = ['overview', 'laporan', 'materi', 'absensi', 'kas'];
+  const validTabsPengurus = ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'];
   const validTabsAnggota = ['overview', 'materi', 'absensi', 'kas'];
   const validTabs = user.role === 'pengurus' ? validTabsPengurus : validTabsAnggota;
 
@@ -304,7 +308,7 @@ window.addEventListener('hashchange', () => {
   if (!userStr || !hashTab) return;
   const user = JSON.parse(userStr);
   const validTabs = user.role === 'pengurus' ? 
-    ['overview', 'laporan', 'materi', 'absensi', 'kas'] : 
+    ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'] : 
     ['overview', 'materi', 'absensi', 'kas'];
 
   if (validTabs.includes(hashTab)) {
@@ -319,7 +323,7 @@ function switchPengurusTab(tabName) {
   document.querySelectorAll('#pengurus-view .tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('#pengurus-view .tab-content').forEach(c => c.style.display = 'none');
 
-  const tabs = ['overview', 'laporan', 'materi', 'absensi', 'kas'];
+  const tabs = ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'];
   const idx = tabs.indexOf(tabName);
   if (idx >= 0) {
     const btns = document.querySelectorAll('#pengurus-view .tab-btn');
@@ -333,6 +337,7 @@ function switchPengurusTab(tabName) {
   if (tabName === 'materi') loadPengurusMateri();
   if (tabName === 'absensi') loadPengurusAbsensi();
   if (tabName === 'kas') loadKasReport('');
+  if (tabName === 'anggota') loadAnggotaList();
 }
 
 async function loadPengurusOverview() {
@@ -1471,3 +1476,5 @@ async function uploadQrisImage(e) {
     btn.textContent = originalText;
   }
 }
+
+
