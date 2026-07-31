@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getDashboardStats } = require('../controllers/dashboardController');
-const { exportPPT } = require('../controllers/exportController');
+const { getDashboardStats, exportPPT } = require('../controllers/dashboardController');
 const { authenticate } = require('../middlewares/auth');
 const { isPengurus } = require('../middlewares/roleCheck');
 
