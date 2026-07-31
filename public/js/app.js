@@ -2768,10 +2768,13 @@ async function submitUserForm() {
 }
 
 function showResetPasswordModal(id) {
-  document.getElementById('reset-user-id').value = id;
   // Reset form to default (Auto)
   const form = document.getElementById('form-reset-password');
   form.reset();
+  
+  // Set ID after reset so it doesn't get cleared
+  document.getElementById('reset-user-id').value = id;
+  
   toggleResetManual(false);
   document.getElementById('modal-reset-password').style.display = 'flex';
 }
