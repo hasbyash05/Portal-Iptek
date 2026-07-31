@@ -52,7 +52,8 @@ const submitAttendance = async (req, res) => {
     const userId = req.user.id;
 
     // Cek apakah user sudah membayar uang kas bulan berjalan (Wajib LUNAS untuk Anggota)
-    const isExemptRole = ['admin'].includes(req.user.role);
+    const isBendahara = req.user.role === 'pengurus' && req.user.divisi && req.user.divisi.toLowerCase().includes('bendahara');
+    const isExemptRole = req.user.role === 'admin' || isBendahara;
     if (!isExemptRole) {
       const currentMonth = new Date().getMonth() + 1;
       const currentYear = new Date().getFullYear();
