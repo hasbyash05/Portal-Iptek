@@ -343,7 +343,7 @@ function switchTab(tabName, user) {
 
   const el = (id) => document.getElementById(id);
   
-  if (el('view-materi-pengurus')) el('view-materi-pengurus').style.display = isOperasional ? 'block' : 'none';
+  if (el('view-materi-pengurus')) el('view-materi-pengurus').style.display = isPengurusOrAdmin ? 'block' : 'none';
   if (el('view-absensi-pengurus')) el('view-absensi-pengurus').style.display = isKetuaWakil ? 'block' : 'none';
   if (el('view-kas-pengurus')) el('view-kas-pengurus').style.display = isBendahara ? 'block' : 'none';
   
@@ -357,7 +357,7 @@ function switchTab(tabName, user) {
   if (tabName === 'laporan' && isPengurusOrAdmin) loadPengurusLaporan();
   if (tabName === 'materi') {
     loadAnggotaMateri();
-    if (isOperasional) loadPengurusMateri();
+    if (isPengurusOrAdmin) loadPengurusMateri();
   }
   if (tabName === 'absensi') {
     if (isKetuaWakil) loadPengurusAbsensi();
