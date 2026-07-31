@@ -82,8 +82,7 @@ async function handleAdminLogin(e) {
     checkAdminAuth();
   } catch (err) {
     alert(err.message);
-  } font-size
-  finally {
+  } finally {
     btn.disabled = false;
     btn.innerHTML = '<i class="fa-solid fa-lock"></i> Masuk Administrator';
   }
