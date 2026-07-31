@@ -98,10 +98,12 @@ const checkStatus = async (req, res) => {
       order: [['id', 'DESC']]
     });
 
+    const isExempt = ['pengurus', 'admin'].includes(req.user.role);
+
     return res.status(200).json({
       status: 'success',
       data: {
-        hasPaid: payment && payment.status === 'lunas',
+        hasPaid: isExempt || (payment && payment.status === 'lunas'),
         month: currentMonth,
         year: currentYear,
         payment: payment || null

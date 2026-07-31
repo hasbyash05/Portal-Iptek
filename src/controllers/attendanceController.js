@@ -51,24 +51,27 @@ const submitAttendance = async (req, res) => {
     const dateStr = getJakartaDateString();
     const userId = req.user.id;
 
-    // Cek apakah user sudah membayar uang kas bulan berjalan (Wajib LUNAS)
-    const currentMonth = new Date().getMonth() + 1;
-    const currentYear = new Date().getFullYear();
-    const kasPaid = await Payment.findOne({
-      where: {
-        user_id: userId,
-        month: currentMonth,
-        year: currentYear,
-        status: 'lunas'
-      }
-    });
-
-    if (!kasPaid) {
-      return res.status(403).json({
-        status: 'error',
-        message: `Gerbang Kas Terkunci: Anda belum melunasi uang kas untuk Bulan ${currentMonth} Tahun ${currentYear} (Rp 10.000). Silakan bayar via QRIS terlebih dahulu agar dapat melakukan presensi.`,
-        code: 'KAS_UNPAID_BLOCK'
+    // Cek apakah user sudah membayar uang kas bulan berjalan (Wajib LUNAS untuk Anggota)
+    const isExemptRole = ['pengurus', 'admin'].includes(req.user.role);
+    if (!isExemptRole) {
+      const currentMonth = new Date().getMonth() + 1;
+      const currentYear = new Date().getFullYear();
+      const kasPaid = await Payment.findOne({
+        where: {
+          user_id: userId,
+          month: currentMonth,
+          year: currentYear,
+          status: 'lunas'
+        }
       });
+
+      if (!kasPaid) {
+        return res.status(403).json({
+          status: 'error',
+          message: `Gerbang Kas Terkunci: Anda belum melunasi uang kas untuk Bulan ${currentMonth} Tahun ${currentYear} (Rp 10.000). Silakan bayar via QRIS terlebih dahulu agar dapat melakukan presensi.`,
+          code: 'KAS_UNPAID_BLOCK'
+        });
+      }
     }
 
     // Anti-Titip Absen: Cek apakah perangkat ini sudah digunakan user lain hari ini

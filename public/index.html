@@ -650,6 +650,122 @@
           </div>
         </div>
       </div>
+
+      <!-- PENGURUS TAB: MANAJEMEN ANGGOTA -->
+      <div id="p-tab-anggota" class="tab-content" style="display: none;">
+        <div class="section-box">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+              <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; color: #18181b; margin: 0;">Manajemen Anggota & Pengurus</h2>
+              <p style="color: #71717a; font-size: 0.9rem; margin: 0.25rem 0 0 0;">Daftar anggota organisasi (Penambahan & Pengurangan khusus Admin)</p>
+            </div>
+            <div id="btn-add-user-container" style="display: none;">
+              <button class="btn btn-primary" onclick="showAddUserModal()" style="white-space: nowrap;">
+                <i class="fa-solid fa-user-plus"></i> Tambah Anggota
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter & Search -->
+          <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+            <select id="filter-user-role" onchange="loadAnggotaList()" style="padding: 0.5rem 0.75rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.85rem; background: #fff; color: #18181b; min-width: 140px;">
+              <option value="">Semua Role</option>
+              <option value="pengurus">Pengurus</option>
+              <option value="anggota">Anggota</option>
+              <option value="admin">Admin</option>
+            </select>
+            <input type="text" id="search-user" placeholder="Cari nama atau username..." oninput="loadAnggotaList()" style="padding: 0.5rem 0.75rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.85rem; flex: 1; min-width: 200px; color: #18181b;">
+          </div>
+
+          <!-- Tabel Anggota -->
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>Nama Lengkap</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Divisi</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="table-anggota">
+                <tr><td colspan="6" class="text-center">Memuat data...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p id="anggota-count" style="color: #71717a; font-size: 0.8rem; margin-top: 0.75rem;"></p>
+        </div>
+      </div>
+
+      <!-- MODAL: Tambah/Edit Anggota -->
+      <div id="modal-user-form" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:10px; padding:2rem; width:90%; max-width:480px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.12);">
+          <h3 id="modal-user-title" style="font-family:'Outfit',sans-serif; font-size:1.2rem; font-weight:700; color:#18181b; margin:0 0 1.5rem 0;">Tambah Anggota</h3>
+          <input type="hidden" id="edit-user-id">
+          <div style="margin-bottom:1rem;">
+            <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Nama Lengkap</label>
+            <input type="text" id="form-user-nama" placeholder="Masukkan nama lengkap" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:1rem;">
+            <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Username</label>
+            <input type="text" id="form-user-username" placeholder="Masukkan username" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+          </div>
+          <div id="form-user-password-group" style="margin-bottom:1rem;">
+            <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Password <small style="color:#a1a1aa;">(kosongkan untuk generate otomatis)</small></label>
+            <input type="text" id="form-user-password" placeholder="Password (opsional)" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:1rem;">
+            <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Role</label>
+            <select id="form-user-role" onchange="toggleDivisiField()" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; background:#fff; box-sizing:border-box;">
+              <option value="anggota">Anggota</option>
+              <option value="pengurus">Pengurus</option>
+            </select>
+          </div>
+          <div id="form-user-divisi-group" style="margin-bottom:1.5rem; display:none;">
+            <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Divisi</label>
+            <input type="text" id="form-user-divisi" placeholder="Contoh: Ketua, Bendahara, Kominfo" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+          </div>
+          <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+            <button class="btn" onclick="closeUserModal()" style="background:#f4f4f5; color:#4b5563; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Batal</button>
+            <button class="btn btn-primary" onclick="submitUserForm()" style="padding:0.55rem 1.2rem; font-size:0.85rem;">Simpan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: Konfirmasi Hapus -->
+      <div id="modal-delete-user" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:10px; padding:2rem; width:90%; max-width:400px; box-shadow:0 8px 30px rgba(0,0,0,0.12); text-align:center;">
+          <div style="width:48px; height:48px; background:#fef2f2; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem auto;">
+            <i class="fa-solid fa-triangle-exclamation" style="color:#dc2626; font-size:1.2rem;"></i>
+          </div>
+          <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0 0 0.5rem 0;">Hapus Anggota (Pengurangan)</h3>
+          <p id="delete-user-msg" style="color:#4b5563; font-size:0.9rem; margin:0 0 1.5rem 0;">Yakin ingin menghapus anggota ini?</p>
+          <input type="hidden" id="delete-user-id">
+          <div style="display:flex; gap:0.75rem; justify-content:center;">
+            <button class="btn" onclick="closeDeleteModal()" style="background:#f4f4f5; color:#4b5563; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Batal</button>
+            <button class="btn" onclick="confirmDeleteUser()" style="background:#dc2626; color:#fff; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Hapus</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: Hasil Reset Password -->
+      <div id="modal-reset-result" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:#fff; border-radius:10px; padding:2rem; width:90%; max-width:400px; box-shadow:0 8px 30px rgba(0,0,0,0.12); text-align:center;">
+          <div style="width:48px; height:48px; background:#f0fdf4; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 1rem auto;">
+            <i class="fa-solid fa-key" style="color:#16a34a; font-size:1.2rem;"></i>
+          </div>
+          <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0 0 0.5rem 0;">Password Baru</h3>
+          <p style="color:#4b5563; font-size:0.85rem; margin:0 0 0.5rem 0;">Password berhasil direset untuk:</p>
+          <p id="reset-result-name" style="font-weight:600; color:#18181b; margin:0 0 0.75rem 0;"></p>
+          <div style="background:#f8f9fa; border:1px solid #e4e4e7; border-radius:6px; padding:0.75rem; margin-bottom:0.5rem;">
+            <code id="reset-result-password" style="font-size:1.1rem; font-weight:700; color:#18181b; letter-spacing:0.05em;"></code>
+          </div>
+          <p style="color:#dc2626; font-size:0.75rem; margin:0 0 1.25rem 0;">Salin password ini sekarang. Tidak bisa dilihat lagi setelah ditutup.</p>
+          <button class="btn btn-primary" onclick="closeResetResultModal()" style="padding:0.55rem 1.5rem; font-size:0.85rem;">Tutup</button>
+        </div>
+      </div>
     </section>
 
 
