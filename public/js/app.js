@@ -1503,7 +1503,12 @@ async function loadAnggotaList() {
       if (!tbody) return;
 
       if (data.status !== 'success' || !data.data || !data.data.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color:#71717a;">Tidak ada data ditemukan.</td></tr>';
+        let msg = 'Tidak ada data ditemukan.';
+        if (data.status === 'error') {
+          msg = `Gagal: ${data.message} ${data.error ? '('+data.error+')' : ''}`;
+          console.error(msg);
+        }
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="color:#71717a;">${escapeHtml(msg)}</td></tr>`;
         if (countEl) countEl.textContent = '';
         return;
       }
