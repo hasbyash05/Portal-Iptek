@@ -294,7 +294,7 @@ function switchNavTab(tabName, fromHash = false) {
     }
   });
 
-  if (user.role === 'pengurus') {
+  if (user.role === 'pengurus' || user.role === 'admin') {
     switchPengurusTab(tabName);
   } else {
     switchAnggotaTab(tabName);
