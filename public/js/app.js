@@ -1264,7 +1264,6 @@ function getDeviceInfo() {
   });
 }
 
-const API_BASE = '/api';
 
 // Initialize App
 document.addEventListener('DOMContentLoaded', () => {
