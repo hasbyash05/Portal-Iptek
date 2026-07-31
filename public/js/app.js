@@ -2767,24 +2767,73 @@ async function submitUserForm() {
   }
 }
 
-async function resetUserPassword(id) {
-  if (!confirm('Reset password user ini? Password baru akan di-generate otomatis.')) return;
+function showResetPasswordModal(id) {
+  document.getElementById('reset-user-id').value = id;
+  // Reset form to default (Auto)
+  const form = document.getElementById('form-reset-password');
+  form.reset();
+  toggleResetManual(false);
+  document.getElementById('modal-reset-password').style.display = 'flex';
+}
+
+function closeResetPasswordModal() {
+  document.getElementById('modal-reset-password').style.display = 'none';
+}
+
+function toggleResetManual(show) {
+  const manualGroup = document.getElementById('reset-manual-group');
+  const manualInput = document.getElementById('reset-manual-password');
+  if (show) {
+    manualGroup.style.display = 'block';
+    manualInput.required = true;
+  } else {
+    manualGroup.style.display = 'none';
+    manualInput.required = false;
+    manualInput.value = '';
+  }
+}
+
+async function submitResetPassword(e) {
+  e.preventDefault();
+  const id = document.getElementById('reset-user-id').value;
+  const mode = document.querySelector('input[name="reset-mode"]:checked').value;
+  const newPassword = document.getElementById('reset-manual-password').value.trim();
+  
+  if (mode === 'manual' && !newPassword) {
+    return alert('Silakan masukkan password baru.');
+  }
+
+  const btn = document.getElementById('btn-submit-reset');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mereset...';
 
   try {
+    const bodyData = {};
+    if (mode === 'manual') {
+      bodyData.new_password = newPassword;
+    }
+
     const res = await fetchAuth(`${API_BASE}/users/${id}/reset-password`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({})
+      body: JSON.stringify(bodyData)
     });
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal reset password.');
 
+    closeResetPasswordModal();
+    
+    // Show the result modal (existing logic)
     document.getElementById('reset-result-name').textContent = data.data.nama_lengkap + ' (@' + data.data.username + ')';
     document.getElementById('reset-result-password').textContent = data.data.new_password;
     document.getElementById('modal-reset-result').style.display = 'flex';
   } catch (err) {
     alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
   }
 }
 
