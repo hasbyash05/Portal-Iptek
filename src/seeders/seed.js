@@ -254,7 +254,7 @@ const seedDatabase = async () => {
       'Muhammad Yusuf Saputra'
     ];
 
-    const existingUsernames = new Set(daftarPengurus.map(p => p.username));
+    const existingUsernames = new Set(['admin', ...daftarPengurus.map(p => p.username)]);
 
     const createdAnggota = [];
 
