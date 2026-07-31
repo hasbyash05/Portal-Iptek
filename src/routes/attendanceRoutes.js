@@ -3,7 +3,7 @@ const router = express.Router();
 const { submitAttendance, getMyHistory, getReport } = require('../controllers/attendanceController');
 const { openSession, closeSession, getSessionStatus } = require('../controllers/attendanceSessionController');
 const { authenticate } = require('../middlewares/auth');
-const { isPengurus } = require('../middlewares/roleCheck');
+const { isKetuaWakil } = require('../middlewares/roleCheck');
 const { checkAttendanceActive } = require('../middlewares/checkAttendanceActive');
 
 router.use(authenticate);
@@ -15,9 +15,9 @@ router.get('/session/status', getSessionStatus);
 router.post('/', checkAttendanceActive, submitAttendance);
 router.get('/history', getMyHistory);
 
-// Khusus Pengurus: kelola sesi presensi dan lihat rekap
-router.post('/session/open', isPengurus, openSession);
-router.post('/session/close', isPengurus, closeSession);
-router.get('/report', isPengurus, getReport);
+// Khusus Ketua & Wakil: kelola sesi presensi dan lihat rekap
+router.post('/session/open', isKetuaWakil, openSession);
+router.post('/session/close', isKetuaWakil, closeSession);
+router.get('/report', isKetuaWakil, getReport);
 
 module.exports = router;

@@ -28,5 +28,38 @@ const isAnggota = (req, res, next) => {
   next();
 };
 
-module.exports = { isAdmin, isPengurus, isAnggota };
+const isOperasional = (req, res, next) => {
+  const isEligible = req.user.role === 'admin' || (req.user.role === 'pengurus' && req.user.divisi && req.user.divisi.toLowerCase().includes('operasional'));
+  if (!isEligible) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Akses ditolak. Endpoint ini khusus untuk divisi Operasional / Admin.'
+    });
+  }
+  next();
+};
+
+const isKetuaWakil = (req, res, next) => {
+  const isEligible = req.user.role === 'admin' || (req.user.role === 'pengurus' && req.user.divisi && (req.user.divisi.toLowerCase().includes('ketua') || req.user.divisi.toLowerCase().includes('wakil')));
+  if (!isEligible) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Akses ditolak. Endpoint ini khusus untuk Ketua, Wakil Ketua / Admin.'
+    });
+  }
+  next();
+};
+
+const isBendahara = (req, res, next) => {
+  const isEligible = req.user.role === 'admin' || (req.user.role === 'pengurus' && req.user.divisi && req.user.divisi.toLowerCase().includes('bendahara'));
+  if (!isEligible) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Akses ditolak. Endpoint ini khusus untuk Bendahara / Admin.'
+    });
+  }
+  next();
+};
+
+module.exports = { isAdmin, isPengurus, isAnggota, isOperasional, isKetuaWakil, isBendahara };
 

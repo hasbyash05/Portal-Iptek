@@ -123,11 +123,11 @@ function checkAuth() {
   const navAnggota = document.getElementById('nav-item-anggota');
 
   if (user.role === 'pengurus' || user.role === 'admin') {
-    showView('pengurus-view');
+    showView('main-view');
     if (navLaporan) navLaporan.style.display = 'block';
     if (navAnggota) navAnggota.style.display = 'block';
   } else {
-    showView('anggota-view');
+    showView('main-view');
     if (navLaporan) navLaporan.style.display = 'none';
     if (navAnggota) navAnggota.style.display = 'none';
   }
@@ -278,9 +278,8 @@ function switchNavTab(tabName, fromHash = false) {
   const accountItem = document.getElementById('nav-item-akun');
   if (accountItem) accountItem.classList.remove('active');
 
-  // Perbarui URL hash di browser jika bukan dari event hashchange/initial load
-  if (!fromHash && window.location.hash !== `#${tabName}`) {
-    history.pushState(null, null, `#${tabName}`);
+  if (!fromHash && window.location.hash !== '#' + tabName) {
+    history.pushState(null, null, '#' + tabName);
   }
 
   const userStr = localStorage.getItem('iptek_user');
@@ -294,11 +293,12 @@ function switchNavTab(tabName, fromHash = false) {
     }
   });
 
-  if (user.role === 'pengurus' || user.role === 'admin') {
-    switchPengurusTab(tabName);
-  } else {
-    switchAnggotaTab(tabName);
+  if (tabName === 'absensi') {
+    checkKasAndUnlockAttendance();
+    return;
   }
+
+  switchTab(tabName, user);
 }
 
 // Dengarkan perubahan URL hash (misalnya saat tombol Back/Forward browser diubah)
@@ -319,25 +319,54 @@ window.addEventListener('hashchange', () => {
 /* ==========================================================
    PENGURUS LOGIC & TABS
 ========================================================== */
-function switchPengurusTab(tabName) {
-  document.querySelectorAll('#pengurus-view .tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('#pengurus-view .tab-content').forEach(c => c.style.display = 'none');
-
-  const tabs = ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'];
-  const idx = tabs.indexOf(tabName);
-  if (idx >= 0) {
-    const btns = document.querySelectorAll('#pengurus-view .tab-btn');
-    if (btns[idx]) btns[idx].classList.add('active');
-    const contentEl = document.getElementById(`p-tab-${tabName}`);
-    if (contentEl) contentEl.style.display = 'block';
+function switchTab(tabName, user) {
+  if (!user) {
+    const userStr = localStorage.getItem('iptek_user');
+    if (!userStr) return;
+    user = JSON.parse(userStr);
   }
 
-  if (tabName === 'overview') loadPengurusOverview();
-  if (tabName === 'laporan') loadPengurusLaporan();
-  if (tabName === 'materi') loadPengurusMateri();
-  if (tabName === 'absensi') loadPengurusAbsensi();
-  if (tabName === 'kas') loadKasReport('');
-  if (tabName === 'anggota') loadAnggotaList();
+  document.querySelectorAll('#main-view .tab-content').forEach(c => {
+    if (c.parentElement.id === 'main-view') c.style.display = 'none';
+  });
+  
+  const contentEl = document.getElementById('tab-' + tabName);
+  if (contentEl) contentEl.style.display = 'block';
+
+  const role = user.role;
+  const divisi = user.divisi ? user.divisi.toLowerCase() : '';
+
+  const isOperasional = role === 'admin' || (role === 'pengurus' && divisi.includes('operasional'));
+  const isKetuaWakil = role === 'admin' || (role === 'pengurus' && (divisi.includes('ketua') || divisi.includes('wakil')));
+  const isBendahara = role === 'admin' || (role === 'pengurus' && divisi.includes('bendahara'));
+  const isPengurusOrAdmin = role === 'admin' || role === 'pengurus';
+
+  const el = (id) => document.getElementById(id);
+  
+  if (el('view-materi-pengurus')) el('view-materi-pengurus').style.display = isOperasional ? 'block' : 'none';
+  if (el('view-absensi-pengurus')) el('view-absensi-pengurus').style.display = isKetuaWakil ? 'block' : 'none';
+  if (el('view-kas-pengurus')) el('view-kas-pengurus').style.display = isBendahara ? 'block' : 'none';
+  
+  if (el('view-overview-pengurus')) el('view-overview-pengurus').style.display = isPengurusOrAdmin ? 'block' : 'none';
+  if (el('view-overview-anggota')) el('view-overview-anggota').style.display = isPengurusOrAdmin ? 'none' : 'block';
+
+  if (tabName === 'overview') {
+    if (isPengurusOrAdmin) loadPengurusOverview();
+    else loadAnggotaOverview();
+  }
+  if (tabName === 'laporan' && isPengurusOrAdmin) loadPengurusLaporan();
+  if (tabName === 'materi') {
+    loadAnggotaMateri();
+    if (isOperasional) loadPengurusMateri();
+  }
+  if (tabName === 'absensi') {
+    if (isKetuaWakil) loadPengurusAbsensi();
+  }
+  if (tabName === 'kas') {
+    loadAnggotaKas();
+    if (isBendahara) loadKasReport('');
+  }
+  if (tabName === 'anggota' && isPengurusOrAdmin) loadAnggotaList();
 }
 
 async function loadPengurusOverview() {

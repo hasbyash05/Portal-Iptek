@@ -98,7 +98,7 @@ const checkStatus = async (req, res) => {
       order: [['id', 'DESC']]
     });
 
-    const isExempt = ['pengurus', 'admin'].includes(req.user.role);
+    const isExempt = ['admin'].includes(req.user.role);
 
     return res.status(200).json({
       status: 'success',
