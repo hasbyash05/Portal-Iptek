@@ -34,7 +34,7 @@ const getAllUsers = async (req, res) => {
 
     const users = await User.findAll({
       where,
-      attributes: ['id', 'username', 'nama_lengkap', 'role', 'divisi', 'created_at'],
+      attributes: ['id', 'username', 'nama_lengkap', 'role', 'divisi'],
       order: [['role', 'ASC'], ['nama_lengkap', 'ASC']]
     });
 
