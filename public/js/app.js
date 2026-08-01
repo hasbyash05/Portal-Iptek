@@ -365,7 +365,6 @@ function switchTab(tabName, user) {
     if (isKetuaWakil) loadPengurusAbsensi();
   }
   if (tabName === 'kas') {
-    loadTotalKasTerkumpul();
     loadAnggotaKas();
     if (isBendahara) loadKasReport('');
   }
@@ -383,6 +382,10 @@ async function loadPengurusOverview() {
       const kasStatEl = document.getElementById('stat-lunas-kas') || document.getElementById('stat-pending-kas');
       if (kasStatEl) {
         kasStatEl.textContent = stats.kasLunasBulanIni !== undefined ? `${stats.kasLunasBulanIni}` : (stats.pendingPayments || 0);
+      }
+      const totalKasEl = document.getElementById('stat-total-kas-pengurus');
+      if (totalKasEl && stats.totalKasTerkumpul !== undefined) {
+        totalKasEl.textContent = `Rp ${Number(stats.totalKasTerkumpul).toLocaleString('id-ID')}`;
       }
 
       // Check current weekly report status
@@ -414,6 +417,20 @@ async function loadPengurusOverview() {
     }
   } catch (err) {
     console.error('Gagal memuat overview:', err);
+  }
+}
+
+async function loadAnggotaOverview() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/total`);
+    const data = await res.json();
+    if (data.status === 'success') {
+      const totalStr = Number(data.data.total).toLocaleString('id-ID');
+      const el = document.getElementById('stat-total-kas-anggota');
+      if (el) el.textContent = `Rp ${totalStr}`;
+    }
+  } catch (err) {
+    console.error('Gagal memuat total kas anggota:', err);
   }
 }
 
@@ -2513,19 +2530,6 @@ async function loadAnggotaKas() {
     }
   } catch (err) {
     console.error('Gagal memuat kas anggota:', err);
-  }
-}
-
-async function loadTotalKasTerkumpul() {
-  try {
-    const res = await fetchAuth(`${API_BASE}/payments/total`);
-    const data = await res.json();
-    if (data.status === 'success') {
-      const totalStr = Number(data.data.total).toLocaleString('id-ID');
-      document.getElementById('total-kas-terkumpul').textContent = `Rp ${totalStr}`;
-    }
-  } catch (err) {
-    console.error('Gagal memuat total kas terkumpul:', err);
   }
 }
 
