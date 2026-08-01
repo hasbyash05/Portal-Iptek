@@ -949,8 +949,55 @@
                 </table>
               </div>
             </div>
+            </div>
           </div>
 
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3>Manajemen Pengeluaran Kas (Operasional)</h3>
+            </div>
+            <div class="card-body">
+              <div class="grid-2col" style="gap: 2rem; align-items: start;">
+                <div>
+                  <form id="form-expense" onsubmit="submitExpense(event)">
+                    <div class="form-group">
+                      <label>Keterangan Pengeluaran</label>
+                      <input type="text" id="expense-desc" required placeholder="Contoh: Beli konsumsi rapat" style="padding: 0.6rem; width: 100%; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </div>
+                    <div class="form-group">
+                      <label>Nominal (Rp)</label>
+                      <input type="number" id="expense-amount" required placeholder="50000" min="0" style="padding: 0.6rem; width: 100%; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </div>
+                    <div class="form-group">
+                      <label>Tanggal Pengeluaran</label>
+                      <input type="date" id="expense-date" required style="padding: 0.6rem; width: 100%; border: 1px solid var(--border-color); border-radius: 4px;">
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-expense" style="width: 100%;">Catat Pengeluaran</button>
+                  </form>
+                </div>
+                <div>
+                  <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th>Tanggal</th>
+                          <th>Keterangan</th>
+                          <th>Nominal</th>
+                          <th>Oleh</th>
+                          <th>Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody id="table-expenses">
+                        <tr>
+                          <td colspan="5" class="text-center">Memuat riwayat pengeluaran...</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- PENGURUS TAB: MANAJEMEN ANGGOTA -->
         </div>

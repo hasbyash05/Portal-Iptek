@@ -366,7 +366,10 @@ function switchTab(tabName, user) {
   }
   if (tabName === 'kas') {
     loadAnggotaKas();
-    if (isBendahara) loadKasReport('');
+    if (isBendahara) {
+      loadKasReport('');
+      loadExpenses();
+    }
   }
   if (tabName === 'anggota' && isPengurusOrAdmin) loadAnggotaList();
 }
@@ -2530,6 +2533,92 @@ async function loadAnggotaKas() {
     }
   } catch (err) {
     console.error('Gagal memuat kas anggota:', err);
+  }
+}
+
+/* ==========================================================
+   PENGELUARAN KAS (BENDAHARA)
+========================================================== */
+
+async function loadExpenses() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/expenses`);
+    const data = await res.json();
+    const tbody = document.getElementById('table-expenses');
+    
+    if (data.status === 'success') {
+      const items = data.data.items || [];
+      if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center">Belum ada catatan pengeluaran.</td></tr>`;
+      } else {
+        tbody.innerHTML = items.map(exp => `
+          <tr>
+            <td>${exp.date}</td>
+            <td>${exp.description}</td>
+            <td style="color: #ef4444; font-weight: 600;">- Rp ${Number(exp.amount).toLocaleString('id-ID')}</td>
+            <td><small>${exp.creator ? exp.creator.nama_lengkap : 'Admin'}</small></td>
+            <td>
+              <button onclick="deleteExpense(${exp.id})" class="btn btn-logout btn-sm"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          </tr>
+        `).join('');
+      }
+    }
+  } catch (err) {
+    console.error('Gagal memuat pengeluaran:', err);
+  }
+}
+
+async function submitExpense(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-submit-expense');
+  const originalText = btn.textContent;
+  btn.textContent = 'Menyimpan...';
+  btn.disabled = true;
+
+  try {
+    const payload = {
+      description: document.getElementById('expense-desc').value,
+      amount: document.getElementById('expense-amount').value,
+      date: document.getElementById('expense-date').value
+    };
+
+    const res = await fetchAuth(`${API_BASE}/expenses`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+    if (data.status === 'success') {
+      alert('Pengeluaran berhasil dicatat!');
+      document.getElementById('form-expense').reset();
+      loadExpenses();
+    } else {
+      alert(data.message || 'Gagal mencatat pengeluaran.');
+    }
+  } catch (err) {
+    alert('Terjadi kesalahan koneksi.');
+    console.error(err);
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+async function deleteExpense(id) {
+  if (!confirm('Yakin ingin menghapus catatan pengeluaran ini?')) return;
+  
+  try {
+    const res = await fetchAuth(`${API_BASE}/expenses/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (data.status === 'success') {
+      loadExpenses();
+    } else {
+      alert(data.message || 'Gagal menghapus pengeluaran.');
+    }
+  } catch (err) {
+    alert('Terjadi kesalahan koneksi.');
   }
 }
 

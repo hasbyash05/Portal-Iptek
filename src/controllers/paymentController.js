@@ -1,4 +1,4 @@
-const { Payment, User } = require('../models');
+const { Payment, User, KasExpense } = require('../models');
 
 const submitPayment = async (req, res) => {
   try {
@@ -240,11 +240,13 @@ const getReport = async (req, res) => {
 
 const getTotalKas = async (req, res) => {
   try {
-    const total = await Payment.sum('amount', {
-      where: {
-        status: 'lunas'
-      }
-    });
+    const totalKasMasuk = await Payment.sum('amount', {
+      where: { status: 'lunas' }
+    }) || 0;
+    
+    const totalKasKeluar = await KasExpense.sum('amount') || 0;
+    const total = totalKasMasuk - totalKasKeluar;
+
     return res.status(200).json({
       status: 'success',
       data: {

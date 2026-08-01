@@ -7,6 +7,7 @@ const { Payment } = require('./Payment');
 const { AttendanceSession } = require('./AttendanceSession');
 const { UserDevice } = require('./UserDevice');
 const { TeachingSchedule } = require('./TeachingSchedule');
+const { KasExpense } = require('./KasExpense');
 
 // Associations
 User.hasMany(WeeklyReport, { foreignKey: 'user_id', as: 'reports' });
@@ -27,6 +28,10 @@ Payment.belongsTo(User, { foreignKey: 'confirmed_by', as: 'verifier' });
 
 // AttendanceSession - activated_by association
 AttendanceSession.belongsTo(User, { foreignKey: 'activated_by', as: 'activator' });
+
+// KasExpense - created_by association
+User.hasMany(KasExpense, { foreignKey: 'created_by', as: 'expenses' });
+KasExpense.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
 
 // UserDevice - user association
 User.hasMany(UserDevice, { foreignKey: 'user_id', as: 'devices' });
@@ -66,5 +71,6 @@ module.exports = {
   UserDevice,
   TeachingSchedule,
   ScheduleMaterial,
-  DocumentTemplate
+  DocumentTemplate,
+  KasExpense
 };

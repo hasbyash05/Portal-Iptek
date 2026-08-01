@@ -10,6 +10,7 @@ const dashboardRoutes = require('./dashboardRoutes');
 const qrisRoutes = require('./qrisRoutes');
 const templateRoutes = require('./templateRoutes');
 const userRoutes = require('./userRoutes');
+const expenseRoutes = require('./expenseRoutes');
 
 router.use('/auth', authRoutes);
 router.use('/reports', reportRoutes);
@@ -20,6 +21,7 @@ router.use('/dashboard', dashboardRoutes);
 router.use('/qris', qrisRoutes);
 router.use('/templates', templateRoutes);
 router.use('/users', userRoutes);
+router.use('/expenses', expenseRoutes);
 
 // Helper route for direct export if frontend calls /api/export/ppt
 router.use('/export', dashboardRoutes);

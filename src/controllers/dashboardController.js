@@ -1,4 +1,4 @@
-const { User, Attendance, Payment, WeeklyReport, sequelize } = require('../models');
+const { User, Attendance, Payment, WeeklyReport, KasExpense, sequelize } = require('../models');
 const { Op } = require('sequelize');
 
 const getDashboardStats = async (req, res) => {
@@ -21,9 +21,11 @@ const getDashboardStats = async (req, res) => {
     });
     const pendingPayments = await Payment.count({ where: { status: 'pending' } });
     
-    const totalKasTerkumpul = await Payment.sum('amount', {
+    const totalKasMasuk = await Payment.sum('amount', {
       where: { status: 'lunas' }
-    });
+    }) || 0;
+    const totalKasKeluar = await KasExpense.sum('amount') || 0;
+    const totalKasTerkumpul = totalKasMasuk - totalKasKeluar;
 
     // 3. Attendance chart (count by date for recent Tuesday meetings)
     // Group attendance by date (MySQL)
