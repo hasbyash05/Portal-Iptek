@@ -20,6 +20,10 @@ const getDashboardStats = async (req, res) => {
       }
     });
     const pendingPayments = await Payment.count({ where: { status: 'pending' } });
+    
+    const totalKasTerkumpul = await Payment.sum('amount', {
+      where: { status: 'lunas' }
+    });
 
     // 3. Attendance chart (count by date for recent Tuesday meetings)
     // Group attendance by date (MySQL)
@@ -72,7 +76,8 @@ const getDashboardStats = async (req, res) => {
           totalMembers,
           totalPengurus,
           pendingPayments,
-          kasLunasBulanIni
+          kasLunasBulanIni,
+          totalKasTerkumpul: totalKasTerkumpul || 0
         },
         attendanceChart,
         paymentChart,
