@@ -1,10 +1,10 @@
-const CACHE_NAME = 'iptek-pwa-v1';
+const CACHE_NAME = 'iptek-pwa-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/css/style.css',
   '/js/app.js',
-  '/img/logo.jpg'
+  '/img/favicon.svg'
 ];
 
 self.addEventListener('install', event => {
