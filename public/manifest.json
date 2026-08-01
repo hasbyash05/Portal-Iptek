@@ -1,0 +1,21 @@
+{
+  "name": "SIM IPTEK STIKES Semarang",
+  "short_name": "SIM IPTEK",
+  "description": "Sistem Informasi Manajemen Internal UKM IPTEK STIKES Semarang",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#18181b",
+  "icons": [
+    {
+      "src": "/img/logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "/img/logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}

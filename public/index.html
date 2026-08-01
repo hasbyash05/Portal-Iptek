@@ -4,6 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#18181b">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/img/logo.jpg">
   <title>Sistem Informasi Manajemen IPTEK - STIKES Semarang</title>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -310,7 +313,7 @@
                 <div class="pillar-header">
                   <span class="pillar-num">03</span>
                 </div>
-                <h3 class="pillar-title">Verifikasi & Uang Kas QRIS</h3>
+                <h3 class="pillar-title">Verifikasi & Uang Kas QRIS Instan</h3>
                 <p class="pillar-desc">Mekanisme iuran kas wajib Rp 10.000/bulan secara instan menggunakan QRIS dengan
                   verifikasi lunas otomatis.</p>
                 <button onclick="switchNavTab('kas')" class="pillar-cta">Cek Laporan Keuangan </button>
@@ -1190,6 +1193,17 @@
   </footer>
 
   <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, err => {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+      });
+    }
+  </script>
 
     <!-- MODAL BUKTI PEMBAYARAN KAS -->
     <div id="admin-bukti-modal" class="modal-overlay"
