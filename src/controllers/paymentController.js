@@ -238,4 +238,26 @@ const getReport = async (req, res) => {
   }
 };
 
-module.exports = { submitPayment, checkStatus, getMyHistory, confirmPayment, getReport };
+const getTotalKas = async (req, res) => {
+  try {
+    const total = await Payment.sum('amount', {
+      where: {
+        status: 'lunas'
+      }
+    });
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        total: total || 0
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Terjadi kesalahan saat mengambil total kas.',
+      error: error.message
+    });
+  }
+};
+
+module.exports = { submitPayment, checkStatus, getMyHistory, confirmPayment, getReport, getTotalKas };

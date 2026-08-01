@@ -365,6 +365,7 @@ function switchTab(tabName, user) {
     if (isKetuaWakil) loadPengurusAbsensi();
   }
   if (tabName === 'kas') {
+    loadTotalKasTerkumpul();
     loadAnggotaKas();
     if (isBendahara) loadKasReport('');
   }
@@ -2512,6 +2513,19 @@ async function loadAnggotaKas() {
     }
   } catch (err) {
     console.error('Gagal memuat kas anggota:', err);
+  }
+}
+
+async function loadTotalKasTerkumpul() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/total`);
+    const data = await res.json();
+    if (data.status === 'success') {
+      const totalStr = Number(data.data.total).toLocaleString('id-ID');
+      document.getElementById('total-kas-terkumpul').textContent = `Rp ${totalStr}`;
+    }
+  } catch (err) {
+    console.error('Gagal memuat total kas terkumpul:', err);
   }
 }
 
