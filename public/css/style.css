@@ -1440,3 +1440,13 @@ input[type="text"], input[type="number"], input[type="date"], textarea, .select-
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+
+/* REFACTORED CLASSES */
+.section-label { font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.5rem; }
+.section-title { font-family: 'Outfit', sans-serif; font-size: clamp(1.6rem, 2.8vw, 2.2rem); font-weight: 800; color: #18181b; line-height: 1.25; }
+.section-title.mb-1 { margin-bottom: 1rem; }
+.section-desc { color: #4b5563; font-size: 1.05rem; line-height: 1.7; margin-bottom: 0; max-width: 100%; }
+
+.modal-card-qris { background: #ffffff; border-radius: 12px; padding: 3rem 2rem; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); position: relative; }
+.text-red.title-lock { font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: #dc2626; margin-bottom: 0.5rem; }
+.text-desc-lock { color: #71717a; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.5; }
