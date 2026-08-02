@@ -14,7 +14,9 @@ export function showView(viewId) {
     activeSec.style.display = 'block';
     activeSec.classList.add('active');
   }
-}\n\nexport function toggleMobileMenu(open) {
+}
+
+export function toggleMobileMenu(open) {
   const navMenu = document.getElementById('navMenu');
   const backdrop = document.getElementById('navBackdrop');
   const toggle = document.getElementById('mobileToggle');
@@ -26,7 +28,9 @@ export function showView(viewId) {
     toggle.setAttribute('aria-expanded', isOpen);
     toggle.innerHTML = isOpen ? '<i class="fa-solid fa-xmark"></i>' : '<i class="fa-solid fa-bars"></i>';
   }
-}\n\nexport function toggleAccountMenu(e) {
+}
+
+export function toggleAccountMenu(e) {
   if (e) {
     e.preventDefault();
     e.stopPropagation();
@@ -35,7 +39,9 @@ export function showView(viewId) {
   if (item) {
     item.classList.toggle('active');
   }
-}\n\nexport function switchNavTab(tabName, fromHash = false) {
+}
+
+export function switchNavTab(tabName, fromHash = false) {
   toggleMobileMenu(false);
   const accountItem = document.getElementById('nav-item-akun');
   if (accountItem) accountItem.classList.remove('active');
@@ -61,7 +67,9 @@ export function showView(viewId) {
   }
 
   switchTab(tabName, user);
-}\n\nexport function switchTab(tabName, user) {
+}
+
+export function switchTab(tabName, user) {
   if (!user) {
     const userStr = localStorage.getItem('iptek_user');
     if (!userStr) return;
@@ -114,7 +122,9 @@ export function showView(viewId) {
     }
   }
   if (tabName === 'anggota' && isPengurusOrAdmin) loadAnggotaList();
-}\n\nexport function switchAnggotaTab(tabName) {
+}
+
+export function switchAnggotaTab(tabName) {
   if (tabName === 'absensi') {
     checkKasAndUnlockAttendance();
     return;
@@ -134,7 +144,9 @@ export function showView(viewId) {
 
   if (tabName === 'materi') loadAnggotaMateri();
   if (tabName === 'kas') loadAnggotaKas();
-}\n\nasync function checkKasAndUnlockAttendance() {
+}
+
+export async function checkKasAndUnlockAttendance() {
   const userStr = localStorage.getItem('iptek_user');
   if (!userStr) return;
   const user = JSON.parse(userStr);
@@ -170,4 +182,5 @@ export function showView(viewId) {
     console.error('Kas check error:', err);
     switchTab('absensi', user);
   }
-}\n\n
+}
+

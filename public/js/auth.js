@@ -65,7 +65,9 @@ export function checkAuth() {
 
   // Muat konfigurasi QRIS (gambar QR Code Bendahara) untuk ditampilkan di UI
   loadQrisConfig();
-}\n\nasync function handleLogin(e) {
+}
+
+export async function handleLogin(e) {
   e.preventDefault();
   const usernameInput = document.getElementById('username').value.trim();
   const passwordInput = document.getElementById('password').value.trim();
@@ -112,12 +114,16 @@ export function checkAuth() {
     btnLogin.disabled = false;
     btnLogin.innerHTML = `<span>Masuk ke Portal</span> <i class="fa-solid fa-arrow-right"></i>`;
   }
-}\n\nexport function logout() {
+}
+
+export function logout() {
   localStorage.removeItem('iptek_token');
   localStorage.removeItem('iptek_user');
   history.replaceState(null, null, window.location.pathname);
   checkAuth();
-}\n\nasync function fetchAuth(url, options = {}) {
+}
+
+export async function fetchAuth(url, options = {}) {
   const token = localStorage.getItem('iptek_token');
   if (!options.headers) options.headers = {};
   if (token) options.headers['Authorization'] = `Bearer ${token}`;
@@ -128,4 +134,5 @@ export function checkAuth() {
     throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
   }
   return res;
-}\n\n
+}
+

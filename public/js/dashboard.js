@@ -3,7 +3,7 @@ import { loadDocumentTemplates } from './academic.js';
 export const API_BASE = '/api';
 
 let _anggotaDebounce = null;
-async function loadPengurusOverview() {
+export async function loadPengurusOverview() {
   try {
     const res = await fetchAuth(`${API_BASE}/dashboard/stats`);
     const data = await res.json();
@@ -50,7 +50,9 @@ async function loadPengurusOverview() {
   } catch (err) {
     console.error('Gagal memuat overview:', err);
   }
-}\n\nasync function loadAnggotaOverview() {
+}
+
+export async function loadAnggotaOverview() {
   try {
     const res = await fetchAuth(`${API_BASE}/payments/total`);
     const data = await res.json();
@@ -62,7 +64,9 @@ async function loadPengurusOverview() {
   } catch (err) {
     console.error('Gagal memuat total kas anggota:', err);
   }
-}\n\nasync function loadPengurusLaporan() {
+}
+
+export async function loadPengurusLaporan() {
   try {
     const checkRes = await fetchAuth(`${API_BASE}/reports/check`);
     const checkData = await checkRes.json();
@@ -98,7 +102,9 @@ async function loadPengurusOverview() {
   } catch (err) {
     console.error('Gagal memuat laporan:', err);
   }
-}\n\nasync function submitLaporan(e) {
+}
+
+export async function submitLaporan(e) {
   e.preventDefault();
   const activity = document.getElementById('laporan-activity').value;
   const fileInput = document.getElementById('laporan-file');
@@ -124,7 +130,9 @@ async function loadPengurusOverview() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function loadAnggotaList() {
+}
+
+export async function loadAnggotaList() {
   clearTimeout(_anggotaDebounce);
   _anggotaDebounce = setTimeout(async () => {
     try {
@@ -186,10 +194,14 @@ async function loadPengurusOverview() {
       console.error('loadAnggotaList error:', err);
     }
   }, 300);
-}\n\nexport function escapeHtml(str) {
+}
+
+export function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}\n\nexport function showAddUserModal() {
+}
+
+export function showAddUserModal() {
   document.getElementById('modal-user-title').textContent = 'Penambahan Anggota Baru';
   document.getElementById('edit-user-id').value = '';
   document.getElementById('form-user-nama').value = '';
@@ -200,7 +212,9 @@ async function loadPengurusOverview() {
   document.getElementById('form-user-password-group').style.display = 'block';
   toggleDivisiField();
   document.getElementById('modal-user-form').style.display = 'flex';
-}\n\nasync function showEditUserModal(id) {
+}
+
+export async function showEditUserModal(id) {
   try {
     const res = await fetchAuth(`${API_BASE}/users?search=`);
     const data = await res.json();
@@ -222,12 +236,18 @@ async function loadPengurusOverview() {
   } catch (err) {
     alert('Gagal memuat data user.');
   }
-}\n\nexport function toggleDivisiField() {
+}
+
+export function toggleDivisiField() {
   const role = document.getElementById('form-user-role').value;
   document.getElementById('form-user-divisi-group').style.display = role === 'pengurus' ? 'block' : 'none';
-}\n\nexport function closeUserModal() {
+}
+
+export function closeUserModal() {
   document.getElementById('modal-user-form').style.display = 'none';
-}\n\nasync function submitUserForm() {
+}
+
+export async function submitUserForm() {
   const id = document.getElementById('edit-user-id').value;
   const nama_lengkap = document.getElementById('form-user-nama').value.trim();
   const username = document.getElementById('form-user-username').value.trim();
@@ -268,7 +288,9 @@ async function loadPengurusOverview() {
   } catch (err) {
     alert(err.message);
   }
-}\n\nexport function showResetPasswordModal(id) {
+}
+
+export function showResetPasswordModal(id) {
   // Reset form to default (Auto)
   const form = document.getElementById('form-reset-password');
   form.reset();
@@ -278,9 +300,13 @@ async function loadPengurusOverview() {
 
   toggleResetManual(false);
   document.getElementById('modal-reset-password').style.display = 'flex';
-}\n\nexport function closeResetPasswordModal() {
+}
+
+export function closeResetPasswordModal() {
   document.getElementById('modal-reset-password').style.display = 'none';
-}\n\nexport function toggleResetManual(show) {
+}
+
+export function toggleResetManual(show) {
   const manualGroup = document.getElementById('reset-manual-group');
   const manualInput = document.getElementById('reset-manual-password');
   if (show) {
@@ -291,7 +317,9 @@ async function loadPengurusOverview() {
     manualInput.required = false;
     manualInput.value = '';
   }
-}\n\nasync function submitResetPassword(e) {
+}
+
+export async function submitResetPassword(e) {
   e.preventDefault();
   const id = document.getElementById('reset-user-id').value;
   const mode = document.querySelector('input[name="reset-mode"]:checked').value;
@@ -333,15 +361,23 @@ async function loadPengurusOverview() {
     btn.disabled = false;
     btn.innerHTML = originalText;
   }
-}\n\nexport function closeResetResultModal() {
+}
+
+export function closeResetResultModal() {
   document.getElementById('modal-reset-result').style.display = 'none';
-}\n\nexport function showDeleteUserModal(id, nama) {
+}
+
+export function showDeleteUserModal(id, nama) {
   document.getElementById('delete-user-id').value = id;
   document.getElementById('delete-user-msg').textContent = `Yakin ingin menghapus (mengurangi) anggota "${nama}"? Semua data terkait juga akan dibersihkan.`;
   document.getElementById('modal-delete-user').style.display = 'flex';
-}\n\nexport function closeDeleteModal() {
+}
+
+export function closeDeleteModal() {
   document.getElementById('modal-delete-user').style.display = 'none';
-}\n\nasync function confirmDeleteUser() {
+}
+
+export async function confirmDeleteUser() {
   const id = document.getElementById('delete-user-id').value;
   try {
     const res = await fetchAuth(`${API_BASE}/users/${id}`, { method: 'DELETE' });
@@ -354,4 +390,5 @@ async function loadPengurusOverview() {
   } catch (err) {
     alert(err.message);
   }
-}\n\n
+}
+

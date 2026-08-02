@@ -2,7 +2,7 @@ import { fetchAuth } from './auth.js';
 import { checkKasAndUnlockAttendance, switchAnggotaTab } from './router.js';
 export const API_BASE = '/api';
 
-async function loadKasReport(statusFilter = '') {
+export async function loadKasReport(statusFilter = '') {
   // Update button active states
   document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
     btn.classList.remove('active');
@@ -54,7 +54,9 @@ async function loadKasReport(statusFilter = '') {
   } catch (err) {
     console.error('Gagal memuat kas report:', err);
   }
-}\n\nasync function confirmKas(id, status) {
+}
+
+export async function confirmKas(id, status) {
   if (!confirm(`Ubah status pembayaran menjadi '${status.toUpperCase()}'?`)) return;
   try {
     const res = await fetchAuth(`${API_BASE}/payments/${id}/confirm`, {
@@ -77,7 +79,9 @@ async function loadKasReport(statusFilter = '') {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nexport function openAdminBuktiModal(pEncoded) {
+}
+
+export function openAdminBuktiModal(pEncoded) {
   try {
     const p = typeof pEncoded === 'string' ? JSON.parse(decodeURIComponent(pEncoded)) : pEncoded;
     const modal = document.getElementById('admin-bukti-modal');
@@ -121,12 +125,16 @@ async function loadKasReport(statusFilter = '') {
   } catch (err) {
     console.error('Error opening bukti modal:', err);
   }
-}\n\nexport function closeAdminBuktiModal() {
+}
+
+export function closeAdminBuktiModal() {
   const modal = document.getElementById('admin-bukti-modal');
   if (modal) {
     modal.style.display = 'none';
   }
-}\n\nasync function payQrisFromModal() {
+}
+
+export async function payQrisFromModal() {
   const btn = document.getElementById('btn-modal-qris');
   const originalText = btn.innerHTML;
   btn.disabled = true;
@@ -153,7 +161,10 @@ async function loadKasReport(statusFilter = '') {
     if (!res.ok) throw new Error(data.message || 'Gagal mengirim pembayaran QRIS');
 
     if (fileInput) fileInput.value = '';
-    alert('PEMBAYARAN QRIS BERHASIL DIKIRIM!\n\nStatus: MENUNGGU VERIFIKASI BENDAHARA.\nSilakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas agar Anda dapat melakukan presensi.');
+    alert('PEMBAYARAN QRIS BERHASIL DIKIRIM!
+
+Status: MENUNGGU VERIFIKASI BENDAHARA.
+Silakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas agar Anda dapat melakukan presensi.');
     checkKasAndUnlockAttendance();
   } catch (err) {
     alert(`Gagal: ${err.message}`);
@@ -163,10 +174,14 @@ async function loadKasReport(statusFilter = '') {
       btn.innerHTML = originalText;
     }
   }
-}\n\nexport function closeLockModalAndGoHome() {
+}
+
+export function closeLockModalAndGoHome() {
   document.getElementById('qris-lock-modal').style.display = 'none';
   switchAnggotaTab('overview');
-}\n\nasync function submitKasQris(e) {
+}
+
+export async function submitKasQris(e) {
   e.preventDefault();
   const month = document.getElementById('kas-month').value;
   const year = document.getElementById('kas-year').value;
@@ -194,7 +209,10 @@ async function loadKasReport(statusFilter = '') {
     if (!res.ok) throw new Error(data.message || 'Gagal mengajukan kas');
 
     if (fileInput) fileInput.value = '';
-    alert('PEMBAYARAN QRIS BERHASIL DIKIRIM!\n\nStatus: MENUNGGU VERIFIKASI BENDAHARA.\nSilakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas.');
+    alert('PEMBAYARAN QRIS BERHASIL DIKIRIM!
+
+Status: MENUNGGU VERIFIKASI BENDAHARA.
+Silakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas.');
     loadAnggotaKas();
   } catch (err) {
     alert(`Error: ${err.message}`);
@@ -204,7 +222,9 @@ async function loadKasReport(statusFilter = '') {
       btn.innerHTML = originalText;
     }
   }
-}\n\nasync function loadAnggotaKas() {
+}
+
+export async function loadAnggotaKas() {
   try {
     const res = await fetchAuth(`${API_BASE}/payments/history?limit=10`);
     const data = await res.json();
@@ -229,7 +249,9 @@ async function loadKasReport(statusFilter = '') {
   } catch (err) {
     console.error('Gagal memuat kas anggota:', err);
   }
-}\n\nasync function loadExpenses() {
+}
+
+export async function loadExpenses() {
   try {
     const res = await fetchAuth(`${API_BASE}/expenses`);
     const data = await res.json();
@@ -256,7 +278,9 @@ async function loadKasReport(statusFilter = '') {
   } catch (err) {
     console.error('Gagal memuat pengeluaran:', err);
   }
-}\n\nasync function submitExpense(e) {
+}
+
+export async function submitExpense(e) {
   e.preventDefault();
   const btn = document.getElementById('btn-submit-expense');
   const originalText = btn.textContent;
@@ -291,7 +315,9 @@ async function loadKasReport(statusFilter = '') {
     btn.textContent = originalText;
     btn.disabled = false;
   }
-}\n\nasync function deleteExpense(id) {
+}
+
+export async function deleteExpense(id) {
   if (!confirm('Yakin ingin menghapus catatan pengeluaran ini?')) return;
 
   try {
@@ -305,7 +331,9 @@ async function loadKasReport(statusFilter = '') {
   } catch (err) {
     alert('Terjadi kesalahan koneksi.');
   }
-}\n\nasync function exportKasCsv() {
+}
+
+export async function exportKasCsv() {
   const year = document.getElementById('export-kas-year').value;
   if (!year) return alert('Pilih tahun terlebih dahulu.');
 
@@ -345,7 +373,8 @@ async function loadKasReport(statusFilter = '') {
         ].join(',');
       });
 
-      const csvContent = [headers.join(','), ...rows].join('\n');
+      const csvContent = [headers.join(','), ...rows].join('
+');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
 
@@ -363,7 +392,9 @@ async function loadKasReport(statusFilter = '') {
     console.error('Export CSV Error:', err);
     alert('Terjadi kesalahan saat memproses export CSV.');
   }
-}\n\nasync function loadQrisConfig() {
+}
+
+export async function loadQrisConfig() {
   try {
     const res = await fetchAuth(`${API_BASE}/qris/config`);
     const data = await res.json();
@@ -403,7 +434,9 @@ async function loadKasReport(statusFilter = '') {
   } catch (err) {
     console.error('Gagal memuat konfigurasi QRIS:', err);
   }
-}\n\nasync function uploadQrisImage(e) {
+}
+
+export async function uploadQrisImage(e) {
   e.preventDefault();
   const fileInput = document.getElementById('qris-file-input');
   const btn = document.getElementById('btn-upload-qris');
@@ -437,4 +470,5 @@ async function loadKasReport(statusFilter = '') {
     btn.disabled = false;
     btn.textContent = originalText;
   }
-}\n\n
+}
+

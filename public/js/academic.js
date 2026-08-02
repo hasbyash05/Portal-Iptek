@@ -1,15 +1,19 @@
 import { fetchAuth } from './auth.js';
 export const API_BASE = '/api';
 
-async function loadPengurusMateri() {
+export async function loadPengurusMateri() {
   loadInstructors();
   loadSchedules();
   loadMateriList('list-pengurus-materi', true);
   loadDocumentTemplates('list-pengurus-templates', true);
-}\n\nexport function getAuthTokenParam() {
+}
+
+export function getAuthTokenParam() {
   const token = localStorage.getItem('iptek_token');
   return token ? `?token=${encodeURIComponent(token)}` : '';
-}\n\nasync function loadDocumentTemplates(containerId, showActions) {
+}
+
+export async function loadDocumentTemplates(containerId, showActions) {
   try {
     const res = await fetchAuth(`${API_BASE}/templates`);
     const data = await res.json();
@@ -40,7 +44,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     console.error('Gagal memuat template dokumen:', err);
   }
-}\n\nasync function submitDocumentTemplate(e) {
+}
+
+export async function submitDocumentTemplate(e) {
   e.preventDefault();
   const title = document.getElementById('template-title').value;
   const category = document.getElementById('template-category').value;
@@ -75,7 +81,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function deleteDocumentTemplate(id) {
+}
+
+export async function deleteDocumentTemplate(id) {
   if (!confirm('Apakah Anda yakin ingin menghapus template dokumen ini?')) return;
   try {
     const res = await fetchAuth(`${API_BASE}/templates/${id}`, { method: 'DELETE' });
@@ -85,7 +93,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function loadInstructors() {
+}
+
+export async function loadInstructors() {
   try {
     const res = await fetchAuth(`${API_BASE}/materials/instructors`);
     const data = await res.json();
@@ -98,7 +108,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     console.error('Gagal memuat daftar pemateri:', err);
   }
-}\n\nexport function toggleCustomInstructor(val) {
+}
+
+export function toggleCustomInstructor(val) {
   const groupEl = document.getElementById('group-instructor-other');
   const inputEl = document.getElementById('jadwal-instructor-other');
   if (!groupEl) return;
@@ -112,7 +124,9 @@ async function loadPengurusMateri() {
       inputEl.value = '';
     }
   }
-}\n\nasync function loadSchedules() {
+}
+
+export async function loadSchedules() {
   try {
     const res = await fetchAuth(`${API_BASE}/materials/schedules`);
     const data = await res.json();
@@ -179,7 +193,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     console.error('Gagal memuat jadwal:', err);
   }
-}\n\nasync function unlinkMaterial(scheduleId, materialId) {
+}
+
+export async function unlinkMaterial(scheduleId, materialId) {
   if (!confirm('Apakah Anda yakin ingin melepaskan materi ini dari jadwal?')) return;
   try {
     const res = await fetchAuth(`${API_BASE}/materials/schedules/${scheduleId}/link/${materialId}`, { method: 'DELETE' });
@@ -188,7 +204,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function submitJadwal(e) {
+}
+
+export async function submitJadwal(e) {
   e.preventDefault();
   const date = document.getElementById('jadwal-date').value;
   const topic = document.getElementById('jadwal-topic').value;
@@ -226,7 +244,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function deleteSchedule(id) {
+}
+
+export async function deleteSchedule(id) {
   if (!confirm('Apakah Anda yakin ingin menghapus jadwal ini?')) return;
   try {
     const res = await fetchAuth(`${API_BASE}/materials/schedules/${id}`, { method: 'DELETE' });
@@ -236,7 +256,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function showLinkMaterial(scheduleId) {
+}
+
+export async function showLinkMaterial(scheduleId) {
   try {
     const res = await fetchAuth(`${API_BASE}/materials`);
     const data = await res.json();
@@ -257,10 +279,14 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nexport function closeLinkMaterialModal() {
+}
+
+export function closeLinkMaterialModal() {
   const modal = document.getElementById('modal-link-materi');
   if (modal) modal.style.display = 'none';
-}\n\nasync function submitLinkMaterial(e) {
+}
+
+export async function submitLinkMaterial(e) {
   e.preventDefault();
   const scheduleId = document.getElementById('link-schedule-id').value;
   const materialId = document.getElementById('link-materi-select').value;
@@ -285,7 +311,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function loadMateriList(containerId, showActions) {
+}
+
+export async function loadMateriList(containerId, showActions) {
   try {
     const res = await fetchAuth(`${API_BASE}/materials`);
     const data = await res.json();
@@ -315,7 +343,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     console.error('Gagal memuat materi:', err);
   }
-}\n\nasync function submitMateri(e) {
+}
+
+export async function submitMateri(e) {
   e.preventDefault();
   const title = document.getElementById('materi-title').value;
   const desc = document.getElementById('materi-desc').value;
@@ -344,7 +374,9 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function deleteMateri(id) {
+}
+
+export async function deleteMateri(id) {
   if (!confirm('Apakah Anda yakin ingin menghapus materi ini?')) return;
   try {
     const res = await fetchAuth(`${API_BASE}/materials/${id}`, { method: 'DELETE' });
@@ -354,7 +386,10 @@ async function loadPengurusMateri() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function loadAnggotaMateri() {
+}
+
+export async function loadAnggotaMateri() {
   loadSchedules();
   loadDocumentTemplates('list-anggota-templates', false);
-}\n\n
+}
+

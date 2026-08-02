@@ -1,7 +1,7 @@
 import { fetchAuth, generateDeviceFingerprint } from './auth.js';
 export const API_BASE = '/api';
 
-async function loadSessionStatus() {
+export async function loadSessionStatus() {
   try {
     const res = await fetchAuth(`${API_BASE}/attendance/session/status`);
     const data = await res.json();
@@ -47,7 +47,9 @@ async function loadSessionStatus() {
     console.error('Gagal memuat status sesi:', err);
     return false;
   }
-}\n\nasync function toggleSession(action) {
+}
+
+export async function toggleSession(action) {
   const endpoint = action === 'open' ? '/attendance/session/open' : '/attendance/session/close';
   try {
     const res = await fetchAuth(`${API_BASE}${endpoint}`, { method: 'POST' });
@@ -58,7 +60,9 @@ async function loadSessionStatus() {
   } catch (err) {
     alert(`Error: ${err.message}`);
   }
-}\n\nasync function loadPengurusAbsensi(query = '') {
+}
+
+export async function loadPengurusAbsensi(query = '') {
   try {
     loadSessionStatus();
 
@@ -83,7 +87,9 @@ async function loadSessionStatus() {
   } catch (err) {
     console.error('Gagal memuat absensi:', err);
   }
-}\n\nexport function filterAbsensi(e) {
+}
+
+export function filterAbsensi(e) {
   e.preventDefault();
   const start = document.getElementById('filter-start-date').value;
   const end = document.getElementById('filter-end-date').value;
@@ -95,7 +101,9 @@ async function loadSessionStatus() {
   if (div) params.append('divisi', div);
 
   loadPengurusAbsensi(`?${params.toString()}`);
-}\n\nasync function submitAbsensiAnggota(e) {
+}
+
+export async function submitAbsensiAnggota(e) {
   e.preventDefault();
   const statusEl = document.getElementById('anggota-status-absen');
   const status = statusEl ? statusEl.value : 'hadir';
@@ -178,21 +186,32 @@ async function loadSessionStatus() {
     let msg = err.message;
     if (err.code === 1) {
       if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        msg = `Browser HP memblokir pop-up izin lokasi karena Anda mengakses lewat IP LAN HTTP (${window.location.origin}) tanpa HTTPS.\n\n🛠️ CARA AGAR HP BISA IZIN LOKASI DI CHROME:\n1. Buka tab baru di Chrome HP, ketik: chrome://flags\n2. Cari di kolom search: Insecure origins treated as secure\n3. Ubah jadi ENABLED, lalu isi kolom dengan: ${window.location.origin}\n4. Klik tombol Relaunch di bawah layar HP.\n5. Setelah Chrome restart, klik presensi lagi. HP akan memunculkan izin lokasi!`;
+        msg = `Browser HP memblokir pop-up izin lokasi karena Anda mengakses lewat IP LAN HTTP (${window.location.origin}) tanpa HTTPS.
+
+🛠️ CARA AGAR HP BISA IZIN LOKASI DI CHROME:
+1. Buka tab baru di Chrome HP, ketik: chrome://flags
+2. Cari di kolom search: Insecure origins treated as secure
+3. Ubah jadi ENABLED, lalu isi kolom dengan: ${window.location.origin}
+4. Klik tombol Relaunch di bawah layar HP.
+5. Setelah Chrome restart, klik presensi lagi. HP akan memunculkan izin lokasi!`;
       } else {
         msg = 'Anda menolak izin akses lokasi (GPS) di HP. Silakan klik ikon gembok/pengaturan di samping alamat web pada browser HP Anda, lalu aktifkan izin Lokasi (Location).';
       }
     }
     else if (err.code === 2) msg = 'Sinyal GPS tidak ditemukan oleh perangkat HP Anda. Pastikan fitur Lokasi/GPS di HP Anda dalam keadaan aktif.';
     else if (err.code === 3) msg = 'Waktu pencarian sinyal GPS habis (timeout). Sinyal satelit terhalang gedung/ruangan. Coba lagi di dekat jendela atau area terbuka.';
-    alert(`PEMBERITAHUAN LOKASI:\n\n${msg}`);
+    alert(`PEMBERITAHUAN LOKASI:
+
+${msg}`);
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.textContent = originalText;
     }
   }
-}\n\nasync function loadAnggotaAttendance() {
+}
+
+export async function loadAnggotaAttendance() {
   try {
     const res = await fetchAuth(`${API_BASE}/attendance/history?limit=10`);
     const data = await res.json();
@@ -212,4 +231,5 @@ async function loadSessionStatus() {
   } catch (err) {
     console.error('Gagal memuat absensi anggota:', err);
   }
-}\n\n
+}
+
