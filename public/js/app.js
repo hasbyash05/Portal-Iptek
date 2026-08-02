@@ -2622,6 +2622,61 @@ async function deleteExpense(id) {
   }
 }
 
+async function exportKasCsv() {
+  const year = document.getElementById('export-kas-year').value;
+  if (!year) return alert('Pilih tahun terlebih dahulu.');
+
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/report?year=${year}&status=lunas`);
+    const data = await res.json();
+    
+    if (data.status === 'success') {
+      const items = data.data.items || [];
+      if (items.length === 0) {
+        alert(`Tidak ada data uang kas yang lunas pada tahun ${year}.`);
+        return;
+      }
+
+      const headers = ['No', 'Nama Anggota', 'Bulan', 'Tahun', 'Nominal', 'Tanggal Bayar', 'Disetujui Oleh', 'Tanggal Disetujui'];
+      const rows = items.map((p, index) => {
+        const nama = p.user ? `"${p.user.nama_lengkap}"` : 'Tidak Diketahui';
+        const nominal = p.amount || 10000;
+        const tglBayar = p.created_at ? new Date(p.created_at).toLocaleDateString('id-ID') : '-';
+        const verifikator = p.verifier ? `"${p.verifier.nama_lengkap}"` : '-';
+        const tglDisetujui = p.confirmed_at ? new Date(p.confirmed_at).toLocaleDateString('id-ID') : '-';
+
+        return [
+          index + 1,
+          nama,
+          p.month,
+          p.year,
+          nominal,
+          tglBayar,
+          verifikator,
+          tglDisetujui
+        ].join(',');
+      });
+
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Laporan_Uang_Kas_Lunas_${year}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else {
+      alert(data.message || 'Gagal mengambil data laporan.');
+    }
+  } catch (err) {
+    console.error('Export CSV Error:', err);
+    alert('Terjadi kesalahan saat memproses export CSV.');
+  }
+}
+
 /* ==========================================================
    QRIS CONFIGURATION
 ========================================================== */
