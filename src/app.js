@@ -9,20 +9,9 @@ const apiRoutes = require('./routes');
 
 const app = express();
 
-// Helmet: HTTP security headers dengan Strict CSP
+// Helmet: HTTP security headers
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      upgradeInsecureRequests: [],
-    }
-  },
+  contentSecurityPolicy: false, // Dimatikan agar frontend statis tidak terblokir
   crossOriginEmbedderPolicy: false
 }));
 

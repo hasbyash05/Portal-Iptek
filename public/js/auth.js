@@ -1,15 +1,85 @@
 export const API_BASE = '/api';
 
-export async function generateDeviceFingerprint() {
+async function generateDeviceFingerprint() {
+  // Cek cache di localStorage
   const cached = localStorage.getItem('iptek_device_fp');
   if (cached) return cached;
-  
-  const fp = btoa(navigator.userAgent + screen.width + navigator.language).substring(0, 32);
-  localStorage.setItem('iptek_device_fp', fp);
-  return fp;
-}
 
-export function getDeviceInfo() {
+  const components = [];
+
+  // 1. User Agent
+  components.push(navigator.userAgent || '');
+
+  // 2. Screen properties
+  components.push(`${screen.width}x${screen.height}x${screen.colorDepth}`);
+  components.push(`${screen.availWidth}x${screen.availHeight}`);
+
+  // 3. Timezone
+  components.push(Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+  components.push(String(new Date().getTimezoneOffset()));
+
+  // 4. Language
+  components.push(navigator.language || '');
+  components.push((navigator.languages || []).join(','));
+
+  // 5. Platform
+  components.push(navigator.platform || '');
+  components.push(String(navigator.hardwareConcurrency || ''));
+  components.push(String(navigator.maxTouchPoints || 0));
+
+  // 6. Canvas fingerprint
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 200;
+    canvas.height = 50;
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(40, 0, 80, 25);
+    ctx.fillStyle = '#069';
+    ctx.fillText('IPTEK-FP-2026', 2, 15);
+    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+    ctx.fillText('IPTEK-FP-2026', 4, 17);
+    components.push(canvas.toDataURL());
+  } catch (e) {
+    components.push('canvas-unavailable');
+  }
+
+  // 7. WebGL renderer
+  try {
+    const glCanvas = document.createElement('canvas');
+    const gl = glCanvas.getContext('webgl') || glCanvas.getContext('experimental-webgl');
+    if (gl) {
+      const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (debugInfo) {
+        components.push(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || '');
+        components.push(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '');
+      }
+    }
+  } catch (e) {
+    components.push('webgl-unavailable');
+  }
+
+  // Hash semua komponen menggunakan SHA-256
+  const raw = components.join('|||');
+
+  let fingerprint;
+  if (crypto && crypto.subtle) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(raw);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    fingerprint = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  } else {
+    // Fallback sederhana jika diakses via HTTP (karena crypto.subtle butuh HTTPS)
+    fingerprint = btoa(unescape(encodeURIComponent(raw))).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+  }
+
+  // Cache fingerprint
+  localStorage.setItem('iptek_device_fp', fingerprint);
+  return fingerprint;
+}\n\nexport function getDeviceInfo() {
   return JSON.stringify({
     userAgent: navigator.userAgent,
     platform: navigator.platform,
@@ -17,9 +87,7 @@ export function getDeviceInfo() {
     language: navigator.language,
     touchPoints: navigator.maxTouchPoints || 0
   });
-}
-
-export function checkAuth() {
+}\n\nexport function checkAuth() {
   const token = localStorage.getItem('iptek_token');
   const userStr = localStorage.getItem('iptek_user');
 
@@ -65,9 +133,7 @@ export function checkAuth() {
 
   // Muat konfigurasi QRIS (gambar QR Code Bendahara) untuk ditampilkan di UI
   loadQrisConfig();
-}
-
-export async function handleLogin(e) {
+}\n\nasync function handleLogin(e) {
   e.preventDefault();
   const usernameInput = document.getElementById('username').value.trim();
   const passwordInput = document.getElementById('password').value.trim();
@@ -114,16 +180,12 @@ export async function handleLogin(e) {
     btnLogin.disabled = false;
     btnLogin.innerHTML = `<span>Masuk ke Portal</span> <i class="fa-solid fa-arrow-right"></i>`;
   }
-}
-
-export function logout() {
+}\n\nexport function logout() {
   localStorage.removeItem('iptek_token');
   localStorage.removeItem('iptek_user');
   history.replaceState(null, null, window.location.pathname);
   checkAuth();
-}
-
-export async function fetchAuth(url, options = {}) {
+}\n\nasync function fetchAuth(url, options = {}) {
   const token = localStorage.getItem('iptek_token');
   if (!options.headers) options.headers = {};
   if (token) options.headers['Authorization'] = `Bearer ${token}`;
@@ -134,5 +196,4 @@ export async function fetchAuth(url, options = {}) {
     throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
   }
   return res;
-}
-
+}\n\n
