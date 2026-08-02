@@ -2640,7 +2640,7 @@ async function exportKasCsv() {
       const summary = {};
       items.forEach(p => {
         const nama = p.user ? p.user.nama_lengkap : 'Tidak Diketahui';
-        const nominal = p.amount || 10000;
+        const nominal = p.amount ? parseFloat(p.amount) : 10000;
         
         if (!summary[nama]) {
           summary[nama] = {
