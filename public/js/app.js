@@ -2637,23 +2637,28 @@ async function exportKasCsv() {
         return;
       }
 
-      const headers = ['No', 'Nama Anggota', 'Bulan', 'Tahun', 'Nominal', 'Tanggal Bayar', 'Disetujui Oleh', 'Tanggal Disetujui'];
-      const rows = items.map((p, index) => {
-        const nama = p.user ? `"${p.user.nama_lengkap}"` : 'Tidak Diketahui';
+      const summary = {};
+      items.forEach(p => {
+        const nama = p.user ? p.user.nama_lengkap : 'Tidak Diketahui';
         const nominal = p.amount || 10000;
-        const tglBayar = p.created_at ? new Date(p.created_at).toLocaleDateString('id-ID') : '-';
-        const verifikator = p.verifier ? `"${p.verifier.nama_lengkap}"` : '-';
-        const tglDisetujui = p.confirmed_at ? new Date(p.confirmed_at).toLocaleDateString('id-ID') : '-';
+        
+        if (!summary[nama]) {
+          summary[nama] = {
+            nama: `"${nama}"`,
+            totalNominal: 0,
+            tahun: p.year
+          };
+        }
+        summary[nama].totalNominal += nominal;
+      });
 
+      const headers = ['No', 'Nama Anggota', 'Total Pembayaran', 'Tahun'];
+      const rows = Object.values(summary).map((data, index) => {
         return [
           index + 1,
-          nama,
-          p.month,
-          p.year,
-          nominal,
-          tglBayar,
-          verifikator,
-          tglDisetujui
+          data.nama,
+          data.totalNominal,
+          data.tahun
         ].join(',');
       });
 
