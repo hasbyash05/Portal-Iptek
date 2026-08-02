@@ -64,7 +64,7 @@ async function generateDeviceFingerprint() {
 
   // Hash semua komponen menggunakan SHA-256
   const raw = components.join('|||');
-  
+
   let fingerprint;
   if (crypto && crypto.subtle) {
     const encoder = new TextEncoder();
@@ -307,8 +307,8 @@ window.addEventListener('hashchange', () => {
   const userStr = localStorage.getItem('iptek_user');
   if (!userStr || !hashTab) return;
   const user = JSON.parse(userStr);
-  const validTabs = (user.role === 'pengurus' || user.role === 'admin') ? 
-    ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'] : 
+  const validTabs = (user.role === 'pengurus' || user.role === 'admin') ?
+    ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'] :
     ['overview', 'materi', 'absensi', 'kas'];
 
   if (validTabs.includes(hashTab)) {
@@ -329,7 +329,7 @@ function switchTab(tabName, user) {
   document.querySelectorAll('#main-view .tab-content').forEach(c => {
     if (c.parentElement.id === 'main-view') c.style.display = 'none';
   });
-  
+
   const contentEl = document.getElementById('tab-' + tabName);
   if (contentEl) contentEl.style.display = 'block';
 
@@ -342,11 +342,11 @@ function switchTab(tabName, user) {
   const isPengurusOrAdmin = role === 'admin' || role === 'pengurus';
 
   const el = (id) => document.getElementById(id);
-  
+
   if (el('view-materi-pengurus')) el('view-materi-pengurus').style.display = isPengurusOrAdmin ? 'block' : 'none';
   if (el('view-absensi-pengurus')) el('view-absensi-pengurus').style.display = isKetuaWakil ? 'block' : 'none';
   if (el('view-kas-pengurus')) el('view-kas-pengurus').style.display = isBendahara ? 'block' : 'none';
-  
+
   if (el('view-overview-pengurus')) el('view-overview-pengurus').style.display = isPengurusOrAdmin ? 'block' : 'none';
   if (el('view-overview-anggota')) el('view-overview-anggota').style.display = isPengurusOrAdmin ? 'none' : 'block';
 
@@ -479,7 +479,7 @@ async function submitLaporan(e) {
   e.preventDefault();
   const activity = document.getElementById('laporan-activity').value;
   const fileInput = document.getElementById('laporan-file');
-  
+
   const formData = new FormData();
   formData.append('activity', activity);
   if (fileInput.files[0]) {
@@ -776,7 +776,7 @@ async function showLinkMaterial(scheduleId) {
     select.innerHTML = '<option value="">-- Pilih Materi Pembelajaran --</option>' +
       items.map(m => `<option value="${m.id}">${m.title} (Minggu ke-${m.week_number})</option>`).join('');
 
-    const modal = document.getElementById('link-materi-modal');
+    const modal = document.getElementById('modal-link-materi');
     modal.style.display = 'flex';
   } catch (err) {
     alert(`Error: ${err.message}`);
@@ -784,7 +784,7 @@ async function showLinkMaterial(scheduleId) {
 }
 
 function closeLinkMaterialModal() {
-  const modal = document.getElementById('link-materi-modal');
+  const modal = document.getElementById('modal-link-materi');
   if (modal) modal.style.display = 'none';
 }
 
@@ -1157,7 +1157,7 @@ async function checkKasAndUnlockAttendance() {
   const userStr = localStorage.getItem('iptek_user');
   if (!userStr) return;
   const user = JSON.parse(userStr);
-  
+
   const isBendahara = user.role === 'pengurus' && user.divisi && user.divisi.toLowerCase().includes('bendahara');
   if (user.role === 'admin' || isBendahara) {
     document.getElementById('qris-lock-modal').style.display = 'none';
@@ -1177,11 +1177,11 @@ async function checkKasAndUnlockAttendance() {
     } else {
       if (modal) modal.style.display = 'flex';
       if (statusText && data.data && data.data.payment) {
-         if (data.data.payment.status === 'pending') {
-           statusText.innerHTML = '<div class="alert alert-info" style="margin-bottom: 1rem; font-size: 0.85rem;">Pembayaran Kas Anda sedang <strong>menunggu verifikasi</strong> Bendahara.</div>';
-         } else if (data.data.payment.status === 'ditolak') {
-           statusText.innerHTML = '<div class="alert alert-danger" style="margin-bottom: 1rem; font-size: 0.85rem;">Pembayaran Kas Anda <strong>ditolak</strong>. Silakan periksa kembali.</div>';
-         }
+        if (data.data.payment.status === 'pending') {
+          statusText.innerHTML = '<div class="alert alert-info" style="margin-bottom: 1rem; font-size: 0.85rem;">Pembayaran Kas Anda sedang <strong>menunggu verifikasi</strong> Bendahara.</div>';
+        } else if (data.data.payment.status === 'ditolak') {
+          statusText.innerHTML = '<div class="alert alert-danger" style="margin-bottom: 1rem; font-size: 0.85rem;">Pembayaran Kas Anda <strong>ditolak</strong>. Silakan periksa kembali.</div>';
+        }
       }
       switchTab('absensi', user);
     }
@@ -1257,7 +1257,7 @@ async function generateDeviceFingerprint() {
 
   // Hash semua komponen menggunakan SHA-256
   const raw = components.join('|||');
-  
+
   let fingerprint;
   if (crypto && crypto.subtle) {
     const encoder = new TextEncoder();
@@ -1499,8 +1499,8 @@ window.addEventListener('hashchange', () => {
   const userStr = localStorage.getItem('iptek_user');
   if (!userStr || !hashTab) return;
   const user = JSON.parse(userStr);
-  const validTabs = (user.role === 'pengurus' || user.role === 'admin') ? 
-    ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'] : 
+  const validTabs = (user.role === 'pengurus' || user.role === 'admin') ?
+    ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'] :
     ['overview', 'materi', 'absensi', 'kas'];
 
   if (validTabs.includes(hashTab)) {
@@ -1521,7 +1521,7 @@ function switchTab(tabName, user) {
   document.querySelectorAll('#main-view .tab-content').forEach(c => {
     if (c.parentElement.id === 'main-view') c.style.display = 'none';
   });
-  
+
   const contentEl = document.getElementById('tab-' + tabName);
   if (contentEl) contentEl.style.display = 'block';
 
@@ -1534,11 +1534,11 @@ function switchTab(tabName, user) {
   const isPengurusOrAdmin = role === 'admin' || role === 'pengurus';
 
   const el = (id) => document.getElementById(id);
-  
+
   if (el('view-materi-pengurus')) el('view-materi-pengurus').style.display = isPengurusOrAdmin ? 'block' : 'none';
   if (el('view-absensi-pengurus')) el('view-absensi-pengurus').style.display = isKetuaWakil ? 'block' : 'none';
   if (el('view-kas-pengurus')) el('view-kas-pengurus').style.display = isBendahara ? 'block' : 'none';
-  
+
   if (el('view-overview-pengurus')) el('view-overview-pengurus').style.display = isPengurusOrAdmin ? 'block' : 'none';
   if (el('view-overview-anggota')) el('view-overview-anggota').style.display = isPengurusOrAdmin ? 'none' : 'block';
 
@@ -1650,7 +1650,7 @@ async function submitLaporan(e) {
   e.preventDefault();
   const activity = document.getElementById('laporan-activity').value;
   const fileInput = document.getElementById('laporan-file');
-  
+
   const formData = new FormData();
   formData.append('activity', activity);
   if (fileInput.files[0]) {
@@ -1947,7 +1947,7 @@ async function showLinkMaterial(scheduleId) {
     select.innerHTML = '<option value="">-- Pilih Materi Pembelajaran --</option>' +
       items.map(m => `<option value="${m.id}">${m.title} (Minggu ke-${m.week_number})</option>`).join('');
 
-    const modal = document.getElementById('link-materi-modal');
+    const modal = document.getElementById('modal-link-materi');
     modal.style.display = 'flex';
   } catch (err) {
     alert(`Error: ${err.message}`);
@@ -1955,7 +1955,7 @@ async function showLinkMaterial(scheduleId) {
 }
 
 function closeLinkMaterialModal() {
-  const modal = document.getElementById('link-materi-modal');
+  const modal = document.getElementById('modal-link-materi');
   if (modal) modal.style.display = 'none';
 }
 
@@ -2545,7 +2545,7 @@ async function loadExpenses() {
     const res = await fetchAuth(`${API_BASE}/expenses`);
     const data = await res.json();
     const tbody = document.getElementById('table-expenses');
-    
+
     if (data.status === 'success') {
       const items = data.data.items || [];
       if (items.length === 0) {
@@ -2608,7 +2608,7 @@ async function submitExpense(e) {
 
 async function deleteExpense(id) {
   if (!confirm('Yakin ingin menghapus catatan pengeluaran ini?')) return;
-  
+
   try {
     const res = await fetchAuth(`${API_BASE}/expenses/${id}`, { method: 'DELETE' });
     const data = await res.json();
@@ -2629,7 +2629,7 @@ async function exportKasCsv() {
   try {
     const res = await fetchAuth(`${API_BASE}/payments/report?year=${year}&status=lunas`);
     const data = await res.json();
-    
+
     if (data.status === 'success') {
       const items = data.data.items || [];
       if (items.length === 0) {
@@ -2641,7 +2641,7 @@ async function exportKasCsv() {
       items.forEach(p => {
         const nama = p.user ? p.user.nama_lengkap : 'Tidak Diketahui';
         const nominal = p.amount ? parseFloat(p.amount) : 10000;
-        
+
         if (!summary[nama]) {
           summary[nama] = {
             nama: `"${nama}"`,
@@ -2665,7 +2665,7 @@ async function exportKasCsv() {
       const csvContent = [headers.join(','), ...rows].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
-      
+
       const a = document.createElement('a');
       a.href = url;
       a.download = `Laporan_Uang_Kas_Lunas_${year}.csv`;
@@ -2799,7 +2799,7 @@ async function loadAnggotaList() {
       if (data.status !== 'success' || !data.data || !data.data.length) {
         let msg = 'Tidak ada data ditemukan.';
         if (data.status === 'error') {
-          msg = `Gagal: ${data.message} ${data.error ? '('+data.error+')' : ''}`;
+          msg = `Gagal: ${data.message} ${data.error ? '(' + data.error + ')' : ''}`;
           console.error(msg);
         }
         tbody.innerHTML = `<tr><td colspan="6" class="text-center" style="color:#71717a;">${escapeHtml(msg)}</td></tr>`;
@@ -2938,10 +2938,10 @@ function showResetPasswordModal(id) {
   // Reset form to default (Auto)
   const form = document.getElementById('form-reset-password');
   form.reset();
-  
+
   // Set ID after reset so it doesn't get cleared
   document.getElementById('reset-user-id').value = id;
-  
+
   toggleResetManual(false);
   document.getElementById('modal-reset-password').style.display = 'flex';
 }
@@ -2968,7 +2968,7 @@ async function submitResetPassword(e) {
   const id = document.getElementById('reset-user-id').value;
   const mode = document.querySelector('input[name="reset-mode"]:checked').value;
   const newPassword = document.getElementById('reset-manual-password').value.trim();
-  
+
   if (mode === 'manual' && !newPassword) {
     return alert('Silakan masukkan password baru.');
   }
@@ -2994,7 +2994,7 @@ async function submitResetPassword(e) {
     if (!res.ok) throw new Error(data.message || 'Gagal reset password.');
 
     closeResetPasswordModal();
-    
+
     // Show the result modal (existing logic)
     document.getElementById('reset-result-name').textContent = data.data.nama_lengkap + ' (@' + data.data.username + ')';
     document.getElementById('reset-result-password').textContent = data.data.new_password;
