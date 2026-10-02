@@ -83,6 +83,17 @@ sequelize.authenticate()
       // Production: sync tanpa alter, tabel harus sudah ada
       await sequelize.sync({ alter: false });
       console.log('[DB] Tabel database tersinkronisasi (production mode).');
+
+      // Migrasi aman: tambah kolom attendance_mode jika belum ada
+      try {
+        const [columns] = await sequelize.query("SHOW COLUMNS FROM `attendance_sessions` LIKE 'attendance_mode'");
+        if (columns.length === 0) {
+          await sequelize.query("ALTER TABLE `attendance_sessions` ADD COLUMN `attendance_mode` ENUM('onsite','anywhere') NOT NULL DEFAULT 'onsite'");
+          console.log("[DB] Kolom 'attendance_mode' berhasil ditambahkan ke tabel attendance_sessions.");
+        }
+      } catch (migErr) {
+        console.warn('[DB] Migrasi attendance_mode:', migErr.message);
+      }
     }
   })
   .catch((error) => {
