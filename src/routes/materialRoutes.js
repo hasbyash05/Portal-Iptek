@@ -5,23 +5,24 @@ const { createSchedule, getSchedules, linkMaterial, unlinkMaterial, deleteSchedu
 const { authenticate } = require('../middlewares/auth');
 const { isPengurus } = require('../middlewares/roleCheck');
 const { handleUpload } = require('../middlewares/uploadHandler');
+const { cacheMiddleware, clearCacheOnSuccess } = require('../middlewares/cache');
 
 router.use(authenticate);
 
-// Jadwal pertemuan (specific routes first)
-router.get('/schedules', getSchedules);
-router.post('/schedules', isPengurus, createSchedule);
-router.put('/schedules/:id/link', isPengurus, linkMaterial);
-router.delete('/schedules/:scheduleId/link/:materialId', isPengurus, unlinkMaterial);
-router.delete('/schedules/:id', isPengurus, deleteSchedule);
+// Jadwal pertemuan (di-cache 30 detik)
+router.get('/schedules', cacheMiddleware(30, () => 'materials:schedules'), getSchedules);
+router.post('/schedules', isPengurus, clearCacheOnSuccess('materials'), createSchedule);
+router.put('/schedules/:id/link', isPengurus, clearCacheOnSuccess('materials'), linkMaterial);
+router.delete('/schedules/:scheduleId/link/:materialId', isPengurus, clearCacheOnSuccess('materials'), unlinkMaterial);
+router.delete('/schedules/:id', isPengurus, clearCacheOnSuccess('materials'), deleteSchedule);
 
-// Daftar pemateri (pengurus) untuk dropdown
-router.get('/instructors', getInstructors);
+// Daftar pemateri (pengurus) untuk dropdown (di-cache 60 detik)
+router.get('/instructors', cacheMiddleware(60, () => 'materials:instructors'), getInstructors);
 
-// Materi bahan ajar
-router.get('/', getMaterials);
+// Materi bahan ajar (di-cache 30 detik)
+router.get('/', cacheMiddleware(30, (req) => `materials:list:${JSON.stringify(req.query)}`), getMaterials);
 router.get('/download/:id', downloadMaterial);
-router.post('/', isPengurus, handleUpload('material_file'), uploadMaterial);
-router.delete('/:id', isPengurus, deleteMaterial);
+router.post('/', isPengurus, handleUpload('material_file'), clearCacheOnSuccess('materials'), uploadMaterial);
+router.delete('/:id', isPengurus, clearCacheOnSuccess('materials'), deleteMaterial);
 
 module.exports = router;

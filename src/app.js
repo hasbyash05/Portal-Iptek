@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
@@ -45,10 +46,32 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// HTTP Compression (Gzip) untuk meringankan transfer data ke browser
+app.use(compression({ threshold: 1024 }));
+
+// Konfigurasi HTTP Caching untuk aset statis agar browser tidak membebani server
+const staticCacheOptions = {
+  maxAge: '1d',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // HTML jangan di-cache permanen agar pembaruan kode frontend langsung tampil
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    } else if (filePath.match(/\.(jpg|jpeg|png|gif|svg|ico|webp|pdf)$/i)) {
+      // Gambar dan media di-cache 7 hari
+      res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+    } else if (filePath.match(/\.(css|js)$/i)) {
+      // File CSS dan JS di-cache 1 hari dengan revalidasi
+      res.setHeader('Cache-Control', 'public, max-age=86400, must-revalidate');
+    }
+  }
+};
+
 // Serve static files from public directory (UI & Uploads)
-app.use(express.static(path.join(__dirname, '../public')));
-app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
-app.use('/asset', express.static(path.join(__dirname, '../asset')));
+app.use(express.static(path.join(__dirname, '../public'), staticCacheOptions));
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads'), staticCacheOptions));
+app.use('/asset', express.static(path.join(__dirname, '../asset'), staticCacheOptions));
 
 // Routes
 app.use('/api', apiRoutes);

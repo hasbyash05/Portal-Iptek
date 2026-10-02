@@ -4,12 +4,13 @@ const { uploadTemplate, getTemplates, downloadTemplate, deleteTemplate } = requi
 const { authenticate } = require('../middlewares/auth');
 const { isPengurus } = require('../middlewares/roleCheck');
 const { handleUpload } = require('../middlewares/uploadHandler');
+const { cacheMiddleware, clearCacheOnSuccess } = require('../middlewares/cache');
 
 router.use(authenticate);
 
-router.get('/', getTemplates);
+router.get('/', cacheMiddleware(30, () => 'templates:list'), getTemplates);
 router.get('/download/:id', downloadTemplate);
-router.post('/', isPengurus, handleUpload('template_file'), uploadTemplate);
-router.delete('/:id', isPengurus, deleteTemplate);
+router.post('/', isPengurus, handleUpload('template_file'), clearCacheOnSuccess('templates'), uploadTemplate);
+router.delete('/:id', isPengurus, clearCacheOnSuccess('templates'), deleteTemplate);
 
 module.exports = router;

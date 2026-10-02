@@ -218,17 +218,94 @@ export function logout() {
   checkAuth();
 }
 
+// Client-side In-Memory Cache & In-flight Request Deduplication
+const apiCache = new Map();
+const inFlightRequests = new Map();
+
+export function clearApiCache(pattern = null) {
+  if (!pattern) {
+    apiCache.clear();
+    return;
+  }
+  for (const key of apiCache.keys()) {
+    if (typeof pattern === 'string' && key.includes(pattern)) {
+      apiCache.delete(key);
+    } else if (pattern instanceof RegExp && pattern.test(key)) {
+      apiCache.delete(key);
+    }
+  }
+}
+
 export async function fetchAuth(url, options = {}) {
   const token = localStorage.getItem('iptek_token');
   if (!options.headers) options.headers = {};
   if (token) options.headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(url, options);
-  if (res.status === 401) {
-    logout();
-    throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
+  const method = (options.method || 'GET').toUpperCase();
+
+  // Jika mutasi data (POST, PUT, DELETE), bersihkan cache agar data terbaru langsung tampil
+  if (method !== 'GET') {
+    clearApiCache();
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+      logout();
+      throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
+    }
+    return res;
   }
-  return res;
+
+  // Khusus GET: gunakan smart in-memory cache & deduplikasi request
+  const noCache = options.noCache === true;
+  const cacheKey = `${url}:${token || ''}`;
+  const ttl = options.cacheTimeMs || 10000; // 10 detik default
+
+  if (!noCache) {
+    const cached = apiCache.get(cacheKey);
+    if (cached && cached.expiry > Date.now()) {
+      return new Response(JSON.stringify(cached.data), {
+        status: cached.status,
+        statusText: cached.statusText,
+        headers: { 'Content-Type': 'application/json', 'X-Client-Cache': 'HIT' }
+      });
+    }
+
+    if (inFlightRequests.has(cacheKey)) {
+      const inflightRes = await inFlightRequests.get(cacheKey);
+      return inflightRes.clone();
+    }
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      const res = await fetch(url, options);
+      if (res.status === 401) {
+        logout();
+        throw new Error('Sesi Anda telah berakhir. Silakan login kembali.');
+      }
+
+      if (res.ok && !noCache) {
+        const cloned = res.clone();
+        cloned.json().then(data => {
+          apiCache.set(cacheKey, {
+            data,
+            status: res.status,
+            statusText: res.statusText,
+            expiry: Date.now() + ttl
+          });
+        }).catch(() => {});
+      }
+
+      return res;
+    } finally {
+      inFlightRequests.delete(cacheKey);
+    }
+  })();
+
+  if (!noCache) {
+    inFlightRequests.set(cacheKey, fetchPromise);
+  }
+
+  return fetchPromise;
 }
 
 // Global window exposure
@@ -236,4 +313,5 @@ window.checkAuth = checkAuth;
 window.handleLogin = handleLogin;
 window.logout = logout;
 window.fetchAuth = fetchAuth;
+window.clearApiCache = clearApiCache;
 window.generateDeviceFingerprint = generateDeviceFingerprint;

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iptek-pwa-v9';
+const CACHE_NAME = 'iptek-pwa-v10';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -11,56 +11,52 @@ const urlsToCache = [
   '/js/finance.js',
   '/js/dashboard.js',
   '/js/app.js',
-  '/img/favicon.svg'
+  '/img/favicon.svg',
+  '/img/logo.jpg',
+  '/img/bg-logo.jpg',
+  '/asset/background.jpg'
 ];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        // Use catch to prevent failing the entire install if an external resource is unavailable
-        return Promise.all(
-          urlsToCache.map(url => {
-            return cache.add(url).catch(err => {
-              console.warn(`Failed to cache ${url}:`, err);
-            });
-          })
-        );
-      })
+    caches.open(CACHE_NAME).then(cache => {
+      return Promise.all(
+        urlsToCache.map(url => {
+          return cache.add(url).catch(err => {
+            console.warn('[SW] Failed to cache ' + url + ':', err);
+          });
+        })
+      );
+    })
   );
 });
 
 self.addEventListener('fetch', event => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
-  // Don't intercept API calls
+  // Jangan pernah cache endpoint API dinamis lewat Service Worker
   if (event.request.url.includes('/api/')) return;
 
+  // Stale-While-Revalidate untuk seluruh aset statis
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        if (response) {
-          return response;
-        }
-        return fetch(event.request).then(
-          function(response) {
-            // Check if we received a valid response
-            if(!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-            // Clone the response
-            var responseToCache = response.clone();
-            caches.open(CACHE_NAME)
-              .then(function(cache) {
-                cache.put(event.request, responseToCache);
-              });
-            return response;
+    caches.match(event.request).then(cachedResponse => {
+      const fetchPromise = fetch(event.request)
+        .then(networkResponse => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseToCache);
+            });
           }
-        );
-      }).catch(() => {
-        // Optional: return a fallback offline page here if needed
-      })
+          return networkResponse;
+        })
+        .catch(err => {
+          // Offline fallback
+          return cachedResponse;
+        });
+
+      return cachedResponse || fetchPromise;
+    })
   );
 });
 

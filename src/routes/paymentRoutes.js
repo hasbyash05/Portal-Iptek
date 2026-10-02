@@ -4,17 +4,18 @@ const { submitPayment, checkStatus, getMyHistory, confirmPayment, getReport, get
 const { authenticate } = require('../middlewares/auth');
 const { isBendahara } = require('../middlewares/roleCheck');
 const { handleUpload } = require('../middlewares/uploadHandler');
+const { cacheMiddleware, clearCacheOnSuccess } = require('../middlewares/cache');
 
 router.use(authenticate);
 
-// Semua role
-router.get('/check', checkStatus);
-router.get('/total', getTotalKas);
-router.post('/', handleUpload('proof_file'), submitPayment);
+// Status bayar kas user di-cache 10 detik per user
+router.get('/check', cacheMiddleware(10, (req) => `payments:check:${req.user ? req.user.id : 'anon'}`), checkStatus);
+router.get('/total', cacheMiddleware(15, () => 'payments:total'), getTotalKas);
+router.post('/', handleUpload('proof_file'), clearCacheOnSuccess('payments'), clearCacheOnSuccess('dashboard:stats'), submitPayment);
 router.get('/history', getMyHistory);
 
 // Khusus Bendahara
-router.put('/:id/confirm', isBendahara, confirmPayment);
+router.put('/:id/confirm', isBendahara, clearCacheOnSuccess('payments'), clearCacheOnSuccess('dashboard:stats'), confirmPayment);
 router.get('/report', isBendahara, getReport);
 
 module.exports = router;
