@@ -69,7 +69,11 @@ export async function loadSessionStatus() {
     if (modeIndicator && isActive) {
       const modeLabel = attendanceMode === 'onsite' ? 'Di Tempat (GPS 100m)' : 'Dimana Saja';
       const modeIcon = attendanceMode === 'onsite' ? 'fa-location-dot' : 'fa-globe';
-      modeIndicator.innerHTML = `<span style="font-size: 0.8rem; font-weight: 600; color: #4b5563;"><i class="fa-solid ${modeIcon}"></i> Mode: ${modeLabel}</span>`;
+      modeIndicator.innerHTML = `
+        <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: #f4f4f5; border: 1px solid #e4e4e7; padding: 0.35rem 0.8rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #18181b;">
+          <i class="fa-solid ${modeIcon}"></i>
+          <span>Mode: <strong>${modeLabel}</strong></span>
+        </div>`;
       modeIndicator.style.display = 'block';
     } else if (modeIndicator) {
       modeIndicator.style.display = 'none';
@@ -83,29 +87,100 @@ export async function loadSessionStatus() {
     if (anggotaStatus) {
       if (isActive) {
         const activator = data.data.session && data.data.session.activator ? data.data.session.activator.nama_lengkap : 'Pengurus';
-        anggotaStatus.style.background = '#f0fdf4';
-        anggotaStatus.innerHTML = `<p style="color: #166534; font-size: 0.95rem; margin: 0; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Sesi presensi sedang <strong>DIBUKA</strong> oleh ${activator}. Anda dapat melakukan absensi sekarang.</p>`;
+        anggotaStatus.style.padding = '0';
+        anggotaStatus.style.background = 'transparent';
+        anggotaStatus.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.85rem; padding: 0.9rem 1.15rem; background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #18181b; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="width: 36px; height: 36px; border-radius: 6px; background: #f4f4f5; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #18181b; font-size: 1rem;">
+              <i class="fa-solid fa-lock-open"></i>
+            </div>
+            <div>
+              <p style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #18181b; font-family: 'Outfit', sans-serif;">Sesi Presensi Sedang Dibuka</p>
+              <p style="margin: 0; font-size: 0.82rem; color: #71717a;">Dibuka oleh <strong>${activator}</strong>. Anda dapat mengirimkan presensi sekarang.</p>
+            </div>
+          </div>`;
       } else {
-        anggotaStatus.style.background = '#fef2f2';
-        anggotaStatus.innerHTML = `<p style="color: #991b1b; font-size: 0.95rem; margin: 0; font-weight: 600;"><i class="fa-solid fa-circle-xmark"></i> Sesi presensi sedang <strong>DITUTUP</strong>. Silakan tunggu Pengurus membuka sesi presensi.</p>`;
+        anggotaStatus.style.padding = '0';
+        anggotaStatus.style.background = 'transparent';
+        anggotaStatus.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 0.85rem; padding: 0.9rem 1.15rem; background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #a1a1aa; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="width: 36px; height: 36px; border-radius: 6px; background: #f4f4f5; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #71717a; font-size: 1rem;">
+              <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+              <p style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #18181b; font-family: 'Outfit', sans-serif;">Sesi Presensi Ditutup</p>
+              <p style="margin: 0; font-size: 0.82rem; color: #71717a;">Silakan menunggu Pengurus membuka sesi presensi pertemuan hari ini.</p>
+            </div>
+          </div>`;
       }
     }
 
-    // Update info mode di sisi anggota
+    // Update info mode & panduan dinamis di sisi anggota
     if (anggotaModeInfo) {
       if (isActive) {
         if (attendanceMode === 'onsite') {
-          anggotaModeInfo.innerHTML = `<div style="padding: 0.75rem 1rem; background: #f8f9fa; border-radius: 6px; margin-bottom: 1rem;">
-            <p style="margin: 0; font-size: 0.9rem; color: #4b5563;"><i class="fa-solid fa-location-dot" style="color: #18181b;"></i> <strong>Mode: Di Tempat</strong> &mdash; Anda harus berada dalam radius 100 meter dari titik pertemuan.</p>
-          </div>`;
+          anggotaModeInfo.innerHTML = `
+            <div class="mode-card-badge">
+              <div class="mode-card-icon">
+                <i class="fa-solid fa-location-dot"></i>
+              </div>
+              <div class="mode-card-content">
+                <div class="mode-card-header">
+                  <h5 class="mode-card-title">Mode: Di Tempat</h5>
+                  <span class="mode-pill-badge">GPS Radius 100M</span>
+                </div>
+                <p class="mode-card-desc">Anda wajib berada dalam radius maksimal 100 meter dari titik koordinat pertemuan untuk mencatatkan kehadiran.</p>
+                <div class="mode-card-meta">
+                  <span><i class="fa-solid fa-crosshairs"></i> Radius Maks: 100m</span>
+                  <span><i class="fa-solid fa-location-crosshairs"></i> Deteksi Koordinat Aktif</span>
+                </div>
+              </div>
+            </div>`;
         } else {
-          anggotaModeInfo.innerHTML = `<div style="padding: 0.75rem 1rem; background: #f0f9ff; border-radius: 6px; margin-bottom: 1rem;">
-            <p style="margin: 0; font-size: 0.9rem; color: #0c4a6e;"><i class="fa-solid fa-globe" style="color: #0369a1;"></i> <strong>Mode: Dimana Saja</strong> &mdash; Anda dapat melakukan presensi dari lokasi manapun.</p>
-          </div>`;
+          anggotaModeInfo.innerHTML = `
+            <div class="mode-card-badge">
+              <div class="mode-card-icon">
+                <i class="fa-solid fa-globe"></i>
+              </div>
+              <div class="mode-card-content">
+                <div class="mode-card-header">
+                  <h5 class="mode-card-title">Mode: Dimana Saja</h5>
+                  <span class="mode-pill-badge">Akses Jarak Jauh</span>
+                </div>
+                <p class="mode-card-desc">Ketua UKM mengaktifkan mode presensi jarak jauh. Anda dapat mencatatkan presensi dari lokasi manapun tanpa batasan radius GPS.</p>
+                <div class="mode-card-meta">
+                  <span style="color: #18181b; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Bebas Radius GPS</span>
+                  <span><i class="fa-solid fa-laptop"></i> Presensi Mandiri</span>
+                </div>
+              </div>
+            </div>`;
         }
         anggotaModeInfo.style.display = 'block';
       } else {
         anggotaModeInfo.style.display = 'none';
+      }
+    }
+
+    // Update teks ketentuan & pilihan dropdown sesuai mode
+    const ketentuanTitle = document.getElementById('ketentuan-title');
+    const ketentuanDesc = document.getElementById('ketentuan-desc');
+    const selectStatusAbsen = document.getElementById('anggota-status-absen');
+
+    if (attendanceMode === 'anywhere') {
+      if (ketentuanTitle) ketentuanTitle.textContent = 'Presensi Bebas Lokasi (Dimana Saja)';
+      if (ketentuanDesc) {
+        ketentuanDesc.innerHTML = 'Sesi pertemuan saat ini dibuka dalam <strong style="color: #18181b;">Mode Dimana Saja</strong> oleh Ketua UKM. Anda dapat langsung mengirimkan absensi secara fleksibel tanpa verifikasi radius jarak GPS.';
+      }
+      if (selectStatusAbsen) {
+        selectStatusAbsen.innerHTML = '<option value="hadir">Hadir (Presensi Dimana Saja)</option>';
+      }
+    } else {
+      if (ketentuanTitle) ketentuanTitle.textContent = 'Verifikasi GPS (Maks. 100 Meter)';
+      if (ketentuanDesc) {
+        ketentuanDesc.innerHTML = 'Presensi dibuka dalam <strong style="color: #18181b;">Mode Di Tempat</strong>. Sistem secara otomatis memeriksa GPS, Anda harus berada dalam radius maksimal <strong style="color: #18181b;">100 meter</strong> dari titik pertemuan.';
+      }
+      if (selectStatusAbsen) {
+        selectStatusAbsen.innerHTML = '<option value="hadir">Hadir (Verifikasi GPS Radius 100m)</option>';
       }
     }
 
