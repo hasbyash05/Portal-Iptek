@@ -1,4 +1,4 @@
-const { AttendanceSession, User } = require('../models');
+const { sequelize, AttendanceSession, User } = require('../models');
 
 /**
  * POST /api/attendance/session/open
@@ -114,24 +114,46 @@ const setAttendanceMode = async (req, res) => {
  */
 const getSessionStatus = async (req, res) => {
   try {
-    const session = await AttendanceSession.findOne({
-      where: { is_active: true },
-      include: [{
-        model: User,
-        as: 'activator',
-        attributes: ['id', 'nama_lengkap', 'divisi']
-      }]
-    });
+    let session;
+    try {
+      session = await AttendanceSession.findOne({
+        where: { is_active: true },
+        include: [{
+          model: User,
+          as: 'activator',
+          attributes: ['id', 'nama_lengkap', 'divisi']
+        }]
+      });
+    } catch (queryErr) {
+      // Fallback jika kolom attendance_mode belum ada di database
+      console.warn('[SESSION] Fallback query (kolom attendance_mode mungkin belum ada):', queryErr.message);
+      const [rows] = await sequelize.query(
+        "SELECT s.id, s.is_active, s.activated_by, s.activated_at, u.id AS `activator.id`, u.nama_lengkap AS `activator.nama_lengkap`, u.divisi AS `activator.divisi` FROM attendance_sessions s LEFT JOIN users u ON s.activated_by = u.id WHERE s.is_active = 1 LIMIT 1",
+        { type: sequelize.QueryTypes.SELECT }
+      );
+      if (rows) {
+        session = {
+          ...rows,
+          attendance_mode: 'onsite',
+          activator: rows['activator.id'] ? {
+            id: rows['activator.id'],
+            nama_lengkap: rows['activator.nama_lengkap'],
+            divisi: rows['activator.divisi']
+          } : null
+        };
+      }
+    }
 
     return res.status(200).json({
       status: 'success',
       data: {
         is_active: !!session,
-        attendance_mode: session ? session.attendance_mode : 'onsite',
+        attendance_mode: (session && session.attendance_mode) || 'onsite',
         session: session || null
       }
     });
   } catch (error) {
+    console.error('[SESSION STATUS ERROR]', error.message);
     return res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan saat mengecek status sesi presensi.'
