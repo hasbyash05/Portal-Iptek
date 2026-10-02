@@ -18,6 +18,11 @@ const AttendanceSession = sequelize.define('AttendanceSession', {
   activated_at: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  attendance_mode: {
+    type: DataTypes.ENUM('onsite', 'anywhere'),
+    defaultValue: 'onsite',
+    allowNull: false
   }
 }, {
   tableName: 'attendance_sessions',
@@ -25,3 +30,4 @@ const AttendanceSession = sequelize.define('AttendanceSession', {
 });
 
 module.exports = { AttendanceSession };
+

@@ -12,13 +12,6 @@ const submitAttendance = async (req, res) => {
       });
     }
 
-    if (latitude === undefined || longitude === undefined || latitude === null || longitude === null) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Gagal absensi: Koordinat lokasi GPS (latitude & longitude) wajib dikirimkan untuk verifikasi radius pertemuan.'
-      });
-    }
-
     // Validasi device fingerprint wajib
     if (!device_fingerprint) {
       return res.status(400).json({
@@ -28,25 +21,39 @@ const submitAttendance = async (req, res) => {
       });
     }
 
-    // Titik pertemuan: 7°02'02.4"S 110°22'07.8"E
-    const targetLat = -7.034000;
-    const targetLon = 110.36883333333333;
-    const toRad = (val) => (val * Math.PI) / 180;
-    const R = 6371000;
-    const dLat = toRad(targetLat - latitude);
-    const dLon = toRad(targetLon - longitude);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(latitude)) * Math.cos(toRad(targetLat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
+    // Cek mode presensi dari sesi aktif (di-set oleh middleware checkAttendanceActive)
+    const currentMode = req.attendanceSession ? req.attendanceSession.attendance_mode : 'onsite';
 
-    if (distance > 100) {
-      return res.status(403).json({
-        status: 'error',
-        message: `Gagal presensi: Lokasi Anda (${distance.toFixed(1)} meter) berada di luar batas radius maksimal 100 meter dari titik koordinat pertemuan UKM Iptek (7\u00b002'02.4"S 110\u00b022'07.8"E).`
-      });
+    if (currentMode === 'onsite') {
+      // Mode Di Tempat: validasi GPS wajib
+      if (latitude === undefined || longitude === undefined || latitude === null || longitude === null) {
+        return res.status(400).json({
+          status: 'error',
+          message: 'Gagal absensi: Koordinat lokasi GPS (latitude & longitude) wajib dikirimkan untuk verifikasi radius pertemuan.'
+        });
+      }
+
+      // Titik pertemuan: 7\u00b002'02.4"S 110\u00b022'07.8"E
+      const targetLat = -7.034000;
+      const targetLon = 110.36883333333333;
+      const toRad = (val) => (val * Math.PI) / 180;
+      const R = 6371000;
+      const dLat = toRad(targetLat - latitude);
+      const dLon = toRad(targetLon - longitude);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(latitude)) * Math.cos(toRad(targetLat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distance = R * c;
+
+      if (distance > 100) {
+        return res.status(403).json({
+          status: 'error',
+          message: `Gagal presensi: Lokasi Anda (${distance.toFixed(1)} meter) berada di luar batas radius maksimal 100 meter dari titik koordinat pertemuan UKM Iptek (7\u00b002'02.4"S 110\u00b022'07.8"E).`
+        });
+      }
     }
+    // Mode Dimana Saja: skip validasi GPS, langsung lanjut
 
     const dateStr = getJakartaDateString();
     const userId = req.user.id;

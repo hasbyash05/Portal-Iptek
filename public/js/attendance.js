@@ -6,6 +6,7 @@ export async function loadSessionStatus() {
     const res = await fetchAuth(`${API_BASE}/attendance/session/status`);
     const data = await res.json();
     const isActive = data.data && data.data.is_active;
+    const attendanceMode = data.data ? data.data.attendance_mode : 'onsite';
 
     // Update badge Pengurus
     const badge = document.getElementById('session-status-badge');
@@ -26,9 +27,38 @@ export async function loadSessionStatus() {
     if (btnOpen) btnOpen.style.display = isActive ? 'none' : 'inline-flex';
     if (btnClose) btnClose.style.display = isActive ? 'inline-flex' : 'none';
 
+    // Update mode toggle UI (hanya tampil untuk Ketua saat sesi aktif)
+    const modeToggleWrap = document.getElementById('mode-toggle-wrap');
+    const btnModeOnsite = document.getElementById('btn-mode-onsite');
+    const btnModeAnywhere = document.getElementById('btn-mode-anywhere');
+    if (modeToggleWrap) {
+      modeToggleWrap.style.display = isActive ? 'flex' : 'none';
+    }
+    if (btnModeOnsite && btnModeAnywhere) {
+      if (attendanceMode === 'onsite') {
+        btnModeOnsite.classList.add('mode-active');
+        btnModeAnywhere.classList.remove('mode-active');
+      } else {
+        btnModeAnywhere.classList.add('mode-active');
+        btnModeOnsite.classList.remove('mode-active');
+      }
+    }
+
+    // Update mode indicator di sisi Pengurus
+    const modeIndicator = document.getElementById('pengurus-mode-indicator');
+    if (modeIndicator && isActive) {
+      const modeLabel = attendanceMode === 'onsite' ? 'Di Tempat (GPS 100m)' : 'Dimana Saja';
+      const modeIcon = attendanceMode === 'onsite' ? 'fa-location-dot' : 'fa-globe';
+      modeIndicator.innerHTML = `<span style="font-size: 0.8rem; font-weight: 600; color: #4b5563;"><i class="fa-solid ${modeIcon}"></i> Mode: ${modeLabel}</span>`;
+      modeIndicator.style.display = 'block';
+    } else if (modeIndicator) {
+      modeIndicator.style.display = 'none';
+    }
+
     // Update status di sisi Anggota
     const anggotaStatus = document.getElementById('anggota-session-status');
     const btnSubmit = document.getElementById('btn-submit-absensi');
+    const anggotaModeInfo = document.getElementById('anggota-mode-info');
 
     if (anggotaStatus) {
       if (isActive) {
@@ -40,7 +70,29 @@ export async function loadSessionStatus() {
         anggotaStatus.innerHTML = `<p style="color: #991b1b; font-size: 0.95rem; margin: 0; font-weight: 600;"><i class="fa-solid fa-circle-xmark"></i> Sesi presensi sedang <strong>DITUTUP</strong>. Silakan tunggu Pengurus membuka sesi presensi.</p>`;
       }
     }
+
+    // Update info mode di sisi anggota
+    if (anggotaModeInfo) {
+      if (isActive) {
+        if (attendanceMode === 'onsite') {
+          anggotaModeInfo.innerHTML = `<div style="padding: 0.75rem 1rem; background: #f8f9fa; border-radius: 6px; margin-bottom: 1rem;">
+            <p style="margin: 0; font-size: 0.9rem; color: #4b5563;"><i class="fa-solid fa-location-dot" style="color: #18181b;"></i> <strong>Mode: Di Tempat</strong> &mdash; Anda harus berada dalam radius 100 meter dari titik pertemuan.</p>
+          </div>`;
+        } else {
+          anggotaModeInfo.innerHTML = `<div style="padding: 0.75rem 1rem; background: #f0f9ff; border-radius: 6px; margin-bottom: 1rem;">
+            <p style="margin: 0; font-size: 0.9rem; color: #0c4a6e;"><i class="fa-solid fa-globe" style="color: #0369a1;"></i> <strong>Mode: Dimana Saja</strong> &mdash; Anda dapat melakukan presensi dari lokasi manapun.</p>
+          </div>`;
+        }
+        anggotaModeInfo.style.display = 'block';
+      } else {
+        anggotaModeInfo.style.display = 'none';
+      }
+    }
+
     if (btnSubmit) btnSubmit.disabled = !isActive;
+
+    // Simpan mode ke window agar bisa diakses saat submit
+    window._attendanceMode = attendanceMode;
 
     return isActive;
   } catch (err) {
@@ -55,6 +107,22 @@ export async function toggleSession(action) {
     const res = await fetchAuth(`${API_BASE}${endpoint}`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mengubah status sesi');
+    alert(data.message);
+    loadSessionStatus();
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}
+
+export async function setAttendanceMode(mode) {
+  try {
+    const res = await fetchAuth(`${API_BASE}/attendance/session/mode`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mode })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal mengubah mode presensi');
     alert(data.message);
     loadSessionStatus();
   } catch (err) {
@@ -113,74 +181,104 @@ export async function submitAbsensiAnggota(e) {
     return;
   }
 
-  if (!navigator.geolocation) {
-    alert('Error: Browser HP Anda tidak mendukung fitur Geolocation atau memblokirnya karena akses lewat jaringan lokal HTTP tanpa enkripsi (HTTPS).');
-    return;
-  }
-
   const submitBtn = e.target.querySelector('button[type="submit"]');
   const originalText = submitBtn ? submitBtn.textContent : 'Kirim Presensi Sekarang';
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Memeriksa Lokasi GPS...';
+    submitBtn.textContent = 'Memproses Presensi...';
   }
 
   try {
-    let position;
-    try {
-      position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
+    const currentMode = window._attendanceMode || 'onsite';
+    let latitude = null;
+    let longitude = null;
+
+    if (currentMode === 'onsite') {
+      // Mode Di Tempat: wajib GPS
+      if (!navigator.geolocation) {
+        alert('Error: Browser HP Anda tidak mendukung fitur Geolocation atau memblokirnya karena akses lewat jaringan lokal HTTP tanpa enkripsi (HTTPS).');
+        return;
+      }
+
+      if (submitBtn) submitBtn.textContent = 'Memeriksa Lokasi GPS...';
+
+      let position;
+      try {
+        position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+          });
         });
-      });
-    } catch (gpsErr) {
-      console.warn('GPS akurasi tinggi gagal (ruangan tertutup/sinyal lemah), mencoba akurasi jaringan Wi-Fi/Seluler...', gpsErr);
-      if (gpsErr.code === 1) throw gpsErr;
-      position = await new Promise((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: false,
-          timeout: 15000,
-          maximumAge: 60000
+      } catch (gpsErr) {
+        console.warn('GPS akurasi tinggi gagal (ruangan tertutup/sinyal lemah), mencoba akurasi jaringan Wi-Fi/Seluler...', gpsErr);
+        if (gpsErr.code === 1) throw gpsErr;
+        position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 15000,
+            maximumAge: 60000
+          });
         });
-      });
+      }
+
+      latitude = position.coords.latitude;
+      longitude = position.coords.longitude;
+
+      // Titik koordinat pertemuan: 7\u00b002'02.4"S 110\u00b022'07.8"E
+      const targetLat = -7.034000;
+      const targetLon = 110.36883333333333;
+
+      // Haversine formula untuk menghitung jarak dalam meter
+      const toRad = (value) => (value * Math.PI) / 180;
+      const R = 6371000; // Radius Bumi dalam meter
+      const dLat = toRad(targetLat - latitude);
+      const dLon = toRad(targetLon - longitude);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(toRad(latitude)) * Math.cos(toRad(targetLat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distance = R * c; // dalam meter
+
+      if (distance > 100) {
+        throw new Error(`Gagal presensi: Lokasi Anda (${distance.toFixed(1)} meter) berada di luar radius maksimal 100 meter dari titik pertemuan.`);
+      }
     }
-
-    const latitude = position.coords.latitude;
-    const longitude = position.coords.longitude;
-
-    // Titik koordinat pertemuan: 7°02'02.4"S 110°22'07.8"E
-    const targetLat = -7.034000;
-    const targetLon = 110.36883333333333;
-
-    // Haversine formula untuk menghitung jarak dalam meter
-    const toRad = (value) => (value * Math.PI) / 180;
-    const R = 6371000; // Radius Bumi dalam meter
-    const dLat = toRad(targetLat - latitude);
-    const dLon = toRad(targetLon - longitude);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(latitude)) * Math.cos(toRad(targetLat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c; // dalam meter
-
-    if (distance > 100) {
-      throw new Error(`Gagal presensi: Lokasi Anda (${distance.toFixed(1)} meter) berada di luar radius maksimal 100 meter dari titik pertemuan.`);
-    }
+    // Mode Dimana Saja: tidak perlu GPS
 
     if (submitBtn) submitBtn.textContent = 'Mengirim Presensi...';
 
     const fingerprint = await generateDeviceFingerprint();
+    const bodyPayload = { status, device_fingerprint: fingerprint };
+    if (latitude !== null && longitude !== null) {
+      bodyPayload.latitude = latitude;
+      bodyPayload.longitude = longitude;
+    }
+
     const res = await fetchAuth(`${API_BASE}/attendance`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, latitude, longitude, device_fingerprint: fingerprint })
+      body: JSON.stringify(bodyPayload)
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal mencatat presensi');
 
-    alert(`Presensi hari ini berhasil dicatat dengan status: ${status.toUpperCase()} (Terverifikasi dalam radius ${distance.toFixed(1)} meter dari titik pertemuan)`);
+    if (currentMode === 'onsite') {
+      // Hitung distance untuk pesan
+      const targetLat = -7.034000;
+      const targetLon = 110.36883333333333;
+      const toRad = (value) => (value * Math.PI) / 180;
+      const R = 6371000;
+      const dLat = toRad(targetLat - latitude);
+      const dLon = toRad(targetLon - longitude);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(latitude)) * Math.cos(toRad(targetLat)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distance = R * c;
+      alert(`Presensi hari ini berhasil dicatat dengan status: ${status.toUpperCase()} (Terverifikasi dalam radius ${distance.toFixed(1)} meter dari titik pertemuan)`);
+    } else {
+      alert(`Presensi hari ini berhasil dicatat dengan status: ${status.toUpperCase()} (Mode: Dimana Saja)`);
+    }
     loadAnggotaAttendance();
   } catch (err) {
     let msg = err.message;
@@ -188,7 +286,7 @@ export async function submitAbsensiAnggota(e) {
       if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
         msg = `Browser HP memblokir pop-up izin lokasi karena Anda mengakses lewat IP LAN HTTP (${window.location.origin}) tanpa HTTPS.
 
-🛠️ CARA AGAR HP BISA IZIN LOKASI DI CHROME:
+CARA AGAR HP BISA IZIN LOKASI DI CHROME:
 1. Buka tab baru di Chrome HP, ketik: chrome://flags
 2. Cari di kolom search: Insecure origins treated as secure
 3. Ubah jadi ENABLED, lalu isi kolom dengan: ${window.location.origin}
@@ -200,9 +298,7 @@ export async function submitAbsensiAnggota(e) {
     }
     else if (err.code === 2) msg = 'Sinyal GPS tidak ditemukan oleh perangkat HP Anda. Pastikan fitur Lokasi/GPS di HP Anda dalam keadaan aktif.';
     else if (err.code === 3) msg = 'Waktu pencarian sinyal GPS habis (timeout). Sinyal satelit terhalang gedung/ruangan. Coba lagi di dekat jendela atau area terbuka.';
-    alert(`PEMBERITAHUAN LOKASI:
-
-${msg}`);
+    alert(`PEMBERITAHUAN LOKASI:\n\n${msg}`);
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -232,4 +328,3 @@ export async function loadAnggotaAttendance() {
     console.error('Gagal memuat absensi anggota:', err);
   }
 }
-

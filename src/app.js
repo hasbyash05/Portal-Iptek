@@ -9,21 +9,29 @@ const apiRoutes = require('./routes');
 
 const app = express();
 
+// Trust proxy agar express-rate-limit membaca IP asli pengguna
+// (wajib jika di belakang reverse proxy: cPanel Passenger, Nginx, dsb.)
+app.set('trust proxy', 1);
+
 // Helmet: HTTP security headers
 app.use(helmet({
   contentSecurityPolicy: false, // Dimatikan agar frontend statis tidak terblokir
   crossOriginEmbedderPolicy: false
 }));
 
-// Rate limiting khusus endpoint login (maks 10 percobaan per 15 menit per IP)
+// Rate limiting khusus endpoint login (maks 10 percobaan per 30 detik per IP)
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
+  windowMs: 30 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    // Ambil IP asli dari header proxy, fallback ke req.ip
+    return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+  },
   message: {
     status: 'error',
-    message: 'Terlalu banyak percobaan login. Silakan coba lagi setelah 15 menit.'
+    message: 'Terlalu banyak percobaan login. Silakan coba lagi setelah 30 detik.'
   }
 });
 app.use('/api/auth/login', loginLimiter);

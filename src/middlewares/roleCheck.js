@@ -50,6 +50,18 @@ const isKetuaWakil = (req, res, next) => {
   next();
 };
 
+const isKetua = (req, res, next) => {
+  const divisi = req.user.divisi ? req.user.divisi.toLowerCase() : '';
+  const isEligible = req.user.role === 'admin' || (req.user.role === 'pengurus' && divisi.includes('ketua') && !divisi.includes('wakil'));
+  if (!isEligible) {
+    return res.status(403).json({
+      status: 'error',
+      message: 'Akses ditolak. Hanya Ketua UKM / Admin yang dapat mengubah mode presensi.'
+    });
+  }
+  next();
+};
+
 const isBendahara = (req, res, next) => {
   const isEligible = req.user.role === 'admin' || (req.user.role === 'pengurus' && req.user.divisi && req.user.divisi.toLowerCase().includes('bendahara'));
   if (!isEligible) {
@@ -61,5 +73,5 @@ const isBendahara = (req, res, next) => {
   next();
 };
 
-module.exports = { isAdmin, isPengurus, isAnggota, isOperasional, isKetuaWakil, isBendahara };
+module.exports = { isAdmin, isPengurus, isAnggota, isOperasional, isKetuaWakil, isKetua, isBendahara };
 

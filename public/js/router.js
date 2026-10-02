@@ -88,6 +88,7 @@ export function switchTab(tabName, user) {
 
   const isOperasional = role === 'admin' || (role === 'pengurus' && divisi.includes('operasional'));
   const isKetuaWakil = role === 'admin' || (role === 'pengurus' && (divisi.includes('ketua') || divisi.includes('wakil')));
+  const isKetua = role === 'admin' || (role === 'pengurus' && divisi.includes('ketua') && !divisi.includes('wakil'));
   const isBendahara = role === 'admin' || (role === 'pengurus' && divisi.includes('bendahara'));
   const isPengurusOrAdmin = role === 'admin' || role === 'pengurus';
 
@@ -99,6 +100,9 @@ export function switchTab(tabName, user) {
 
   if (el('view-overview-pengurus')) el('view-overview-pengurus').style.display = isPengurusOrAdmin ? 'block' : 'none';
   if (el('view-overview-anggota')) el('view-overview-anggota').style.display = isPengurusOrAdmin ? 'none' : 'block';
+
+  // Mode toggle hanya tampil untuk Ketua UKM (bukan Wakil)
+  if (el('mode-toggle-wrap')) el('mode-toggle-wrap').style.display = isKetua ? 'flex' : 'none';
 
   if (tabName === 'overview') {
     if (isPengurusOrAdmin) loadPengurusOverview();

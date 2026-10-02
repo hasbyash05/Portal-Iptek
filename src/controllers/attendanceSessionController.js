@@ -20,7 +20,8 @@ const openSession = async (req, res) => {
     const session = await AttendanceSession.create({
       is_active: true,
       activated_by: req.user.id,
-      activated_at: new Date()
+      activated_at: new Date(),
+      attendance_mode: 'onsite'
     });
 
     return res.status(201).json({
@@ -68,6 +69,46 @@ const closeSession = async (req, res) => {
 };
 
 /**
+ * PUT /api/attendance/session/mode
+ * Ketua mengubah mode presensi (onsite / anywhere).
+ */
+const setAttendanceMode = async (req, res) => {
+  try {
+    const { mode } = req.body;
+    if (!mode || !['onsite', 'anywhere'].includes(mode)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Mode tidak valid. Pilihan: onsite (di tempat) atau anywhere (dimana saja).'
+      });
+    }
+
+    const session = await AttendanceSession.findOne({ where: { is_active: true } });
+    if (!session) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Tidak ada sesi presensi yang sedang aktif. Buka sesi terlebih dahulu sebelum mengubah mode.',
+        code: 'NO_ACTIVE_SESSION'
+      });
+    }
+
+    session.attendance_mode = mode;
+    await session.save();
+
+    const modeLabel = mode === 'onsite' ? 'Di Tempat (GPS 100m)' : 'Dimana Saja';
+    return res.status(200).json({
+      status: 'success',
+      message: `Mode presensi berhasil diubah ke: ${modeLabel}.`,
+      data: { attendance_mode: mode }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Terjadi kesalahan saat mengubah mode presensi.'
+    });
+  }
+};
+
+/**
  * GET /api/attendance/session/status
  * Mengecek status sesi presensi saat ini (semua user yang login).
  */
@@ -86,6 +127,7 @@ const getSessionStatus = async (req, res) => {
       status: 'success',
       data: {
         is_active: !!session,
+        attendance_mode: session ? session.attendance_mode : 'onsite',
         session: session || null
       }
     });
@@ -97,4 +139,5 @@ const getSessionStatus = async (req, res) => {
   }
 };
 
-module.exports = { openSession, closeSession, getSessionStatus };
+module.exports = { openSession, closeSession, setAttendanceMode, getSessionStatus };
+

@@ -39,6 +39,7 @@ window.deleteMateri = Academic.deleteMateri;
 window.loadAnggotaMateri = Academic.loadAnggotaMateri;
 window.loadSessionStatus = Attendance.loadSessionStatus;
 window.toggleSession = Attendance.toggleSession;
+window.setAttendanceMode = Attendance.setAttendanceMode;
 window.loadPengurusAbsensi = Attendance.loadPengurusAbsensi;
 window.filterAbsensi = Attendance.filterAbsensi;
 window.submitAbsensiAnggota = Attendance.submitAbsensiAnggota;
