@@ -91,8 +91,20 @@ const setAttendanceMode = async (req, res) => {
       });
     }
 
-    session.attendance_mode = mode;
-    await session.save();
+    try {
+      session.attendance_mode = mode;
+      await session.save();
+    } catch (saveErr) {
+      console.warn('[SESSION] Gagal update via model, mencoba migrasi kolom & raw SQL:', saveErr.message);
+      try {
+        await sequelize.query("ALTER TABLE `attendance_sessions` ADD COLUMN `attendance_mode` ENUM('onsite','anywhere') NOT NULL DEFAULT 'onsite'");
+      } catch (alterErr) {
+        // Kolom mungkin sudah ada
+      }
+      await sequelize.query("UPDATE `attendance_sessions` SET `attendance_mode` = :mode WHERE `id` = :id", {
+        replacements: { mode, id: session.id }
+      });
+    }
 
     const modeLabel = mode === 'onsite' ? 'Di Tempat (GPS 100m)' : 'Dimana Saja';
     return res.status(200).json({
@@ -101,6 +113,7 @@ const setAttendanceMode = async (req, res) => {
       data: { attendance_mode: mode }
     });
   } catch (error) {
+    console.error('[SESSION ERROR] setAttendanceMode:', error);
     return res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan saat mengubah mode presensi.'

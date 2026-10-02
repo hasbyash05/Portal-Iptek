@@ -1,13 +1,21 @@
-const CACHE_NAME = 'iptek-pwa-v2';
+const CACHE_NAME = 'iptek-pwa-v4';
 const urlsToCache = [
   '/',
   '/index.html',
   '/css/style.css',
+  '/js/main.js',
+  '/js/auth.js',
+  '/js/router.js',
+  '/js/academic.js',
+  '/js/attendance.js',
+  '/js/finance.js',
+  '/js/dashboard.js',
   '/js/app.js',
   '/img/favicon.svg'
 ];
 
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
@@ -67,6 +75,6 @@ self.addEventListener('activate', event => {
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
 });

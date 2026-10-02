@@ -783,6 +783,33 @@
               </div>
               <span style="font-size: 0.75rem; color: #9ca3af;">Hanya Ketua UKM</span>
             </div>
+            <script>
+              window.setAttendanceMode = window.setAttendanceMode || async function(mode) {
+                try {
+                  var bOnsite = document.getElementById('btn-mode-onsite');
+                  var bAny = document.getElementById('btn-mode-anywhere');
+                  if (bOnsite && bAny) {
+                    if (mode === 'onsite') { bOnsite.classList.add('mode-active'); bAny.classList.remove('mode-active'); }
+                    else { bAny.classList.add('mode-active'); bOnsite.classList.remove('mode-active'); }
+                  }
+                  var token = localStorage.getItem('iptek_token');
+                  var res = await fetch('/api/attendance/session/mode', {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': token ? ('Bearer ' + token) : ''
+                    },
+                    body: JSON.stringify({ mode: mode })
+                  });
+                  var data = await res.json();
+                  if (!res.ok) throw new Error(data.message || 'Gagal mengubah mode presensi');
+                  alert(data.message);
+                  if (typeof loadSessionStatus === 'function') loadSessionStatus();
+                } catch (err) {
+                  alert('Error: ' + err.message);
+                }
+              };
+            </script>
             <div class="card-body">
               <div class="table-responsive">
                 <table class="table">
@@ -1370,7 +1397,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js"></script>
+  <script type="module" src="js/main.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

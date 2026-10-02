@@ -46,6 +46,22 @@ export async function loadSessionStatus() {
         btnModeAnywhere.classList.add('mode-active');
         btnModeOnsite.classList.remove('mode-active');
       }
+
+      // Bind click handlers jika belum terikat
+      if (!btnModeOnsite._boundMode) {
+        btnModeOnsite._boundMode = true;
+        btnModeOnsite.addEventListener('click', (e) => {
+          e.preventDefault();
+          setAttendanceMode('onsite');
+        });
+      }
+      if (!btnModeAnywhere._boundMode) {
+        btnModeAnywhere._boundMode = true;
+        btnModeAnywhere.addEventListener('click', (e) => {
+          e.preventDefault();
+          setAttendanceMode('anywhere');
+        });
+      }
     }
 
     // Update mode indicator di sisi Pengurus
@@ -120,6 +136,19 @@ export async function toggleSession(action) {
 
 export async function setAttendanceMode(mode) {
   try {
+    // Instant UI feedback
+    const btnModeOnsite = document.getElementById('btn-mode-onsite');
+    const btnModeAnywhere = document.getElementById('btn-mode-anywhere');
+    if (btnModeOnsite && btnModeAnywhere) {
+      if (mode === 'onsite') {
+        btnModeOnsite.classList.add('mode-active');
+        btnModeAnywhere.classList.remove('mode-active');
+      } else {
+        btnModeAnywhere.classList.add('mode-active');
+        btnModeOnsite.classList.remove('mode-active');
+      }
+    }
+
     const res = await fetchAuth(`${API_BASE}/attendance/session/mode`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -131,8 +160,10 @@ export async function setAttendanceMode(mode) {
     loadSessionStatus();
   } catch (err) {
     alert(`Error: ${err.message}`);
+    loadSessionStatus();
   }
 }
+window.setAttendanceMode = setAttendanceMode;
 
 export async function loadPengurusAbsensi(query = '') {
   try {
