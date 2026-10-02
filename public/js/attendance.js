@@ -115,50 +115,10 @@ export async function loadSessionStatus() {
       }
     }
 
-    // Update info mode & panduan dinamis di sisi anggota
+    // Hapus box mode info di atas sesuai instruksi user
     if (anggotaModeInfo) {
-      if (isActive) {
-        if (attendanceMode === 'onsite') {
-          anggotaModeInfo.innerHTML = `
-            <div class="mode-card-badge">
-              <div class="mode-card-icon">
-                <i class="fa-solid fa-location-dot"></i>
-              </div>
-              <div class="mode-card-content">
-                <div class="mode-card-header">
-                  <h5 class="mode-card-title">Mode: Di Tempat</h5>
-                  <span class="mode-pill-badge">GPS Radius 100M</span>
-                </div>
-                <p class="mode-card-desc">Anda wajib berada dalam radius maksimal 100 meter dari titik koordinat pertemuan untuk mencatatkan kehadiran.</p>
-                <div class="mode-card-meta">
-                  <span><i class="fa-solid fa-crosshairs"></i> Radius Maks: 100m</span>
-                  <span><i class="fa-solid fa-location-crosshairs"></i> Deteksi Koordinat Aktif</span>
-                </div>
-              </div>
-            </div>`;
-        } else {
-          anggotaModeInfo.innerHTML = `
-            <div class="mode-card-badge">
-              <div class="mode-card-icon">
-                <i class="fa-solid fa-globe"></i>
-              </div>
-              <div class="mode-card-content">
-                <div class="mode-card-header">
-                  <h5 class="mode-card-title">Mode: Dimana Saja</h5>
-                  <span class="mode-pill-badge">Akses Jarak Jauh</span>
-                </div>
-                <p class="mode-card-desc">Ketua UKM mengaktifkan mode presensi jarak jauh. Anda dapat mencatatkan presensi dari lokasi manapun tanpa batasan radius GPS.</p>
-                <div class="mode-card-meta">
-                  <span style="color: #18181b; font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Bebas Radius GPS</span>
-                  <span><i class="fa-solid fa-laptop"></i> Presensi Mandiri</span>
-                </div>
-              </div>
-            </div>`;
-        }
-        anggotaModeInfo.style.display = 'block';
-      } else {
-        anggotaModeInfo.style.display = 'none';
-      }
+      anggotaModeInfo.style.display = 'none';
+      anggotaModeInfo.innerHTML = '';
     }
 
     // Update teks ketentuan & pilihan dropdown sesuai mode
@@ -167,17 +127,21 @@ export async function loadSessionStatus() {
     const selectStatusAbsen = document.getElementById('anggota-status-absen');
 
     if (attendanceMode === 'anywhere') {
-      if (ketentuanTitle) ketentuanTitle.textContent = 'Presensi Bebas Lokasi (Dimana Saja)';
+      if (ketentuanTitle) {
+        ketentuanTitle.innerHTML = '<i class="fa-solid fa-globe" style="margin-right: 6px;"></i> Presensi Dimana Saja';
+      }
       if (ketentuanDesc) {
-        ketentuanDesc.innerHTML = 'Sesi pertemuan saat ini dibuka dalam <strong style="color: #18181b;">Mode Dimana Saja</strong> oleh Ketua UKM. Anda dapat langsung mengirimkan absensi secara fleksibel tanpa verifikasi radius jarak GPS.';
+        ketentuanDesc.innerHTML = 'Presensi saat ini dibuka dalam mode <strong style="color: #18181b;">Dimana Saja</strong> oleh Ketua UKM. Anda dapat mencatatkan kehadiran secara langsung dari lokasi manapun tanpa batasan radius GPS.';
       }
       if (selectStatusAbsen) {
         selectStatusAbsen.innerHTML = '<option value="hadir">Hadir (Presensi Dimana Saja)</option>';
       }
     } else {
-      if (ketentuanTitle) ketentuanTitle.textContent = 'Verifikasi GPS (Maks. 100 Meter)';
+      if (ketentuanTitle) {
+        ketentuanTitle.innerHTML = '<i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> Verifikasi GPS (Maks. 100 Meter)';
+      }
       if (ketentuanDesc) {
-        ketentuanDesc.innerHTML = 'Presensi dibuka dalam <strong style="color: #18181b;">Mode Di Tempat</strong>. Sistem secara otomatis memeriksa GPS, Anda harus berada dalam radius maksimal <strong style="color: #18181b;">100 meter</strong> dari titik pertemuan.';
+        ketentuanDesc.innerHTML = 'Presensi hanya dibuka saat sesi diaktifkan oleh <strong style="color: #18181b;">Pengurus</strong>. Sistem secara otomatis memeriksa GPS, Anda harus berada dalam radius maksimal <strong style="color: #18181b;">100 meter</strong> dari titik pertemuan.';
       }
       if (selectStatusAbsen) {
         selectStatusAbsen.innerHTML = '<option value="hadir">Hadir (Verifikasi GPS Radius 100m)</option>';
@@ -211,7 +175,7 @@ export async function toggleSession(action) {
 
 export async function setAttendanceMode(mode) {
   try {
-    // Instant UI feedback
+    // Instant UI feedback pada toggle button
     const btnModeOnsite = document.getElementById('btn-mode-onsite');
     const btnModeAnywhere = document.getElementById('btn-mode-anywhere');
     if (btnModeOnsite && btnModeAnywhere) {
@@ -222,6 +186,20 @@ export async function setAttendanceMode(mode) {
         btnModeAnywhere.classList.add('mode-active');
         btnModeOnsite.classList.remove('mode-active');
       }
+    }
+
+    // Instant UI feedback pada teks Ketentuan & Dropdown Status
+    const kTitle = document.getElementById('ketentuan-title');
+    const kDesc = document.getElementById('ketentuan-desc');
+    const selOpt = document.getElementById('anggota-status-absen');
+    if (mode === 'anywhere') {
+      if (kTitle) kTitle.innerHTML = '<i class="fa-solid fa-globe" style="margin-right: 6px;"></i> Presensi Dimana Saja';
+      if (kDesc) kDesc.innerHTML = 'Presensi saat ini dibuka dalam mode <strong style="color: #18181b;">Dimana Saja</strong> oleh Ketua UKM. Anda dapat mencatatkan kehadiran secara langsung dari lokasi manapun tanpa batasan radius GPS.';
+      if (selOpt) selOpt.innerHTML = '<option value="hadir">Hadir (Presensi Dimana Saja)</option>';
+    } else {
+      if (kTitle) kTitle.innerHTML = '<i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> Verifikasi GPS (Maks. 100 Meter)';
+      if (kDesc) kDesc.innerHTML = 'Presensi hanya dibuka saat sesi diaktifkan oleh <strong style="color: #18181b;">Pengurus</strong>. Sistem secara otomatis memeriksa GPS, Anda harus berada dalam radius maksimal <strong style="color: #18181b;">100 meter</strong> dari titik pertemuan.';
+      if (selOpt) selOpt.innerHTML = '<option value="hadir">Hadir (Verifikasi GPS Radius 100m)</option>';
     }
 
     const res = await fetchAuth(`${API_BASE}/attendance/session/mode`, {

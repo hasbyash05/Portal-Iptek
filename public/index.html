@@ -662,7 +662,6 @@
                   <p style="color: #4b5563; font-size: 0.95rem; margin: 0;"><i class="fa-solid fa-spinner fa-spin"></i>
                     Memeriksa status sesi presensi...</p>
                 </div>
-                <div id="anggota-mode-info" style="display: none;"></div>
                 <div style="margin-bottom: 2rem;">
                   <span
                     style="font-family: 'Outfit', sans-serif; font-size: 0.8rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 0.3rem;">Ketentuan
@@ -789,6 +788,18 @@
                   if (bOnsite && bAny) {
                     if (mode === 'onsite') { bOnsite.classList.add('mode-active'); bAny.classList.remove('mode-active'); }
                     else { bAny.classList.add('mode-active'); bOnsite.classList.remove('mode-active'); }
+                  }
+                  var kTitle = document.getElementById('ketentuan-title');
+                  var kDesc = document.getElementById('ketentuan-desc');
+                  var selOpt = document.getElementById('anggota-status-absen');
+                  if (mode === 'anywhere') {
+                    if (kTitle) kTitle.innerHTML = '<i class="fa-solid fa-globe" style="margin-right: 6px;"></i> Presensi Dimana Saja';
+                    if (kDesc) kDesc.innerHTML = 'Presensi saat ini dibuka dalam mode <strong style="color: #18181b;">Dimana Saja</strong> oleh Ketua UKM. Anda dapat mencatatkan kehadiran secara langsung dari lokasi manapun tanpa batasan radius GPS.';
+                    if (selOpt) selOpt.innerHTML = '<option value="hadir">Hadir (Presensi Dimana Saja)</option>';
+                  } else {
+                    if (kTitle) kTitle.innerHTML = '<i class="fa-solid fa-location-dot" style="margin-right: 6px;"></i> Verifikasi GPS (Maks. 100 Meter)';
+                    if (kDesc) kDesc.innerHTML = 'Presensi hanya dibuka saat sesi diaktifkan oleh <strong style="color: #18181b;">Pengurus</strong>. Sistem secara otomatis memeriksa GPS, Anda harus berada dalam radius maksimal <strong style="color: #18181b;">100 meter</strong> dari titik pertemuan.';
+                    if (selOpt) selOpt.innerHTML = '<option value="hadir">Hadir (Verifikasi GPS Radius 100m)</option>';
                   }
                   var token = localStorage.getItem('iptek_token');
                   var res = await fetch('/api/attendance/session/mode', {
