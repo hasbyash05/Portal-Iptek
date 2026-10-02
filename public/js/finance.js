@@ -161,10 +161,7 @@ export async function payQrisFromModal() {
     if (!res.ok) throw new Error(data.message || 'Gagal mengirim pembayaran QRIS');
 
     if (fileInput) fileInput.value = '';
-    alert('PEMBAYARAN QRIS BERHASIL DIKIRIM!
-
-Status: MENUNGGU VERIFIKASI BENDAHARA.
-Silakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas agar Anda dapat melakukan presensi.');
+    alert("PEMBAYARAN QRIS BERHASIL DIKIRIM!\n\nStatus: MENUNGGU VERIFIKASI BENDAHARA.\nSilakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas agar Anda dapat melakukan presensi.");
     checkKasAndUnlockAttendance();
   } catch (err) {
     alert(`Gagal: ${err.message}`);
@@ -209,10 +206,7 @@ export async function submitKasQris(e) {
     if (!res.ok) throw new Error(data.message || 'Gagal mengajukan kas');
 
     if (fileInput) fileInput.value = '';
-    alert('PEMBAYARAN QRIS BERHASIL DIKIRIM!
-
-Status: MENUNGGU VERIFIKASI BENDAHARA.
-Silakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas.');
+    alert("PEMBAYARAN QRIS BERHASIL DIKIRIM!\n\nStatus: MENUNGGU VERIFIKASI BENDAHARA.\nSilakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas.");
     loadAnggotaKas();
   } catch (err) {
     alert(`Error: ${err.message}`);
@@ -373,8 +367,7 @@ export async function exportKasCsv() {
         ].join(',');
       });
 
-      const csvContent = [headers.join(','), ...rows].join('
-');
+      const csvContent = [headers.join(','), ...rows].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
 
