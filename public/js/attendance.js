@@ -32,7 +32,11 @@ export async function loadSessionStatus() {
     const btnModeOnsite = document.getElementById('btn-mode-onsite');
     const btnModeAnywhere = document.getElementById('btn-mode-anywhere');
     if (modeToggleWrap) {
-      modeToggleWrap.style.display = isActive ? 'flex' : 'none';
+      const userStr = localStorage.getItem('iptek_user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const divisi = user && user.divisi ? user.divisi.toLowerCase() : '';
+      const isKetua = (user && user.role === 'admin') || (user && user.role === 'pengurus' && divisi.includes('ketua') && !divisi.includes('wakil'));
+      modeToggleWrap.style.display = (isActive && isKetua) ? 'flex' : 'none';
     }
     if (btnModeOnsite && btnModeAnywhere) {
       if (attendanceMode === 'onsite') {
