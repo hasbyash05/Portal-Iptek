@@ -1,5 +1,5 @@
 import { fetchAuth } from './auth.js';
-import { checkKasAndUnlockAttendance, switchAnggotaTab } from './router.js';
+import { checkKasAndUnlockAttendance, switchNavTab, switchAnggotaTab } from './router.js';
 export const API_BASE = '/api';
 
 export async function loadKasReport(statusFilter = '') {
@@ -162,7 +162,7 @@ export async function payQrisFromModal() {
 
     if (fileInput) fileInput.value = '';
     alert("PEMBAYARAN QRIS BERHASIL DIKIRIM!\n\nStatus: MENUNGGU VERIFIKASI BENDAHARA.\nSilakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas agar Anda dapat melakukan presensi.");
-    checkKasAndUnlockAttendance();
+    closeLockModalAndGoHome();
   } catch (err) {
     alert(`Gagal: ${err.message}`);
   } finally {
@@ -174,8 +174,13 @@ export async function payQrisFromModal() {
 }
 
 export function closeLockModalAndGoHome() {
-  document.getElementById('qris-lock-modal').style.display = 'none';
-  switchAnggotaTab('overview');
+  const modal = document.getElementById('qris-lock-modal');
+  if (modal) modal.style.display = 'none';
+  if (typeof switchNavTab === 'function') {
+    switchNavTab('overview');
+  } else if (typeof window.switchNavTab === 'function') {
+    window.switchNavTab('overview');
+  }
 }
 
 export async function submitKasQris(e) {

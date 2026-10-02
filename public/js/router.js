@@ -129,25 +129,7 @@ export function switchTab(tabName, user) {
 }
 
 export function switchAnggotaTab(tabName) {
-  if (tabName === 'absensi') {
-    checkKasAndUnlockAttendance();
-    return;
-  }
-
-  document.querySelectorAll('#anggota-view .tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('#anggota-view .tab-content').forEach(c => c.style.display = 'none');
-
-  const tabs = ['overview', 'materi', 'absensi', 'kas'];
-  const idx = tabs.indexOf(tabName);
-  if (idx >= 0) {
-    const btns = document.querySelectorAll('#anggota-view .tab-btn');
-    if (btns[idx]) btns[idx].classList.add('active');
-    const contentEl = document.getElementById(`a-tab-${tabName}`);
-    if (contentEl) contentEl.style.display = 'block';
-  }
-
-  if (tabName === 'materi') loadAnggotaMateri();
-  if (tabName === 'kas') loadAnggotaKas();
+  switchNavTab(tabName);
 }
 
 export async function checkKasAndUnlockAttendance() {

@@ -1301,13 +1301,18 @@
     <!-- ============================================== -->
     <!-- MODAL GERBANG KUNCI QRIS (TIDAK BISA DITUTUP) -->
     <!-- ============================================== -->
-    <div id="qris-lock-modal" class="modal-overlay"
+    <div id="qris-lock-modal" class="modal-overlay" onclick="if(event.target === this) closeLockModalAndGoHome()"
       style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(24, 24, 27, 0.95); z-index: 9999; align-items: center; justify-content: center;">
       <div class="modal-content card"
-        style="max-height: 85vh; overflow-y: auto; max-width: 480px; width: 90%; padding: 2.5rem; text-align: center; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        style="position: relative; max-height: 85vh; overflow-y: auto; max-width: 480px; width: 90%; padding: 2.5rem; text-align: center; border: none; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+        <button type="button" onclick="closeLockModalAndGoHome()" aria-label="Tutup dan kembali ke beranda"
+          style="position: absolute; top: 1rem; right: 1rem; background: none; border: none; font-size: 1.25rem; color: #71717a; cursor: pointer; padding: 0.5rem; line-height: 1;"
+          onmouseover="this.style.color='#18181b'" onmouseout="this.style.color='#71717a'">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
         <div
-          style="width: 64px; height: 64px; background: #f8f9fa; color: #18181b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1rem;">
-
+          style="width: 64px; height: 64px; background: #f8f9fa; color: #18181b; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1rem;">
+          <i class="fa-solid fa-lock"></i>
         </div>
         <h2 style="color: #18181b; margin-bottom: 0.5rem;">GERBANG PRESENSI TERKUNCI</h2>
         <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">
