@@ -59,6 +59,7 @@ window.deleteExpense = Finance.deleteExpense;
 window.exportKasCsv = Finance.exportKasCsv;
 window.loadQrisConfig = Finance.loadQrisConfig;
 window.uploadQrisImage = Finance.uploadQrisImage;
+window.cleanupOldProofs = Finance.cleanupOldProofs;
 window.loadPengurusOverview = Dashboard.loadPengurusOverview;
 window.loadAnggotaOverview = Dashboard.loadAnggotaOverview;
 window.loadPengurusLaporan = Dashboard.loadPengurusLaporan;

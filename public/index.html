@@ -958,13 +958,13 @@
             </div>
           </div>
           <div class="card mb-4">
-            <div class="card-header">
-              <h3>Export Laporan Kas (Tahunan)</h3>
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <h3 style="margin: 0;">Export & Pengelolaan File Kas</h3>
             </div>
             <div class="card-body">
-              <div style="display: flex; gap: 1rem; align-items: flex-end; max-width: 400px;">
-                <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                  <label style="margin-bottom: 0.5rem; display: block;">Pilih Tahun</label>
+              <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                <div class="form-group" style="min-width: 160px; margin-bottom: 0;">
+                  <label style="margin-bottom: 0.5rem; display: block; font-size: 0.85rem; font-weight: 600;">Pilih Tahun</label>
                   <select id="export-kas-year" style="width: 100%; padding: 0.6rem; border: 1px solid var(--border-color); border-radius: 4px;">
                     <option value="2026">2026</option>
                     <option value="2025">2025</option>
@@ -974,6 +974,11 @@
                 <div>
                   <button class="btn btn-primary" onclick="exportKasCsv()">
                     <i class="fa-solid fa-file-csv"></i> Export CSV
+                  </button>
+                </div>
+                <div style="margin-left: auto;">
+                  <button class="btn btn-outline" onclick="cleanupOldProofs()" style="border-color: #e4e4e7; color: #18181b;" title="Bersihkan file screenshot bukti transfer bulan-bulan lalu untuk menghemat kapasitas hosting">
+                    <i class="fa-solid fa-broom"></i> Bersihkan Bukti Bulan Lalu
                   </button>
                 </div>
               </div>

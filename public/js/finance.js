@@ -532,3 +532,29 @@ export async function uploadQrisImage(e) {
   }
 }
 
+export async function cleanupOldProofs() {
+  if (!confirm('Bersihkan file screenshot bukti transfer bulan-bulan lalu dari server untuk menghemat kapasitas penyimpanan?\n\nCatatan: Status verifikasi lunas dan seluruh riwayat kas anggota di database tetap aman dan tidak terhapus.')) {
+    return;
+  }
+
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/cleanup-proofs`, {
+      method: 'POST'
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal membersihkan screenshot bukti lama');
+
+    alert(`Pembersihan Berhasil: ${data.message} (${data.deletedCount || 0} file dibersihkan).`);
+    const activeBtn = document.querySelector('.filter-buttons .btn.active');
+    let filterVal = '';
+    if (activeBtn) {
+      const txt = activeBtn.textContent.toLowerCase();
+      if (txt.includes('pending')) filterVal = 'pending';
+      else if (txt.includes('lunas')) filterVal = 'lunas';
+      else if (txt.includes('ditolak')) filterVal = 'ditolak';
+    }
+    loadKasReport(filterVal);
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  }
+}

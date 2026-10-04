@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { Op } = require('sequelize');
 const { Payment, User, KasExpense } = require('../models');
 const { verifyPaymentProof } = require('../services/aiVerificationService');
@@ -528,6 +530,96 @@ const verifyAllPendingWithAI = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/payments/cleanup-proofs
+ * Menghapus file fisik screenshot/dokumen bukti pembayaran bulan-bulan lalu
+ * untuk menghemat ruang penyimpanan server hosting.
+ * Catatan pembayaran dan status lunas tetap terjaga aman di database.
+ */
+const cleanupOldPaymentProofs = async (req, res) => {
+  try {
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    const proofsDir = path.join(__dirname, '../../public/uploads/proofs');
+    let deletedFilesCount = 0;
+    let updatedRecordsCount = 0;
+
+    // 1. Ambil pembayaran dari bulan/tahun sebelum bulan berjalan yang masih memiliki proof_path
+    const oldPayments = await Payment.findAll({
+      where: {
+        [Op.and]: [
+          {
+            [Op.or]: [
+              { year: { [Op.lt]: currentYear } },
+              {
+                year: currentYear,
+                month: { [Op.lt]: currentMonth }
+              }
+            ]
+          },
+          {
+            proof_path: { [Op.ne]: null }
+          }
+        ]
+      }
+    });
+
+    for (const p of oldPayments) {
+      if (p.proof_path) {
+        const fileName = path.basename(p.proof_path);
+        const fullPath = path.join(proofsDir, fileName);
+        if (fs.existsSync(fullPath)) {
+          try {
+            fs.unlinkSync(fullPath);
+            deletedFilesCount++;
+          } catch (e) {
+            console.warn(`Gagal menghapus file bukti ${fullPath}:`, e.message);
+          }
+        }
+        p.proof_path = null;
+        await p.save();
+        updatedRecordsCount++;
+      }
+    }
+
+    // 2. Bersihkan file yatim di folder uploads/proofs yang berumur lebih dari 30 hari
+    if (fs.existsSync(proofsDir)) {
+      const allFiles = fs.readdirSync(proofsDir);
+      const oneMonthAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+      for (const f of allFiles) {
+        const fullPath = path.join(proofsDir, f);
+        try {
+          const stat = fs.statSync(fullPath);
+          if (stat.mtimeMs < oneMonthAgo) {
+            fs.unlinkSync(fullPath);
+            deletedFilesCount++;
+          }
+        } catch (e) {
+          // Abaikan jika sudah terhapus
+        }
+      }
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: `Pembersihan selesai: ${deletedFilesCount} file screenshot bukti pembayaran bulan lalu telah dihapus dari server. Data keuangan dan status lunas tetap tersimpan aman.`,
+      data: {
+        deletedFilesCount,
+        updatedRecordsCount
+      }
+    });
+  } catch (error) {
+    console.error('[Cleanup Proofs Error]', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Gagal membersihkan bukti pembayaran lama.',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   submitPayment,
   checkStatus,
@@ -536,5 +628,7 @@ module.exports = {
   getReport,
   getTotalKas,
   verifyPaymentWithAI,
-  verifyAllPendingWithAI
+  verifyAllPendingWithAI,
+  cleanupOldPaymentProofs
 };
+
