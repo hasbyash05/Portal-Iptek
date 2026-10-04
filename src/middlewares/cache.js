@@ -1,6 +1,6 @@
 /**
- * In-Memory Server Caching Middleware
- * Mencegah beban database dan server berlebih saat banyak pengguna mengakses sistem secara bersamaan.
+ * In-Memory Server Caching Middleware (Zero Dependency)
+ * Mencegah beban database MySQL dan server berlebih saat banyak pengguna mengakses sistem secara bersamaan.
  */
 
 const memoryCache = new Map();
@@ -19,13 +19,15 @@ function cacheMiddleware(ttlSeconds = 15, keyGenerator = null) {
 
     const key = keyGenerator
       ? keyGenerator(req)
-      : `${req.baseUrl}${req.path}:${JSON.stringify(req.query)}:${req.user ? req.user.id : 'anon'}`;
+      : `${req.baseUrl || ''}${req.path || ''}:${JSON.stringify(req.query || {})}:${req.user ? req.user.id : 'anon'}`;
 
     const cached = memoryCache.get(key);
     const now = Date.now();
 
     if (cached && cached.expiry > now) {
-      res.setHeader('X-Server-Cache', 'HIT');
+      if (!res.headersSent) {
+        res.setHeader('X-Server-Cache', 'HIT');
+      }
       return res.status(cached.status || 200).json(cached.body);
     }
 
@@ -33,13 +35,25 @@ function cacheMiddleware(ttlSeconds = 15, keyGenerator = null) {
     const originalJson = res.json.bind(res);
     res.json = (body) => {
       if (res.statusCode >= 200 && res.statusCode < 300) {
+        // Pruning berkala jika ukuran cache melebihi batas (mencegah memory leak)
+        if (memoryCache.size > 300) {
+          const pruneNow = Date.now();
+          for (const [k, v] of memoryCache.entries()) {
+            if (v.expiry <= pruneNow || memoryCache.size > 200) {
+              memoryCache.delete(k);
+            }
+          }
+        }
+
         memoryCache.set(key, {
           body,
           status: res.statusCode,
           expiry: now + (ttlSeconds * 1000)
         });
       }
-      res.setHeader('X-Server-Cache', 'MISS');
+      if (!res.headersSent) {
+        res.setHeader('X-Server-Cache', 'MISS');
+      }
       return originalJson(body);
     };
 
@@ -80,20 +94,6 @@ function clearCacheOnSuccess(pattern) {
     };
     next();
   };
-}
-
-// Garbage collector: bersihkan key yang sudah expired secara berkala setiap 60 detik
-const gcInterval = setInterval(() => {
-  const now = Date.now();
-  for (const [key, val] of memoryCache.entries()) {
-    if (val.expiry <= now) {
-      memoryCache.delete(key);
-    }
-  }
-}, 60000);
-
-if (gcInterval.unref) {
-  gcInterval.unref();
 }
 
 module.exports = {

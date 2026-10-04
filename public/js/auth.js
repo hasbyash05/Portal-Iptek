@@ -284,15 +284,18 @@ export async function fetchAuth(url, options = {}) {
       }
 
       if (res.ok && !noCache) {
-        const cloned = res.clone();
-        cloned.json().then(data => {
-          apiCache.set(cacheKey, {
-            data,
-            status: res.status,
-            statusText: res.statusText,
-            expiry: Date.now() + ttl
-          });
-        }).catch(() => {});
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const cloned = res.clone();
+          cloned.json().then(data => {
+            apiCache.set(cacheKey, {
+              data,
+              status: res.status,
+              statusText: res.statusText,
+              expiry: Date.now() + ttl
+            });
+          }).catch(() => {});
+        }
       }
 
       return res;
