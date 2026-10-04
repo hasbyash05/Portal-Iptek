@@ -869,28 +869,9 @@
                   <small id="qris-nmid-kas" class="text-muted">Memuat info merchant...</small>
                 </div>
                 <form id="form-kas-anggota" onsubmit="submitKasQris(event)">
-                  <div class="grid-2col mb-3" style="gap: 10px; text-align: left;">
-                    <div class="form-group mb-0">
-                      <label for="kas-month">Bulan</label>
-                      <select id="kas-month" class="select-input" required>
-                        <option value="1">Januari</option>
-                        <option value="2">Februari</option>
-                        <option value="3">Maret</option>
-                        <option value="4">April</option>
-                        <option value="5">Mei</option>
-                        <option value="6">Juni</option>
-                        <option value="7" selected>Juli</option>
-                        <option value="8">Agustus</option>
-                        <option value="9">September</option>
-                        <option value="10">Oktober</option>
-                        <option value="11">November</option>
-                        <option value="12">Desember</option>
-                      </select>
-                    </div>
-                    <div class="form-group mb-0">
-                      <label for="kas-year">Tahun</label>
-                      <input type="number" id="kas-year" value="2026" required>
-                    </div>
+                  <div class="mb-3" style="text-align: left; padding: 0.85rem 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #e4e4e7;">
+                    <span style="font-size: 0.8rem; color: #71717a; display: block; margin-bottom: 2px;">Periode Pembayaran Kas:</span>
+                    <strong id="kas-current-period-display" style="font-size: 1.05rem; color: #18181b;">Bulan Berjalan</strong>
                   </div>
                   <div class="form-group mb-3" style="text-align: left;">
                     <label for="kas-proof">Unggah Bukti Pembayaran QRIS (Wajib Screenshot Transfer) <span style="color: #ef4444;">*</span></label>

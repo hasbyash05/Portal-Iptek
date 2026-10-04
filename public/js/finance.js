@@ -227,8 +227,9 @@ export function closeLockModalAndGoHome() {
 
 export async function submitKasQris(e) {
   e.preventDefault();
-  const month = document.getElementById('kas-month').value;
-  const year = document.getElementById('kas-year').value;
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
   const fileInput = document.getElementById('kas-proof');
   const btn = document.getElementById('btn-pay-qris');
   const originalText = btn.innerHTML;
@@ -275,6 +276,16 @@ export async function submitKasQris(e) {
 }
 
 export async function loadAnggotaKas() {
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const now = new Date();
+  const periodEl = document.getElementById('kas-current-period-display');
+  if (periodEl) {
+    periodEl.textContent = `Bulan ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  }
+
   try {
     const res = await fetchAuth(`${API_BASE}/payments/history?limit=10`);
     const data = await res.json();
