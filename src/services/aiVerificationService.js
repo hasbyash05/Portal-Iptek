@@ -171,7 +171,7 @@ async function verifyPaymentProof(proofRelativePath, userAccountName) {
   }
 
   // Pastikan file bukti adalah gambar atau dokumen
-  if (!proofRelativePath || !proofRelativePath.startsWith('/uploads')) {
+  if (!proofRelativePath || (!proofRelativePath.startsWith('/uploads') && !path.isAbsolute(proofRelativePath))) {
     return {
       decision: 'pending',
       amount: 0,
@@ -209,39 +209,36 @@ async function verifyPaymentProof(proofRelativePath, userAccountName) {
   }
 
   const promptText = `
-Anda adalah sistem AI verifikasi bukti pembayaran kas organisasi UKM IPTEK.
-Tugas Anda adalah memeriksa gambar screenshot/struk bukti transfer bank / e-wallet (seperti Dana, GoPay, OVO, ShopeePay, QRIS, BCA, BRI, Mandiri, BNI, dll).
-
-Nama Akun Pengguna yang mengajukan: "${userAccountName}"
-Nominal Minimal Wajib Kas: Rp 10.000
+Anda adalah sistem AI pemeriksa bukti pembayaran transfer bank dan e-wallet.
+Tugas Anda adalah memeriksa apakah gambar yang diunggah adalah bukti transfer / struk pembayaran bank atau e-wallet yang sah dan asli (seperti BRI / BRImo, BCA, Mandiri, BNI, Dana, GoPay, OVO, ShopeePay, LinkAja, QRIS, dll).
 
 Analisis gambar ini dan berikan output dalam format JSON murni berikut:
 {
   "is_valid_transfer_proof": true / false,
   "transaction_status": "BERHASIL" | "PENDING" | "GAGAL" | "BUKAN_TRANSFER",
-  "detected_amount": <angka nominal yang ditransfer tanpa titik/koma, contoh 10000>,
-  "detected_sender_name": "<nama pengirim / pemilik akun asal jika tertera, jika tidak ada isi kosong>",
-  "detected_recipient_name": "<nama penerima / merchant tujuan jika ada>",
-  "bank_or_wallet": "<nama bank atau e-wallet yang digunakan>",
+  "detected_amount": <angka nominal yang ditransfer tanpa titik/koma, contoh 450000 atau 10000>,
+  "detected_sender_name": "<nama pengirim / pemilik sumber dana jika tertera di struk, jika tidak ada kosongkan>",
+  "detected_recipient_name": "<nama penerima / tujuan transfer jika tertera di struk>",
+  "bank_or_wallet": "<nama bank atau aplikasi yang digunakan>",
   "confidence": <angka 0.0 sampai 1.0>,
   "summary": "<penjelasan singkat isi bukti transfer>"
 }
 
-Aturan Penilaian:
-1. Jika gambar bukan bukti transfer (contoh: foto sembarangan, meme, screenshot tidak jelas), is_valid_transfer_proof = false.
-2. Jika tertera status transaksi "Berhasil" / "Sukses" / "Transfer Berhasil" / "Pembayaran Berhasil", transaction_status = "BERHASIL".
-3. Ekstrak nominal uang yang ditransfer seakurat mungkin sebagai angka murni (integer).
-4. Ekstrak nama pengirim jika tertera di bukti transfer.
-Kembalikan HANYA JSON tanpa teks lain.
+Panduan Penilaian:
+1. is_valid_transfer_proof = true jika gambar adalah screenshot/struk/bukti transfer bank atau e-wallet yang nyata dan valid. JANGAN PERNAH menyetel false hanya karena nama pengirim atau penerima tidak cocok dengan pihak tertentu.
+2. is_valid_transfer_proof = false HANYA jika gambar sama sekali bukan bukti transfer (misalnya: foto diri, gambar acak, meme, screenshot chat WhatsApp biasa tanpa bukti transaksi, dokumen tidak terkait, atau layar kosong).
+3. transaction_status = "BERHASIL" jika transaksi sukses, berhasil, atau selesai. "GAGAL" jika transaksi gagal/ditolak. "BUKAN_TRANSFER" jika bukan bukti transfer.
+4. detected_amount: ekstrak angka nominal transaksi yang ditransfer secara akurat (integer).
+5. detected_sender_name: baca nama pemilik rekening pengirim / sumber dana bila tertera.
+
+Kembalikan HANYA JSON tanpa format teks markdown lain.
 `.trim();
 
-  // Model yang dicoba secara berurutan sesuai stabilitas API Google Gemini
+  // Model yang dicoba secara berurutan sesuai ketersediaan dan kecepatan API Google Gemini
   const models = [
-    'gemini-3.5-flash',
     'gemini-3.1-flash-lite',
-    'gemini-flash-latest',
     'gemini-flash-lite-latest',
-    'gemini-3.8-flash'
+    'gemini-flash-latest'
   ];
   let aiData = null;
   let lastError = null;
@@ -301,11 +298,14 @@ Kembalikan HANYA JSON tanpa teks lain.
     };
   }
 
-  const isValidProof = Boolean(aiData.is_valid_transfer_proof);
+  const isValidProofRaw = Boolean(aiData.is_valid_transfer_proof);
   const detectedAmount = Number(aiData.detected_amount) || 0;
   const detectedSender = (aiData.detected_sender_name || '').trim();
   const txStatus = (aiData.transaction_status || '').toUpperCase();
   const confidence = Number(aiData.confidence) || 0;
+
+  // Bukti diakui sebagai transfer sah jika model menandai valid ATAU terdeteksi nominal transaksi dengan status bukan BUKAN_TRANSFER
+  const isRealTransferProof = (isValidProofRaw || detectedAmount > 0) && txStatus !== 'BUKAN_TRANSFER';
 
   // =========================================================================
   // PARAMETER VERIFIKASI SESUAI KETENTUAN:
@@ -321,7 +321,7 @@ Kembalikan HANYA JSON tanpa teks lain.
   // =========================================================================
 
   // 1. Cek keabsahan bukti
-  if (!isValidProof || txStatus === 'BUKAN_TRANSFER') {
+  if (!isRealTransferProof) {
     return {
       decision: 'ditolak',
       amount: detectedAmount,
