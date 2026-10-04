@@ -38,7 +38,7 @@ const submitPayment = async (req, res) => {
     if (existing && existing.status === 'pending' && (!existing.proof_path || !existing.proof_path.startsWith('/uploads'))) {
       existing.status = 'ditolak';
       existing.ai_status = 'ditolak';
-      existing.ai_notes = 'Ditolak otomatis oleh AI: Tidak ada file gambar bukti pembayaran yang dilampirkan.';
+      existing.ai_notes = 'Ditolak otomatis: Tidak ada file gambar bukti pembayaran yang dilampirkan.';
       await existing.save();
     }
 
@@ -76,10 +76,10 @@ const submitPayment = async (req, res) => {
     if (!req.file) {
       paymentData.status = 'ditolak';
       paymentData.ai_status = 'ditolak';
-      paymentData.ai_notes = 'Ditolak otomatis oleh AI: Tidak ada file gambar bukti transfer yang dilampirkan.';
+      paymentData.ai_notes = 'Ditolak otomatis: Tidak ada file gambar bukti transfer yang dilampirkan.';
       paymentData.confirmed_at = new Date();
       paymentData.confirmed_by = null;
-      responseMessage = 'PEMBAYARAN DITOLAK OTOMATIS OLEH AI:\n\nAnda tidak melampirkan file gambar bukti transfer pembayaran kas. Pembayaran langsung ditolak.';
+      responseMessage = 'PEMBAYARAN DITOLAK:\n\nAnda tidak melampirkan file gambar bukti transfer pembayaran kas. Pembayaran langsung ditolak.';
     } else {
       // 2. Jalankan verifikasi AI otomatis jika ada file bukti pembayaran gambar
       try {
@@ -95,13 +95,13 @@ const submitPayment = async (req, res) => {
           if (aiResult.decision === 'lunas') {
             paymentData.status = 'lunas';
             paymentData.confirmed_at = new Date();
-            paymentData.confirmed_by = null; // Terverifikasi otomatis oleh AI
-            responseMessage = `PEMBAYARAN DIVERIFIKASI OTOMATIS OLEH AI (LUNAS)!\n\nNominal Rp ${aiResult.amount.toLocaleString('id-ID')} dan nama pengirim "${aiResult.senderName}" cocok dengan nama akun Anda. Gerbang presensi Anda kini terbuka.`;
+            paymentData.confirmed_by = null; // Terverifikasi otomatis 
+            responseMessage = `PEMBAYARAN DIVERIFIKASI (LUNAS)!\n\nNominal Rp ${aiResult.amount.toLocaleString('id-ID')} dan nama pengirim "${aiResult.senderName}" cocok dengan nama akun Anda. Gerbang presensi Anda kini terbuka.`;
           } else if (aiResult.decision === 'ditolak') {
             paymentData.status = 'ditolak';
             paymentData.confirmed_at = new Date();
             paymentData.confirmed_by = null;
-            responseMessage = `PEMBAYARAN DITOLAK OTOMATIS OLEH AI:\n\n${aiResult.notes}\nSilakan periksa kembali dan unggah bukti transfer yang sesuai.`;
+            responseMessage = `PEMBAYARAN DITOLAK:\n\n${aiResult.notes}\nSilakan periksa kembali dan unggah bukti transfer yang sesuai.`;
           } else {
             // 'pending': biarkan verifikasi manual oleh bendahara jika nama beda
             paymentData.status = 'pending';
@@ -156,7 +156,7 @@ const checkStatus = async (req, res) => {
         {
           status: 'ditolak',
           ai_status: 'ditolak',
-          ai_notes: 'Ditolak otomatis oleh AI: Anggota tidak melampirkan file gambar bukti pembayaran.'
+          ai_notes: 'Ditolak otomatis: Anggota tidak melampirkan file gambar bukti pembayaran.'
         },
         {
           where: {
@@ -213,7 +213,7 @@ const getMyHistory = async (req, res) => {
         {
           status: 'ditolak',
           ai_status: 'ditolak',
-          ai_notes: 'Ditolak otomatis oleh AI: Tidak ada file gambar bukti pembayaran yang dilampirkan.'
+          ai_notes: 'Ditolak otomatis: Tidak ada file gambar bukti pembayaran yang dilampirkan.'
         },
         {
           where: {
@@ -313,7 +313,7 @@ const getReport = async (req, res) => {
         {
           status: 'ditolak',
           ai_status: 'ditolak',
-          ai_notes: 'Ditolak otomatis oleh AI: Anggota tidak melampirkan file gambar bukti pembayaran.'
+          ai_notes: 'Ditolak otomatis: Anggota tidak melampirkan file gambar bukti pembayaran.'
         },
         {
           where: {

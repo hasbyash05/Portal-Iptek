@@ -268,7 +268,7 @@ Kembalikan HANYA JSON tanpa teks lain.
   //    -> LANGSUNG DITOLAK
   // 3. Nominal >= Rp 10.000:
   //    - Jika nama pengirim di screenshot sama dengan nama akun:
-  //      -> APPROVAL (LUNAS) otomatis oleh AI
+  //      -> APPROVAL (LUNAS) otomatis 
   //    - Jika nama pengirim beda (atau tidak tertera nama pengirim):
   //      -> BIARKAN VERIFIKASI MANUAL OLEH BENDAHARA (status PENDING)
   // =========================================================================
@@ -279,7 +279,7 @@ Kembalikan HANYA JSON tanpa teks lain.
       decision: 'ditolak',
       amount: detectedAmount,
       senderName: detectedSender,
-      notes: 'Ditolak otomatis oleh AI: Gambar yang diunggah bukan bukti transfer pembayaran yang sah.',
+      notes: 'Ditolak otomatis: Gambar yang diunggah bukan bukti transfer pembayaran yang sah.',
       confidence,
       isValidProof: false
     };
@@ -290,7 +290,7 @@ Kembalikan HANYA JSON tanpa teks lain.
       decision: 'ditolak',
       amount: detectedAmount,
       senderName: detectedSender,
-      notes: 'Ditolak otomatis oleh AI: Status transaksi pada bukti transfer tertera GAGAL.',
+      notes: 'Ditolak otomatis: Status transaksi pada bukti transfer tertera GAGAL.',
       confidence,
       isValidProof: true
     };
@@ -302,7 +302,7 @@ Kembalikan HANYA JSON tanpa teks lain.
       decision: 'ditolak',
       amount: detectedAmount,
       senderName: detectedSender,
-      notes: `Ditolak otomatis oleh AI: Nominal pada bukti transfer (Rp ${detectedAmount.toLocaleString('id-ID')}) kurang dari nominal minimal Rp ${MIN_KAS_AMOUNT.toLocaleString('id-ID')}.`,
+      notes: `Ditolak otomatis: Nominal pada bukti transfer (Rp ${detectedAmount.toLocaleString('id-ID')}) kurang dari nominal minimal Rp ${MIN_KAS_AMOUNT.toLocaleString('id-ID')}.`,
       confidence,
       isValidProof: true
     };
@@ -317,7 +317,7 @@ Kembalikan HANYA JSON tanpa teks lain.
       decision: 'lunas',
       amount: detectedAmount,
       senderName: detectedSender,
-      notes: `Disetujui otomatis oleh AI: Nominal sesuai (Rp ${detectedAmount.toLocaleString('id-ID')}) dan nama pengirim "${detectedSender}" cocok dengan nama akun "${userAccountName}".`,
+      notes: `Disetujui otomatis: Nominal sesuai (Rp ${detectedAmount.toLocaleString('id-ID')}) dan nama pengirim "${detectedSender}" cocok dengan nama akun "${userAccountName}".`,
       confidence,
       isValidProof: true
     };
@@ -342,7 +342,7 @@ Kembalikan HANYA JSON tanpa teks lain.
     decision: 'pending',
     amount: detectedAmount,
     senderName: detectedSender,
-    notes: 'Nominal atau detail transfer tidak terbaca jelas oleh AI. Memerlukan verifikasi manual oleh Bendahara.',
+    notes: 'Nominal atau detail transfer tidak terbaca jelas . Memerlukan verifikasi manual oleh Bendahara.',
     confidence,
     isValidProof: true
   };

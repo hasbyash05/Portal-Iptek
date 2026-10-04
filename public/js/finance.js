@@ -41,7 +41,7 @@ export async function loadKasReport(statusFilter = '') {
             <span style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; background: #f4f4f5; color: #18181b;">
               ${p.status.toUpperCase()}
             </span>
-            ${p.ai_status ? `<br><small style="color: #4b5563; font-weight: 600; font-size: 0.72rem;"><i class="fa-solid fa-robot"></i> AI: ${p.ai_status.toUpperCase()}</small>` : ''}
+            
           </td>
           <td>
             ${p.status === 'pending' ? (isBendahara ? `
@@ -51,7 +51,7 @@ export async function loadKasReport(statusFilter = '') {
               </div>
             ` : `<small class="text-muted" style="font-weight: 600;"><i class="fa-solid fa-clock"></i> Menunggu Verifikasi Bendahara</small>`) : `
               <small class="text-muted">
-                ${p.confirmed_by ? `Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}` : (p.ai_status === 'lunas' ? '<i class="fa-solid fa-robot"></i> Terverifikasi Otomatis oleh AI' : `Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}`)}
+                ${p.confirmed_by ? `Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}` : (p.ai_status === 'lunas' ? 'Terverifikasi Otomatis' : `Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}`)}
               </small>
             `}
           </td>
@@ -137,16 +137,11 @@ export function openAdminBuktiModal(pEncoded) {
     // AI Analysis Panel
     const aiPanelHtml = `
       <div style="margin-top: 1.25rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e4e4e7; font-size: 0.85rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-          <strong style="color: #18181b; font-size: 0.9rem;"><i class="fa-solid fa-robot"></i> Analisis AI Gemini</strong>
-          <span style="padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; background: #e4e4e7; color: #18181b;">
-            ${p.ai_status ? p.ai_status.toUpperCase() : 'BELUM DIPINDAI'}
-          </span>
-        </div>
+        
         <div style="color: #4b5563; line-height: 1.6;">
           <p style="margin: 0 0 4px 0;"><strong>Nama Akun Anggota:</strong> ${p.user ? p.user.nama_lengkap : '-'}</p>
           ${p.sender_name_detected ? `<p style="margin: 0 0 4px 0;"><strong>Nama Pengirim di Bukti:</strong> ${p.sender_name_detected}</p>` : ''}
-          <p style="margin: 0 0 8px 0;"><strong>Catatan AI:</strong> ${p.ai_notes || 'Belum dipindai oleh sistem AI.'}</p>
+          <p style="margin: 0 0 8px 0;"><strong>Keterangan:</strong> ${p.ai_notes || 'Belum ada catatan verifikasi.'}</p>
         </div>
         ${isBendahara && p.status === 'pending' ? `
           <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #e4e4e7; display: flex; gap: 8px; flex-wrap: wrap;">
