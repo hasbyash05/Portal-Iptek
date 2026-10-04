@@ -10,8 +10,67 @@
 
 const fs = require('fs');
 const path = require('path');
+const https = require('https');
+const dns = require('dns');
+
+// Pastikan resolusi DNS memprioritaskan IPv4 agar tidak 'fetch failed' di server hosting cPanel
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const MIN_KAS_AMOUNT = 10000;
+
+/**
+ * Helper HTTP POST ke Google Gemini API menggunakan native https dengan IPv4
+ */
+function callGeminiApi(url, payload, timeoutMs = 25000) {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify(payload);
+    const parsedUrl = new URL(url);
+
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: 443,
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData)
+      },
+      timeout: timeoutMs,
+      family: 4 // Wajib IPv4 agar kompatibel 100% dengan CloudLinux / cPanel firewall
+    };
+
+    const req = https.request(options, (res) => {
+      let responseText = '';
+      res.on('data', chunk => { responseText += chunk; });
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          try {
+            const parsedJson = JSON.parse(responseText);
+            resolve(parsedJson);
+          } catch (jsonErr) {
+            reject(new Error(`Gagal parse JSON dari Gemini: ${responseText.slice(0, 100)}`));
+          }
+        } else {
+          reject(new Error(`Gemini API HTTP ${res.statusCode}: ${responseText.slice(0, 150)}`));
+        }
+      });
+    });
+
+    req.on('error', (netErr) => {
+      reject(new Error(`Koneksi API gagal: ${netErr.message}`));
+    });
+
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error(`Gemini API timeout setelah ${timeoutMs / 1000} detik`));
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
 
 /**
  * Normalisasi dan pencocokan nama pengirim dengan nama akun pengguna
@@ -176,13 +235,13 @@ Aturan Penilaian:
 Kembalikan HANYA JSON tanpa teks lain.
 `.trim();
 
-  // Model yang dicoba secara berurutan sesuai ketersediaan API Google Gemini
+  // Model yang dicoba secara berurutan sesuai stabilitas API Google Gemini
   const models = [
-    'gemini-3.8-flash',
     'gemini-3.5-flash',
     'gemini-3.1-flash-lite',
     'gemini-flash-latest',
-    'gemini-flash-lite-latest'
+    'gemini-flash-lite-latest',
+    'gemini-3.8-flash'
   ];
   let aiData = null;
   let lastError = null;
@@ -210,19 +269,7 @@ Kembalikan HANYA JSON tanpa teks lain.
         }
       };
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(20000)
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        throw new Error(`Gemini API HTTP ${response.status}: ${errText}`);
-      }
-
-      const resJson = await response.json();
+      const resJson = await callGeminiApi(url, payload, 25000);
       const rawText = resJson.candidates?.[0]?.content?.parts?.[0]?.text;
       if (rawText) {
         // Bersihkan formatting markdown jika ada
@@ -233,8 +280,8 @@ Kembalikan HANYA JSON tanpa teks lain.
     } catch (err) {
       lastError = err;
       console.warn(`[AI Verification] Model ${model} gagal:`, err.message);
-      // Tunggu 800ms sebelum mencoba model berikutnya jika terjadi rate limit / high demand
-      await new Promise(r => setTimeout(r, 800));
+      // Tunggu 500ms sebelum mencoba model berikutnya jika terjadi rate limit / high demand
+      await new Promise(r => setTimeout(r, 500));
     }
   }
 
