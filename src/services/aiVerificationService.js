@@ -58,9 +58,12 @@ function matchSenderName(detectedName, accountName) {
  * Membaca file gambar dan mengubahnya ke Base64
  */
 function fileToBase64(filePath) {
-  const resolvedPath = path.isAbsolute(filePath)
-    ? filePath
-    : path.join(__dirname, '../../public', filePath.replace(/^\//, ''));
+  let resolvedPath;
+  if (path.isAbsolute(filePath) && fs.existsSync(filePath)) {
+    resolvedPath = filePath;
+  } else {
+    resolvedPath = path.join(__dirname, '../../public', filePath.replace(/^[/\\]+/, ''));
+  }
 
   if (!fs.existsSync(resolvedPath)) {
     throw new Error(`File bukti pembayaran tidak ditemukan di server: ${resolvedPath}`);
@@ -173,8 +176,14 @@ Aturan Penilaian:
 Kembalikan HANYA JSON tanpa teks lain.
 `.trim();
 
-  // Model yang dicoba secara berurutan: gemini-1.5-flash -> gemini-2.0-flash
-  const models = ['gemini-1.5-flash', 'gemini-2.0-flash'];
+  // Model yang dicoba secara berurutan sesuai ketersediaan API Google Gemini
+  const models = [
+    'gemini-3.8-flash',
+    'gemini-3.5-flash',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest',
+    'gemini-flash-lite-latest'
+  ];
   let aiData = null;
   let lastError = null;
 
@@ -204,7 +213,8 @@ Kembalikan HANYA JSON tanpa teks lain.
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(20000)
       });
 
       if (!response.ok) {
@@ -223,15 +233,22 @@ Kembalikan HANYA JSON tanpa teks lain.
     } catch (err) {
       lastError = err;
       console.warn(`[AI Verification] Model ${model} gagal:`, err.message);
+      // Tunggu 800ms sebelum mencoba model berikutnya jika terjadi rate limit / high demand
+      await new Promise(r => setTimeout(r, 800));
     }
   }
 
   if (!aiData) {
+    const isQuotaOrBusy = lastError && (lastError.message.includes('503') || lastError.message.includes('429'));
+    const failureMsg = isQuotaOrBusy
+      ? 'Layanan AI sedang sibuk (kuota/beban tinggi). Memerlukan verifikasi manual oleh Bendahara.'
+      : `Gagal memproses AI (${lastError ? lastError.message.slice(0, 100) : 'Respon kosong'}). Memerlukan verifikasi manual oleh Bendahara.`;
+
     return {
       decision: 'pending',
       amount: 0,
       senderName: '',
-      notes: `Gagal memproses AI: ${lastError ? lastError.message : 'Respon kosong'}. Memerlukan verifikasi manual Bendahara.`,
+      notes: failureMsg,
       confidence: 0,
       isValidProof: false
     };
