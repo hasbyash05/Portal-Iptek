@@ -41,12 +41,24 @@ export async function loadKasReport(statusFilter = '') {
             <span style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; background: #f4f4f5; color: #18181b;">
               ${p.status.toUpperCase()}
             </span>
+            ${p.ai_status ? `<br><small style="color: #4b5563; font-weight: 600; font-size: 0.72rem;"><i class="fa-solid fa-robot"></i> AI: ${p.ai_status.toUpperCase()}</small>` : ''}
           </td>
           <td>
             ${p.status === 'pending' ? (isBendahara ? `
-              <button onclick="confirmKas(${p.id}, 'lunas')" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Lunas</button>
-              <button onclick="confirmKas(${p.id}, 'ditolak')" class="btn btn-logout btn-sm"><i class="fa-solid fa-xmark"></i> Tolak</button>
-            ` : `<small class="text-muted" style="font-weight: 600;"><i class="fa-solid fa-clock"></i> Menunggu Verifikasi Bendahara</small>`) : `<small class="text-muted">Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}</small>`}
+              <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                ${p.proof_path && p.proof_path.startsWith('/uploads') ? `
+                  <button onclick="verifySingleWithAi(${p.id})" class="btn btn-outline btn-sm" style="border-color: #4b5563; color: #18181b; font-weight: 600;" title="Verifikasi otomatis dengan AI">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Scan AI
+                  </button>
+                ` : ''}
+                <button onclick="confirmKas(${p.id}, 'lunas')" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Lunas</button>
+                <button onclick="confirmKas(${p.id}, 'ditolak')" class="btn btn-logout btn-sm"><i class="fa-solid fa-xmark"></i> Tolak</button>
+              </div>
+            ` : `<small class="text-muted" style="font-weight: 600;"><i class="fa-solid fa-clock"></i> Menunggu Verifikasi Bendahara</small>`) : `
+              <small class="text-muted">
+                ${p.confirmed_by ? `Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}` : (p.ai_status === 'lunas' ? '<i class="fa-solid fa-robot"></i> Terverifikasi Otomatis oleh AI' : `Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}`)}
+              </small>
+            `}
           </td>
         </tr>
       `).join('');
@@ -88,22 +100,28 @@ export function openAdminBuktiModal(pEncoded) {
     const body = document.getElementById('admin-bukti-modal-body');
     if (!modal || !body) return;
 
+    const userStr = localStorage.getItem('iptek_user');
+    const currentUser = userStr ? JSON.parse(userStr) : null;
+    const isBendahara = currentUser && (currentUser.role === 'Pengurus' || (currentUser.divisi && currentUser.divisi.toLowerCase().includes('bendahara')));
+
     const hasUploadedFile = p.proof_path && (p.proof_path.startsWith('/uploads') || p.proof_path.startsWith('http'));
     const isImage = hasUploadedFile && /\.(jpg|jpeg|png|webp|gif)$/i.test(p.proof_path);
 
+    let contentHtml = '';
+
     if (hasUploadedFile) {
       if (isImage) {
-        body.innerHTML = `
+        contentHtml = `
           <div style="text-align: center; padding: 0.5rem;">
             <a href="${p.proof_path}" target="_blank" title="Klik untuk ukuran penuh">
-              <img src="${p.proof_path}" style="max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 6px; border: 1px solid #e4e4e7; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" alt="Bukti Pembayaran">
+              <img src="${p.proof_path}" style="max-width: 100%; max-height: 50vh; object-fit: contain; border-radius: 6px; border: 1px solid #e4e4e7; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" alt="Bukti Pembayaran">
             </a>
-            <p style="font-size: 0.75rem; color: #71717a; margin-top: 10px; margin-bottom: 0;">Klik gambar untuk membuka di tab baru</p>
+            <p style="font-size: 0.75rem; color: #71717a; margin-top: 8px; margin-bottom: 0;">Klik gambar untuk membuka ukuran penuh di tab baru</p>
           </div>
         `;
       } else {
-        body.innerHTML = `
-          <div style="text-align: center; padding: 2.5rem 1rem; background: #f8f9fa; border-radius: 8px;">
+        contentHtml = `
+          <div style="text-align: center; padding: 2rem 1rem; background: #f8f9fa; border-radius: 8px;">
             <p style="font-size: 0.9rem; font-weight: 700; color: #18181b; margin-bottom: 1rem;">Dokumen Bukti Transfer (PDF / File)</p>
             <a href="${p.proof_path}" target="_blank" class="btn btn-primary" style="background: #18181b; padding: 0.8rem 1.5rem;">
               <i class="fa-solid fa-file-arrow-down"></i> Buka File Bukti Pembayaran
@@ -112,8 +130,8 @@ export function openAdminBuktiModal(pEncoded) {
         `;
       }
     } else {
-      body.innerHTML = `
-        <div style="text-align: center; padding: 2.5rem 1rem; background: #f8f9fa; border-radius: 8px;">
+      contentHtml = `
+        <div style="text-align: center; padding: 2rem 1rem; background: #f8f9fa; border-radius: 8px;">
           <p style="font-size: 0.9rem; font-weight: 600; color: #4b5563; margin: 0;">
             Anggota tidak melampirkan gambar bukti pembayaran.
           </p>
@@ -121,6 +139,35 @@ export function openAdminBuktiModal(pEncoded) {
       `;
     }
 
+    // AI Analysis Panel
+    const aiPanelHtml = `
+      <div style="margin-top: 1.25rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e4e4e7; font-size: 0.85rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="color: #18181b; font-size: 0.9rem;"><i class="fa-solid fa-robot"></i> Analisis AI Gemini</strong>
+          <span style="padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; background: #e4e4e7; color: #18181b;">
+            ${p.ai_status ? p.ai_status.toUpperCase() : 'BELUM DIPINDAI'}
+          </span>
+        </div>
+        <div style="color: #4b5563; line-height: 1.6;">
+          <p style="margin: 0 0 4px 0;"><strong>Nama Akun Anggota:</strong> ${p.user ? p.user.nama_lengkap : '-'}</p>
+          ${p.sender_name_detected ? `<p style="margin: 0 0 4px 0;"><strong>Nama Pengirim di Bukti:</strong> ${p.sender_name_detected}</p>` : ''}
+          <p style="margin: 0 0 8px 0;"><strong>Catatan AI:</strong> ${p.ai_notes || 'Belum dipindai oleh sistem AI.'}</p>
+        </div>
+        ${hasUploadedFile && isBendahara ? `
+          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #e4e4e7; display: flex; gap: 8px; flex-wrap: wrap;">
+            <button onclick="verifySingleWithAi(${p.id})" class="btn btn-outline btn-sm" style="border-color: #18181b; color: #18181b; font-weight: 600;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> ${p.ai_status ? 'Pindai Ulang dengan AI' : 'Pindai Bukti dengan AI'}
+            </button>
+            ${p.status === 'pending' ? `
+              <button onclick="confirmKas(${p.id}, 'lunas'); closeAdminBuktiModal();" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Setujui Lunas</button>
+              <button onclick="confirmKas(${p.id}, 'ditolak'); closeAdminBuktiModal();" class="btn btn-logout btn-sm"><i class="fa-solid fa-xmark"></i> Tolak</button>
+            ` : ''}
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    body.innerHTML = contentHtml + aiPanelHtml;
     modal.style.display = 'flex';
   } catch (err) {
     console.error('Error opening bukti modal:', err);

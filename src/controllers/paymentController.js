@@ -1,4 +1,5 @@
 const { Payment, User, KasExpense } = require('../models');
+const { verifyPaymentProof } = require('../services/aiVerificationService');
 
 const submitPayment = async (req, res) => {
   try {
@@ -42,7 +43,6 @@ const submitPayment = async (req, res) => {
     const isQris = req.body.payment_method === 'qris';
     const proofPath = req.file ? `/uploads/proofs/${req.file.filename}` : (isQris ? `QRIS (Menunggu Verifikasi Bendahara)` : null);
 
-
     // Force amount to 10000 regardless of client input
     const paymentData = {
       user_id: userId,
@@ -52,17 +52,58 @@ const submitPayment = async (req, res) => {
       proof_path: proofPath,
       status: 'pending',
       confirmed_by: null,
-      confirmed_at: null
+      confirmed_at: null,
+      ai_status: null,
+      ai_notes: null,
+      sender_name_detected: null
     };
+
+    let responseMessage = 'Pengajuan pembayaran kas sebesar Rp 10.000 berhasil dikirim dan menunggu verifikasi dari Pengurus bagian Bendahara.';
+
+    // Jalankan verifikasi AI otomatis jika ada file bukti pembayaran gambar
+    if (req.file) {
+      try {
+        const user = await User.findByPk(userId);
+        const userAccountName = user ? user.nama_lengkap : (req.user ? req.user.nama_lengkap : '');
+        const aiResult = await verifyPaymentProof(proofPath, userAccountName);
+
+        if (aiResult) {
+          paymentData.ai_status = aiResult.decision;
+          paymentData.ai_notes = aiResult.notes;
+          paymentData.sender_name_detected = aiResult.senderName || null;
+
+          if (aiResult.decision === 'lunas') {
+            paymentData.status = 'lunas';
+            paymentData.confirmed_at = new Date();
+            paymentData.confirmed_by = null; // Terverifikasi otomatis oleh AI
+            responseMessage = `PEMBAYARAN DIVERIFIKASI OTOMATIS OLEH AI (LUNAS)!\n\nNominal Rp ${aiResult.amount.toLocaleString('id-ID')} dan nama pengirim "${aiResult.senderName}" cocok dengan nama akun Anda. Gerbang presensi Anda kini terbuka.`;
+          } else if (aiResult.decision === 'ditolak') {
+            paymentData.status = 'ditolak';
+            paymentData.confirmed_at = new Date();
+            paymentData.confirmed_by = null;
+            responseMessage = `PEMBAYARAN DITOLAK OTOMATIS OLEH AI:\n\n${aiResult.notes}\nSilakan periksa kembali dan unggah bukti transfer yang sesuai.`;
+          } else {
+            // 'pending': biarkan verifikasi manual oleh bendahara jika nama beda
+            paymentData.status = 'pending';
+            responseMessage = `Pembayaran kas berhasil dikirim!\n\nCatatan AI: ${aiResult.notes}`;
+          }
+        }
+      } catch (aiErr) {
+        console.warn('[AI Verification Warning]:', aiErr.message);
+      }
+    }
 
     let payment;
     if (existing && existing.status === 'ditolak') {
       // Update the rejected one
       existing.amount = 10000;
       existing.proof_path = proofPath || existing.proof_path;
-      existing.status = 'pending';
-      existing.confirmed_by = null;
-      existing.confirmed_at = null;
+      existing.status = paymentData.status;
+      existing.confirmed_by = paymentData.confirmed_by;
+      existing.confirmed_at = paymentData.confirmed_at;
+      existing.ai_status = paymentData.ai_status;
+      existing.ai_notes = paymentData.ai_notes;
+      existing.sender_name_detected = paymentData.sender_name_detected;
       await existing.save();
       payment = existing;
     } else {
@@ -71,7 +112,7 @@ const submitPayment = async (req, res) => {
 
     return res.status(201).json({
       status: 'success',
-      message: 'Pengajuan pembayaran kas sebesar Rp 10.000 berhasil dikirim dan menunggu verifikasi dari Pengurus bagian Bendahara.',
+      message: responseMessage,
       data: payment
     });
   } catch (error) {
@@ -262,4 +303,148 @@ const getTotalKas = async (req, res) => {
   }
 };
 
-module.exports = { submitPayment, checkStatus, getMyHistory, confirmPayment, getReport, getTotalKas };
+const verifyPaymentWithAI = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const payment = await Payment.findByPk(id, {
+      include: [{ model: User, as: 'user', attributes: ['id', 'nama_lengkap', 'username'] }]
+    });
+
+    if (!payment) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Data pembayaran kas tidak ditemukan.'
+      });
+    }
+
+    if (!payment.proof_path || !payment.proof_path.startsWith('/uploads')) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Pembayaran ini tidak memiliki file gambar bukti transfer yang dapat dianalisis AI.'
+      });
+    }
+
+    const userName = payment.user ? payment.user.nama_lengkap : '';
+    const aiResult = await verifyPaymentProof(payment.proof_path, userName);
+
+    payment.ai_status = aiResult.decision;
+    payment.ai_notes = aiResult.notes;
+    payment.sender_name_detected = aiResult.senderName || null;
+
+    if (aiResult.decision === 'lunas') {
+      payment.status = 'lunas';
+      payment.confirmed_at = new Date();
+      payment.confirmed_by = null;
+    } else if (aiResult.decision === 'ditolak') {
+      payment.status = 'ditolak';
+      payment.confirmed_at = new Date();
+      payment.confirmed_by = null;
+    } else {
+      payment.status = 'pending';
+    }
+
+    await payment.save();
+
+    return res.status(200).json({
+      status: 'success',
+      message: `Hasil Verifikasi AI: ${aiResult.notes}`,
+      data: {
+        payment,
+        aiResult
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Gagal memproses verifikasi AI.',
+      error: error.message
+    });
+  }
+};
+
+const verifyAllPendingWithAI = async (req, res) => {
+  try {
+    const pendingPayments = await Payment.findAll({
+      where: {
+        status: 'pending'
+      },
+      include: [{ model: User, as: 'user', attributes: ['id', 'nama_lengkap'] }]
+    });
+
+    const eligible = pendingPayments.filter(p => p.proof_path && p.proof_path.startsWith('/uploads'));
+
+    if (eligible.length === 0) {
+      return res.status(200).json({
+        status: 'success',
+        message: 'Tidak ada pembayaran pending dengan lampiran gambar bukti transfer.',
+        data: { total: 0, approved: 0, rejected: 0, keptPending: 0 }
+      });
+    }
+
+    let approved = 0;
+    let rejected = 0;
+    let keptPending = 0;
+    const results = [];
+
+    for (const payment of eligible) {
+      try {
+        const userName = payment.user ? payment.user.nama_lengkap : '';
+        const aiResult = await verifyPaymentProof(payment.proof_path, userName);
+
+        payment.ai_status = aiResult.decision;
+        payment.ai_notes = aiResult.notes;
+        payment.sender_name_detected = aiResult.senderName || null;
+
+        if (aiResult.decision === 'lunas') {
+          payment.status = 'lunas';
+          payment.confirmed_at = new Date();
+          payment.confirmed_by = null;
+          approved++;
+        } else if (aiResult.decision === 'ditolak') {
+          payment.status = 'ditolak';
+          payment.confirmed_at = new Date();
+          payment.confirmed_by = null;
+          rejected++;
+        } else {
+          payment.status = 'pending';
+          keptPending++;
+        }
+
+        await payment.save();
+        results.push({ id: payment.id, user: userName, decision: aiResult.decision, notes: aiResult.notes });
+      } catch (err) {
+        keptPending++;
+        results.push({ id: payment.id, error: err.message });
+      }
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: `Pemindaian AI selesai: ${approved} Lunas (disetujui), ${rejected} ditolak, ${keptPending} tetap pending untuk verifikasi manual Bendahara.`,
+      data: {
+        total: eligible.length,
+        approved,
+        rejected,
+        keptPending,
+        details: results
+      }
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: 'error',
+      message: 'Gagal menjalankan pemindaian AI massal.',
+      error: error.message
+    });
+  }
+};
+
+module.exports = {
+  submitPayment,
+  checkStatus,
+  getMyHistory,
+  confirmPayment,
+  getReport,
+  getTotalKas,
+  verifyPaymentWithAI,
+  verifyAllPendingWithAI
+};

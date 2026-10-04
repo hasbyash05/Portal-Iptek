@@ -114,6 +114,19 @@ sequelize.authenticate()
       } catch (migErr) {
         console.warn('[DB] Migrasi attendance_mode:', migErr.message);
       }
+
+      // Migrasi aman: tambah kolom AI verification pada tabel payments jika belum ada
+      try {
+        const [aiCols] = await sequelize.query("SHOW COLUMNS FROM `payments` LIKE 'ai_status'");
+        if (aiCols.length === 0) {
+          await sequelize.query("ALTER TABLE `payments` ADD COLUMN `ai_status` VARCHAR(50) NULL DEFAULT NULL");
+          await sequelize.query("ALTER TABLE `payments` ADD COLUMN `ai_notes` TEXT NULL DEFAULT NULL");
+          await sequelize.query("ALTER TABLE `payments` ADD COLUMN `sender_name_detected` VARCHAR(255) NULL DEFAULT NULL");
+          console.log("[DB] Kolom AI verification berhasil ditambahkan ke tabel payments.");
+        }
+      } catch (aiMigErr) {
+        console.warn('[DB] Migrasi AI verification payments:', aiMigErr.message);
+      }
     }
   })
   .catch((error) => {

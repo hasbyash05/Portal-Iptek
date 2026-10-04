@@ -50,6 +50,18 @@ const Payment = sequelize.define('Payment', {
   confirmed_at: {
     type: DataTypes.DATE,
     allowNull: true
+  },
+  ai_status: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  ai_notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  sender_name_detected: {
+    type: DataTypes.STRING(255),
+    allowNull: true
   }
 }, {
   tableName: 'payments',

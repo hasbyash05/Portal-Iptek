@@ -993,11 +993,18 @@
               <h3>Filter Tagihan Kas</h3>
             </div>
             <div class="card-body">
-              <div class="filter-buttons">
-                <button class="btn btn-outline active" onclick="loadKasReport('')">Semua Status</button>
-                <button class="btn btn-outline" onclick="loadKasReport('pending')">Pending (Need Confirm)</button>
-                <button class="btn btn-outline" onclick="loadKasReport('lunas')">Lunas</button>
-                <button class="btn btn-outline" onclick="loadKasReport('ditolak')">Ditolak</button>
+              <div class="filter-buttons" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <button class="btn btn-outline active" onclick="loadKasReport('')">Semua Status</button>
+                  <button class="btn btn-outline" onclick="loadKasReport('pending')">Pending (Need Confirm)</button>
+                  <button class="btn btn-outline" onclick="loadKasReport('lunas')">Lunas</button>
+                  <button class="btn btn-outline" onclick="loadKasReport('ditolak')">Ditolak</button>
+                </div>
+                <div>
+                  <button id="btn-verify-all-ai" class="btn btn-outline btn-sm" onclick="verifyAllWithAi()" style="border-color: #18181b; color: #18181b; font-weight: 600;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Verifikasi Otomatis Semua dengan AI
+                  </button>
+                </div>
               </div>
             </div>
           </div>
