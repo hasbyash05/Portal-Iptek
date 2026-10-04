@@ -46,11 +46,6 @@ export async function loadKasReport(statusFilter = '') {
           <td>
             ${p.status === 'pending' ? (isBendahara ? `
               <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                ${p.proof_path && p.proof_path.startsWith('/uploads') ? `
-                  <button onclick="verifySingleWithAi(${p.id})" class="btn btn-outline btn-sm" style="border-color: #4b5563; color: #18181b; font-weight: 600;" title="Verifikasi otomatis dengan AI">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Scan AI
-                  </button>
-                ` : ''}
                 <button onclick="confirmKas(${p.id}, 'lunas')" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Lunas</button>
                 <button onclick="confirmKas(${p.id}, 'ditolak')" class="btn btn-logout btn-sm"><i class="fa-solid fa-xmark"></i> Tolak</button>
               </div>
@@ -153,15 +148,10 @@ export function openAdminBuktiModal(pEncoded) {
           ${p.sender_name_detected ? `<p style="margin: 0 0 4px 0;"><strong>Nama Pengirim di Bukti:</strong> ${p.sender_name_detected}</p>` : ''}
           <p style="margin: 0 0 8px 0;"><strong>Catatan AI:</strong> ${p.ai_notes || 'Belum dipindai oleh sistem AI.'}</p>
         </div>
-        ${hasUploadedFile && isBendahara ? `
+        ${isBendahara && p.status === 'pending' ? `
           <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #e4e4e7; display: flex; gap: 8px; flex-wrap: wrap;">
-            <button onclick="verifySingleWithAi(${p.id})" class="btn btn-outline btn-sm" style="border-color: #18181b; color: #18181b; font-weight: 600;">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> ${p.ai_status ? 'Pindai Ulang dengan AI' : 'Pindai Bukti dengan AI'}
-            </button>
-            ${p.status === 'pending' ? `
-              <button onclick="confirmKas(${p.id}, 'lunas'); closeAdminBuktiModal();" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Setujui Lunas</button>
-              <button onclick="confirmKas(${p.id}, 'ditolak'); closeAdminBuktiModal();" class="btn btn-logout btn-sm"><i class="fa-solid fa-xmark"></i> Tolak</button>
-            ` : ''}
+            <button onclick="confirmKas(${p.id}, 'lunas'); closeAdminBuktiModal();" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Setujui Lunas</button>
+            <button onclick="confirmKas(${p.id}, 'ditolak'); closeAdminBuktiModal();" class="btn btn-logout btn-sm"><i class="fa-solid fa-xmark"></i> Tolak</button>
           </div>
         ` : ''}
       </div>
