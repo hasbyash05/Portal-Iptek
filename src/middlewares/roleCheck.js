@@ -9,10 +9,10 @@ const isAdmin = (req, res, next) => {
 };
 
 const isPengurus = (req, res, next) => {
-  if (!req.user || req.user.role !== 'pengurus') {
+  if (!req.user || (req.user.role !== 'pengurus' && req.user.role !== 'admin')) {
     return res.status(403).json({
       status: 'error',
-      message: 'Akses ditolak. Endpoint ini khusus untuk role Pengurus.'
+      message: 'Akses ditolak. Endpoint ini khusus untuk role Pengurus / Admin.'
     });
   }
   next();

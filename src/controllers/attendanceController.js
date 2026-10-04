@@ -218,4 +218,128 @@ const getReport = async (req, res) => {
   }
 };
 
-module.exports = { submitAttendance, getMyHistory, getReport };
+/**
+ * GET /api/attendance/export-csv
+ * Ekspor matriks rekap kehadiran ke format CSV:
+ * - Baris: Semua anggota organisasi (pengurus & anggota)
+ * - Kolom: Tanggal-tanggal pertemuan
+ * - Nilai: HADIR atau TIDAK HADIR
+ * - Rekapitulasi: Total Hadir, Total Tidak Hadir, Persentase Kehadiran
+ */
+const exportAttendanceCsv = async (req, res) => {
+  try {
+    const { startDate, endDate, divisi } = req.query;
+
+    // 1. Ambil seluruh anggota dan pengurus (urutan pengurus dulu, lalu anggota, abjad nama)
+    const userWhereClause = {};
+    if (divisi) {
+      userWhereClause.divisi = divisi;
+    }
+
+    const users = await User.findAll({
+      where: userWhereClause,
+      attributes: ['id', 'username', 'nama_lengkap', 'role', 'divisi'],
+      order: [
+        ['role', 'DESC'],
+        ['nama_lengkap', 'ASC']
+      ]
+    });
+
+    // 2. Ambil seluruh data absensi dengan filter tanggal (jika ada)
+    const attendanceWhere = {};
+    if (startDate && endDate) {
+      attendanceWhere.date = { [Op.between]: [startDate, endDate] };
+    } else if (startDate) {
+      attendanceWhere.date = { [Op.gte]: startDate };
+    } else if (endDate) {
+      attendanceWhere.date = { [Op.lte]: endDate };
+    }
+
+    const attendances = await Attendance.findAll({
+      where: attendanceWhere,
+      attributes: ['user_id', 'date', 'status'],
+      order: [['date', 'ASC']]
+    });
+
+    // 3. Ambil seluruh tanggal unik pertemuan (diurutkan kronologis)
+    const uniqueDates = [...new Set(attendances.map(a => a.date))].filter(Boolean).sort();
+
+    // Mapping presensi untuk pencarian instan: `${user_id}_${date}` -> status
+    const attendanceMap = new Map();
+    attendances.forEach(a => {
+      attendanceMap.set(`${a.user_id}_${a.date}`, a.status);
+    });
+
+    // 4. Susun baris CSV
+    const headers = [
+      'No',
+      'Nama Anggota',
+      'Role',
+      'Divisi',
+      ...uniqueDates,
+      'Total Hadir',
+      'Total Tidak Hadir',
+      'Persentase Kehadiran'
+    ];
+
+    const escapeCsv = (str) => {
+      if (str === null || str === undefined) return '""';
+      const clean = String(str).replace(/"/g, '""');
+      return `"${clean}"`;
+    };
+
+    const rows = users.map((u, idx) => {
+      let userHadirCount = 0;
+      let userTidakHadirCount = 0;
+
+      const dateStatuses = uniqueDates.map(d => {
+        const rawStatus = attendanceMap.get(`${u.id}_${d}`);
+        if (rawStatus === 'hadir') {
+          userHadirCount++;
+          return 'HADIR';
+        } else if (rawStatus === 'izin') {
+          return 'IZIN';
+        } else if (rawStatus === 'sakit') {
+          return 'SAKIT';
+        } else {
+          userTidakHadirCount++;
+          return 'TIDAK HADIR';
+        }
+      });
+
+      const totalMeetings = uniqueDates.length;
+      const pct = totalMeetings > 0 
+        ? Math.round((userHadirCount / totalMeetings) * 100) + '%' 
+        : '0%';
+
+      return [
+        idx + 1,
+        escapeCsv(u.nama_lengkap),
+        escapeCsv(u.role ? u.role.toUpperCase() : '-'),
+        escapeCsv(u.divisi || '-'),
+        ...dateStatuses.map(s => escapeCsv(s)),
+        userHadirCount,
+        userTidakHadirCount,
+        escapeCsv(pct)
+      ].join(',');
+    });
+
+    // Berikan UTF-8 BOM (\uFEFF) agar Microsoft Excel langsung membaca rapi aksen & pemisah kolom
+    const csvContent = '\uFEFF' + [headers.map(escapeCsv).join(','), ...rows].join('\r\n');
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="Rekap_Kehadiran_Anggota_IPTEK_${todayStr}.csv"`);
+    return res.status(200).send(csvContent);
+  } catch (error) {
+    console.error('[Export Attendance CSV Error]', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Gagal mengekspor data absensi ke CSV.',
+      error: error.message
+    });
+  }
+};
+
+module.exports = { submitAttendance, getMyHistory, getReport, exportAttendanceCsv };
+

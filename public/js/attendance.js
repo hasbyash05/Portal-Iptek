@@ -422,3 +422,52 @@ export async function loadAnggotaAttendance() {
     console.error('Gagal memuat absensi anggota:', err);
   }
 }
+
+export async function exportAttendanceCsv() {
+  const btn = document.getElementById('btn-export-attendance-csv');
+  const originalHtml = btn ? btn.innerHTML : '';
+
+  try {
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengekspor...`;
+    }
+
+    const start = document.getElementById('filter-start-date')?.value || '';
+    const end = document.getElementById('filter-end-date')?.value || '';
+    const div = document.getElementById('filter-divisi')?.value || '';
+
+    const params = new URLSearchParams();
+    if (start) params.append('startDate', start);
+    if (end) params.append('endDate', end);
+    if (div) params.append('divisi', div);
+
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+
+    const res = await fetchAuth(`${API_BASE}/attendance/export-csv${queryStr}`);
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || 'Gagal mengekspor data absensi.');
+    }
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    a.download = `Rekap_Kehadiran_Anggota_IPTEK_${todayStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Export Attendance CSV Error:', err);
+    alert(`Gagal mengekspor CSV: ${err.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalHtml;
+    }
+  }
+}
+

@@ -44,6 +44,7 @@ window.loadPengurusAbsensi = Attendance.loadPengurusAbsensi;
 window.filterAbsensi = Attendance.filterAbsensi;
 window.submitAbsensiAnggota = Attendance.submitAbsensiAnggota;
 window.loadAnggotaAttendance = Attendance.loadAnggotaAttendance;
+window.exportAttendanceCsv = Attendance.exportAttendanceCsv;
 window.loadKasReport = Finance.loadKasReport;
 window.confirmKas = Finance.confirmKas;
 window.openAdminBuktiModal = Finance.openAdminBuktiModal;
