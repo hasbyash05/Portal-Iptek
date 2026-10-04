@@ -90,26 +90,32 @@ export async function loadSessionStatus() {
         anggotaStatus.style.padding = '0';
         anggotaStatus.style.background = 'transparent';
         anggotaStatus.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 0.85rem; padding: 0.9rem 1.15rem; background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #18181b; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-            <div style="width: 36px; height: 36px; border-radius: 6px; background: #f4f4f5; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #18181b; font-size: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem; padding: 1.05rem 1.25rem; background: #ffffff; border: 1px solid #18181b; border-radius: 12px; box-shadow: 0 2px 8px -2px rgba(24,24,27,0.06);">
+            <div style="width: 42px; height: 42px; border-radius: 50%; background: #18181b; color: #ffffff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(24,24,27,0.15); font-size: 1rem;">
               <i class="fa-solid fa-lock-open"></i>
             </div>
-            <div>
-              <p style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #18181b; font-family: 'Outfit', sans-serif;">Sesi Presensi Sedang Dibuka</p>
-              <p style="margin: 0; font-size: 0.82rem; color: #71717a;">Dibuka oleh <strong>${activator}</strong>. Anda dapat mengirimkan presensi sekarang.</p>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px;">
+                <span style="font-size: 0.92rem; font-weight: 700; color: #18181b; font-family: 'Outfit', sans-serif; letter-spacing: -0.01em;">Sesi Presensi Sedang Dibuka</span>
+                <span style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: #18181b; color: #ffffff; padding: 2px 8px; border-radius: 12px; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #22c55e;"></span>Dibuka</span>
+              </div>
+              <p style="margin: 0; font-size: 0.82rem; color: #52525b; line-height: 1.45;">Dibuka oleh <strong style="color: #18181b;">${activator}</strong>. Anda dapat mengirimkan presensi sekarang.</p>
             </div>
           </div>`;
       } else {
         anggotaStatus.style.padding = '0';
         anggotaStatus.style.background = 'transparent';
         anggotaStatus.innerHTML = `
-          <div style="display: flex; align-items: center; gap: 0.85rem; padding: 0.9rem 1.15rem; background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #a1a1aa; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-            <div style="width: 36px; height: 36px; border-radius: 6px; background: #f4f4f5; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #71717a; font-size: 1rem;">
+          <div style="display: flex; align-items: center; gap: 1rem; padding: 1.05rem 1.25rem; background: #fafafa; border: 1px solid #e4e4e7; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+            <div style="width: 42px; height: 42px; border-radius: 50%; background: #ffffff; border: 1px solid #e4e4e7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); color: #71717a; font-size: 1rem;">
               <i class="fa-solid fa-lock"></i>
             </div>
-            <div>
-              <p style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #18181b; font-family: 'Outfit', sans-serif;">Sesi Presensi Ditutup</p>
-              <p style="margin: 0; font-size: 0.82rem; color: #71717a;">Silakan menunggu Pengurus membuka sesi presensi pertemuan hari ini.</p>
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 2px;">
+                <span style="font-size: 0.92rem; font-weight: 700; color: #18181b; font-family: 'Outfit', sans-serif; letter-spacing: -0.01em;">Sesi Presensi Ditutup</span>
+                <span style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; background: #ffffff; color: #71717a; padding: 2px 8px; border-radius: 12px; border: 1px solid #e4e4e7; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 5px; height: 5px; border-radius: 50%; background: #a1a1aa;"></span>Ditutup</span>
+              </div>
+              <p style="margin: 0; font-size: 0.82rem; color: #52525b; line-height: 1.45;">Silakan menunggu Pengurus membuka sesi presensi pertemuan hari ini.</p>
             </div>
           </div>`;
       }
