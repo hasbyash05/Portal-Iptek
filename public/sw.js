@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iptek-pwa-v13';
+const CACHE_NAME = 'iptek-pwa-v14';
 const urlsToCache = [
   '/',
   '/index.html',

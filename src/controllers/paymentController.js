@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { Payment, User, KasExpense } = require('../models');
 const { verifyPaymentProof } = require('../services/aiVerificationService');
 
@@ -32,6 +33,15 @@ const submitPayment = async (req, res) => {
       }
     });
 
+    // Jika ada record lama yang masih berstatus pending tapi tidak ada file bukti,
+    // otomatis ubah jadi ditolak agar user dapat mengajukan ulang dengan bukti sah
+    if (existing && existing.status === 'pending' && (!existing.proof_path || !existing.proof_path.startsWith('/uploads'))) {
+      existing.status = 'ditolak';
+      existing.ai_status = 'ditolak';
+      existing.ai_notes = 'Ditolak otomatis oleh AI: Tidak ada file gambar bukti pembayaran yang dilampirkan.';
+      await existing.save();
+    }
+
     if (existing && (existing.status === 'pending' || existing.status === 'lunas')) {
       return res.status(409).json({
         status: 'error',
@@ -40,8 +50,7 @@ const submitPayment = async (req, res) => {
       });
     }
 
-    const isQris = req.body.payment_method === 'qris';
-    const proofPath = req.file ? `/uploads/proofs/${req.file.filename}` : (isQris ? `QRIS (Menunggu Verifikasi Bendahara)` : null);
+    const proofPath = req.file ? `/uploads/proofs/${req.file.filename}` : null;
 
     // Force amount to 10000 regardless of client input
     const paymentData = {
@@ -58,10 +67,21 @@ const submitPayment = async (req, res) => {
       sender_name_detected: null
     };
 
-    let responseMessage = 'Pengajuan pembayaran kas sebesar Rp 10.000 berhasil dikirim dan menunggu verifikasi dari Pengurus bagian Bendahara.';
+    let responseMessage = 'Pengajuan pembayaran kas berhasil dikirim.';
 
-    // Jalankan verifikasi AI otomatis jika ada file bukti pembayaran gambar
-    if (req.file) {
+    // =========================================================================
+    // ATURAN VERIFIKASI:
+    // 1. Jika TIDAK ADA file gambar bukti yang diunggah -> LANGSUNG DITOLAK OTOMATIS
+    // =========================================================================
+    if (!req.file) {
+      paymentData.status = 'ditolak';
+      paymentData.ai_status = 'ditolak';
+      paymentData.ai_notes = 'Ditolak otomatis oleh AI: Tidak ada file gambar bukti transfer yang dilampirkan.';
+      paymentData.confirmed_at = new Date();
+      paymentData.confirmed_by = null;
+      responseMessage = 'PEMBAYARAN DITOLAK OTOMATIS OLEH AI:\n\nAnda tidak melampirkan file gambar bukti transfer pembayaran kas. Pembayaran langsung ditolak.';
+    } else {
+      // 2. Jalankan verifikasi AI otomatis jika ada file bukti pembayaran gambar
       try {
         const user = await User.findByPk(userId);
         const userAccountName = user ? user.nama_lengkap : (req.user ? req.user.nama_lengkap : '');
@@ -130,6 +150,31 @@ const checkStatus = async (req, res) => {
     const currentMonth = month ? parseInt(month) : new Date().getMonth() + 1;
     const currentYear = year ? parseInt(year) : new Date().getFullYear();
 
+    // Auto-reject jika ada pengajuan pending tanpa gambar bukti
+    try {
+      await Payment.update(
+        {
+          status: 'ditolak',
+          ai_status: 'ditolak',
+          ai_notes: 'Ditolak otomatis oleh AI: Anggota tidak melampirkan file gambar bukti pembayaran.'
+        },
+        {
+          where: {
+            user_id: req.user.id,
+            month: currentMonth,
+            year: currentYear,
+            status: 'pending',
+            [Op.or]: [
+              { proof_path: null },
+              { proof_path: { [Op.notLike]: '/uploads%' } }
+            ]
+          }
+        }
+      );
+    } catch (cleanErr) {
+      console.warn('Auto-reject clean error in checkStatus:', cleanErr.message);
+    }
+
     const payment = await Payment.findOne({
       where: {
         user_id: req.user.id,
@@ -162,6 +207,29 @@ const checkStatus = async (req, res) => {
 
 const getMyHistory = async (req, res) => {
   try {
+    // Otomatis ubah status pending lama yang tidak memiliki bukti gambar menjadi 'ditolak'
+    try {
+      await Payment.update(
+        {
+          status: 'ditolak',
+          ai_status: 'ditolak',
+          ai_notes: 'Ditolak otomatis oleh AI: Tidak ada file gambar bukti pembayaran yang dilampirkan.'
+        },
+        {
+          where: {
+            user_id: req.user.id,
+            status: 'pending',
+            [Op.or]: [
+              { proof_path: null },
+              { proof_path: { [Op.notLike]: '/uploads%' } }
+            ]
+          }
+        }
+      );
+    } catch (cleanErr) {
+      console.warn('Auto-reject clean error:', cleanErr.message);
+    }
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
@@ -239,6 +307,28 @@ const confirmPayment = async (req, res) => {
 
 const getReport = async (req, res) => {
   try {
+    // Otomatis ubah status pembayaran pending lama tanpa gambar bukti menjadi 'ditolak'
+    try {
+      await Payment.update(
+        {
+          status: 'ditolak',
+          ai_status: 'ditolak',
+          ai_notes: 'Ditolak otomatis oleh AI: Anggota tidak melampirkan file gambar bukti pembayaran.'
+        },
+        {
+          where: {
+            status: 'pending',
+            [Op.or]: [
+              { proof_path: null },
+              { proof_path: { [Op.notLike]: '/uploads%' } }
+            ]
+          }
+        }
+      );
+    } catch (cleanErr) {
+      console.warn('Auto-reject clean error in getReport:', cleanErr.message);
+    }
+
     const { month, year, status } = req.query;
     const whereClause = {};
 

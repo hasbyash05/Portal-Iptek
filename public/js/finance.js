@@ -174,21 +174,25 @@ export function closeAdminBuktiModal() {
 export async function payQrisFromModal() {
   const btn = document.getElementById('btn-modal-qris');
   const originalText = btn.innerHTML;
+  const fileInput = document.getElementById('modal-kas-proof');
+
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+    alert("DITOLAK OTOMATIS: Anda wajib mengunggah file foto/screenshot bukti transfer pembayaran kas.");
+    return;
+  }
+
   btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Pembayaran QRIS...`;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi Pembayaran dengan AI...`;
 
   const month = new Date().getMonth() + 1;
   const year = new Date().getFullYear();
-  const fileInput = document.getElementById('modal-kas-proof');
 
   try {
     const formData = new FormData();
     formData.append('month', month);
     formData.append('year', year);
     formData.append('payment_method', 'qris');
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-      formData.append('proof_file', fileInput.files[0]);
-    }
+    formData.append('proof_file', fileInput.files[0]);
 
     const res = await fetchAuth(`${API_BASE}/payments`, {
       method: 'POST',
@@ -198,7 +202,13 @@ export async function payQrisFromModal() {
     if (!res.ok) throw new Error(data.message || 'Gagal mengirim pembayaran QRIS');
 
     if (fileInput) fileInput.value = '';
-    alert("PEMBAYARAN QRIS BERHASIL DIKIRIM!\n\nStatus: MENUNGGU VERIFIKASI BENDAHARA.\nSilakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas agar Anda dapat melakukan presensi.");
+    alert(data.message || 'Pembayaran kas berhasil diproses.');
+
+    if (data.data && data.data.status === 'lunas') {
+      if (typeof checkKasAndUnlockAttendance === 'function') {
+        checkKasAndUnlockAttendance();
+      }
+    }
     closeLockModalAndGoHome();
   } catch (err) {
     alert(`Gagal: ${err.message}`);
@@ -228,17 +238,20 @@ export async function submitKasQris(e) {
   const btn = document.getElementById('btn-pay-qris');
   const originalText = btn.innerHTML;
 
+  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
+    alert("DITOLAK OTOMATIS: Anda wajib mengunggah file foto/screenshot bukti transfer pembayaran kas.");
+    return;
+  }
+
   btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Mengirim Pembayaran QRIS...`;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi Pembayaran dengan AI...`;
 
   try {
     const formData = new FormData();
     formData.append('month', month);
     formData.append('year', year);
     formData.append('payment_method', 'qris');
-    if (fileInput && fileInput.files && fileInput.files[0]) {
-      formData.append('proof_file', fileInput.files[0]);
-    }
+    formData.append('proof_file', fileInput.files[0]);
 
     const res = await fetchAuth(`${API_BASE}/payments`, {
       method: 'POST',
@@ -248,7 +261,13 @@ export async function submitKasQris(e) {
     if (!res.ok) throw new Error(data.message || 'Gagal mengajukan kas');
 
     if (fileInput) fileInput.value = '';
-    alert("PEMBAYARAN QRIS BERHASIL DIKIRIM!\n\nStatus: MENUNGGU VERIFIKASI BENDAHARA.\nSilakan tunggu Pengurus bagian Bendahara memverifikasi pembayaran kas Anda menjadi Lunas.");
+    alert(data.message || 'Pembayaran kas berhasil diproses.');
+
+    if (data.data && data.data.status === 'lunas') {
+      if (typeof checkKasAndUnlockAttendance === 'function') {
+        checkKasAndUnlockAttendance();
+      }
+    }
     loadAnggotaKas();
   } catch (err) {
     alert(`Error: ${err.message}`);

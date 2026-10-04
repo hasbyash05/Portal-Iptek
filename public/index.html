@@ -893,11 +893,10 @@
                     </div>
                   </div>
                   <div class="form-group mb-3" style="text-align: left;">
-                    <label for="kas-proof">Unggah Bukti Pembayaran QRIS (Opsional / Dianjurkan)</label>
-                    <input type="file" id="kas-proof" accept="image/*,.pdf" class="file-input"
+                    <label for="kas-proof">Unggah Bukti Pembayaran QRIS (Wajib Screenshot Transfer) <span style="color: #ef4444;">*</span></label>
+                    <input type="file" id="kas-proof" accept="image/*,.pdf" class="file-input" required
                       style="padding: 0.5rem; background: white; border: 1px solid #d4d4d8; border-radius: 6px; width: 100%;">
-                    <small style="color: #71717a; display: block; margin-top: 4px;">Lampirkan screenshot/foto bukti
-                      transfer agar proses verifikasi Bendahara lebih cepat.</small>
+                    <small style="color: #71717a; display: block; margin-top: 4px;">Wajib melampirkan screenshot transfer. AI akan langsung memverifikasi otomatis.</small>
                   </div>
                   <button type="submit" class="btn btn-primary btn-block" id="btn-pay-qris"
                     style="background: #18181b; font-size: 1rem; padding: 0.8rem;">
@@ -1346,11 +1345,10 @@
         <div style="text-align: left; margin-bottom: 1rem;">
           <label for="modal-kas-proof"
             style="font-size: 0.85rem; font-weight: 700; color: #18181b; display: block; margin-bottom: 4px;">Unggah
-            Bukti Pembayaran QRIS (Opsional / Dianjurkan):</label>
-          <input type="file" id="modal-kas-proof" accept="image/*,.pdf" class="file-input"
+            Bukti Pembayaran QRIS (Wajib Screenshot Transfer) <span style="color: #ef4444;">*</span>:</label>
+          <input type="file" id="modal-kas-proof" accept="image/*,.pdf" class="file-input" required
             style="padding: 0.4rem; background: white; border: 1px solid #d4d4d8; border-radius: 6px; width: 100%; font-size: 0.8rem;">
-          <small style="color: #71717a; display: block; margin-top: 4px; font-size: 0.75rem;">Lampirkan screenshot/foto
-            bukti transfer agar verifikasi lebih cepat.</small>
+          <small style="color: #71717a; display: block; margin-top: 4px; font-size: 0.75rem;">Wajib melampirkan screenshot transfer. AI akan langsung memverifikasi otomatis.</small>
         </div>
 
         <div id="qris-modal-status-box"></div>

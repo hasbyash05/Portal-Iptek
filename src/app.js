@@ -127,6 +127,20 @@ sequelize.authenticate()
       } catch (aiMigErr) {
         console.warn('[DB] Migrasi AI verification payments:', aiMigErr.message);
       }
+
+      // Auto-reject pembayaran pending yang tidak memiliki gambar bukti pembayaran
+      try {
+        await sequelize.query(`
+          UPDATE \`payments\` 
+          SET \`status\` = 'ditolak', 
+              \`ai_status\` = 'ditolak', 
+              \`ai_notes\` = 'Ditolak otomatis oleh AI: Tidak ada file gambar bukti pembayaran yang dilampirkan.' 
+          WHERE \`status\` = 'pending' AND (\`proof_path\` IS NULL OR \`proof_path\` NOT LIKE '/uploads%')
+        `);
+        console.log("[DB] Auto-reject pembayaran pending tanpa bukti pembayaran selesai.");
+      } catch (cleanErr) {
+        console.warn('[DB] Auto-reject pending no-proof:', cleanErr.message);
+      }
     }
   })
   .catch((error) => {
