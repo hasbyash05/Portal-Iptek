@@ -3,6 +3,9 @@ import { loadDocumentTemplates } from './academic.js';
 export const API_BASE = '/api';
 
 let _anggotaDebounce = null;
+let _previousTab = 'overview';
+let _currentProfileUserId = null;
+
 export async function loadPengurusOverview() {
   try {
     const res = await fetchAuth(`${API_BASE}/dashboard/stats`);
@@ -36,7 +39,7 @@ export async function loadPengurusOverview() {
       const listContainer = document.getElementById('recent-reports-list');
       const reports = data.data.recentReports || [];
       if (reports.length === 0) {
-        listContainer.innerHTML = `<p class="text-muted">Belum ada aktivitas dilaporkan.</p>`;
+        listContainer.innerHTML = '<p class="text-muted">Belum ada aktivitas dilaporkan.</p>';
       } else {
         listContainer.innerHTML = reports.map(r => `
           <div style="padding: 0.8rem 0; border-bottom: 1px solid var(--border-color);">
@@ -88,7 +91,7 @@ export async function loadPengurusLaporan() {
     const items = histData.data ? histData.data.items : [];
 
     if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center">Belum ada riwayat laporan kegiatan divisi.</td></tr>`;
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center">Belum ada riwayat laporan kegiatan divisi.</td></tr>';
     } else {
       tbody.innerHTML = items.map(r => `
         <tr>
@@ -173,16 +176,17 @@ export async function loadAnggotaList() {
       tbody.innerHTML = data.data.map((u, i) => `
         <tr>
           <td>${i + 1}</td>
-          <td style="font-weight:500;">${escapeHtml(u.nama_lengkap)}</td>
+          <td><a href="javascript:void(0)" onclick="openProfile(${u.id})" style="font-weight:500; color:#18181b; text-decoration:none; border-bottom:1px dashed #a1a1aa; cursor:pointer;" onmouseover="this.style.color='#4b5563'" onmouseout="this.style.color='#18181b'">${escapeHtml(u.nama_lengkap)}</a></td>
           <td><code style="font-size:0.8rem; background:#f4f4f5; padding:0.15rem 0.4rem; border-radius:4px;">${escapeHtml(u.username)}</code></td>
           <td><span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:4px; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; ${u.role === 'admin' ? 'background:#dc2626; color:#fff;' : (u.role === 'pengurus' ? 'background:#18181b; color:#fff;' : 'background:#f4f4f5; color:#4b5563;')}">${u.role}</span></td>
           <td style="color:${u.divisi ? '#18181b' : '#a1a1aa'};">${u.divisi || '-'}</td>
           <td>
             <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+              <button onclick="openProfile(${u.id})" title="Lihat Profil" style="background:none; border:1px solid #e4e4e7; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#4b5563; font-size:0.8rem;"><i class="fa-solid fa-user"></i></button>
               ${isAdminUser ? `
                 <button onclick="showEditUserModal(${u.id})" title="Edit" style="background:none; border:1px solid #e4e4e7; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#4b5563; font-size:0.8rem;"><i class="fa-solid fa-pen-to-square"></i></button>
                 <button onclick="showResetPasswordModal(${u.id})" title="Reset Password" style="background:none; border:1px solid #e4e4e7; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#4b5563; font-size:0.8rem;"><i class="fa-solid fa-key"></i></button>
-                ${u.id !== currentUser.id ? `<button onclick="showDeleteUserModal(${u.id}, '${escapeHtml(u.nama_lengkap).replace(/'/g, "\\'")}')" title="Hapus (Pengurangan)" style="background:none; border:1px solid #fecaca; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#dc2626; font-size:0.8rem;"><i class="fa-solid fa-trash"></i></button>` : ''}
+                ${u.id !== currentUser.id ? `<button onclick="showDeleteUserModal(${u.id}, '${escapeHtml(u.nama_lengkap).replace(/'/g, "\\\\'")}')" title="Hapus (Pengurangan)" style="background:none; border:1px solid #fecaca; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#dc2626; font-size:0.8rem;"><i class="fa-solid fa-trash"></i></button>` : ''}
               ` : `<span style="font-size:0.75rem; color:#a1a1aa;"><i class="fa-solid fa-lock" style="font-size:0.7rem;"></i> Khusus Admin</span>`}
             </div>
           </td>
@@ -190,6 +194,14 @@ export async function loadAnggotaList() {
       `).join('');
 
       if (countEl) countEl.textContent = `Menampilkan ${data.data.length} akun`;
+
+      // Tampilkan panel sertifikat untuk pengurus/admin
+      const isPengurusOrAdmin = currentUser.role === 'admin' || currentUser.role === 'pengurus';
+      const certPanel = document.getElementById('view-sertifikat-pengurus');
+      if (certPanel) {
+        certPanel.style.display = isPengurusOrAdmin ? 'block' : 'none';
+        if (isPengurusOrAdmin) loadCertificates();
+      }
     } catch (err) {
       console.error('loadAnggotaList error:', err);
     }
@@ -199,6 +211,329 @@ export async function loadAnggotaList() {
 export function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// ========== PROFIL ANGGOTA ==========
+
+export function openMyProfile() {
+  const userStr = localStorage.getItem('iptek_user');
+  if (!userStr) return;
+  const user = JSON.parse(userStr);
+  openProfile(user.id);
+}
+
+export function openProfile(userId) {
+  // Simpan tab sebelumnya agar bisa kembali
+  const activeTab = document.querySelector('.nav-link.active');
+  if (activeTab) _previousTab = activeTab.getAttribute('data-tab') || 'overview';
+
+  // Sembunyikan semua tab, tampilkan profil
+  document.querySelectorAll('#main-view .tab-content').forEach(c => {
+    if (c.parentElement.id === 'main-view') c.style.display = 'none';
+  });
+  const profilTab = document.getElementById('tab-profil');
+  if (profilTab) profilTab.style.display = 'block';
+
+  // Tutup dropdown akun
+  const accountItem = document.getElementById('nav-item-akun');
+  if (accountItem) accountItem.classList.remove('active');
+
+  // Deaktifkan semua nav link
+  document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+
+  if (window.location.hash !== '#profil') {
+    history.pushState(null, null, '#profil');
+  }
+
+  loadProfileData(userId);
+}
+
+export function closeProfile() {
+  if (typeof window.switchNavTab === 'function') {
+    window.switchNavTab(_previousTab || 'overview');
+  }
+}
+
+export async function loadProfileData(userId) {
+  try {
+    _currentProfileUserId = userId;
+    const res = await fetchAuth(`${API_BASE}/certificates/profile/${userId}`);
+    const data = await res.json();
+
+    if (data.status !== 'success') {
+      alert(data.message || 'Gagal memuat profil.');
+      return;
+    }
+
+    const { user, attendance, certificates } = data.data;
+
+    // Header
+    document.getElementById('profile-nama').textContent = user.nama_lengkap;
+    const roleText = user.divisi ? `${user.divisi} (${user.role.toUpperCase()})` : user.role.toUpperCase();
+    document.getElementById('profile-role').textContent = roleText;
+    const joinDate = user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+    document.getElementById('profile-joined').textContent = `Bergabung: ${joinDate}`;
+
+    // Tombol upload sertifikat (khusus Pengurus / Admin)
+    const curUserStr = localStorage.getItem('iptek_user');
+    const curUser = curUserStr ? JSON.parse(curUserStr) : null;
+    const isPengurusOrAdmin = curUser && (curUser.role === 'admin' || curUser.role === 'pengurus');
+    const btnUpload = document.getElementById('btn-upload-cert-profile');
+    if (btnUpload) btnUpload.style.display = isPengurusOrAdmin ? 'inline-flex' : 'none';
+
+    // Statistik kehadiran
+    const rateEl = document.getElementById('profile-persentase');
+    if (rateEl) rateEl.textContent = `${attendance.persentase || 0}%`;
+    const rateBadge = document.getElementById('profile-attendance-rate-badge');
+    if (rateBadge) {
+      const p = attendance.persentase || 0;
+      rateBadge.textContent = `${p}% Kehadiran`;
+      rateBadge.style.color = p >= 75 ? '#166534' : (p >= 50 ? '#854d0e' : '#991b1b');
+      rateBadge.style.background = p >= 75 ? '#f0fdf4' : (p >= 50 ? '#fefce8' : '#fef2f2');
+    }
+
+    document.getElementById('profile-total-pertemuan').textContent = attendance.total_pertemuan || 0;
+    document.getElementById('profile-hadir').textContent = attendance.hadir || 0;
+    document.getElementById('profile-izin').textContent = attendance.izin || 0;
+    document.getElementById('profile-sakit').textContent = attendance.sakit || 0;
+    document.getElementById('profile-alpa').textContent = attendance.alpa || 0;
+
+    // Status absen hari ini banner
+    const todayBox = document.getElementById('profile-today-attendance');
+    if (todayBox) {
+      if (attendance.today) {
+        let timeStr = '';
+        if (attendance.today.waktu) {
+          try {
+            timeStr = ' pukul ' + new Date(attendance.today.waktu).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+          } catch (e) {
+            timeStr = '';
+          }
+        }
+        todayBox.style.display = 'block';
+        todayBox.innerHTML = `
+          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:0.75rem 1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; font-size:0.85rem; color:#166534;">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <i class="fa-solid fa-circle-check" style="font-size:1.1rem; color:#16a34a;"></i>
+              <div><strong>Absensi Hari Ini:</strong> Tercatat sebagai <span style="text-transform:uppercase; font-weight:700; background:#dcfce7; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.8rem;">${attendance.today.status}</span>${timeStr}</div>
+            </div>
+            <span style="font-size:0.75rem; color:#15803d; font-weight:600;"><i class="fa-solid fa-check"></i> Selesai</span>
+          </div>
+        `;
+      } else {
+        const isSelf = curUser && String(curUser.id) === String(userId);
+        todayBox.style.display = 'block';
+        todayBox.innerHTML = `
+          <div style="background:#f8f9fa; border:1px solid #e4e4e7; border-radius:8px; padding:0.75rem 1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; font-size:0.85rem; color:#71717a;">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <i class="fa-solid fa-clock" style="font-size:1.1rem; color:#a1a1aa;"></i>
+              <div><strong>Absensi Hari Ini:</strong> Belum ada catatan absensi untuk hari ini.</div>
+            </div>
+            ${isSelf ? `
+              <button onclick="switchNavTab('absensi')" class="btn btn-outline" style="font-size:0.78rem; padding:0.3rem 0.75rem; color:#18181b;">
+                Buka Absensi <i class="fa-solid fa-arrow-right" style="font-size:0.65rem;"></i>
+              </button>
+            ` : ''}
+          </div>
+        `;
+      }
+    }
+
+    // Riwayat absensi orang tersebut
+    const attList = attendance.records || attendance.recent || [];
+    const attCount = document.getElementById('profile-attendance-count');
+    if (attCount) attCount.textContent = `${attList.length} total presensi`;
+
+    const attBody = document.getElementById('profile-attendance-list');
+    if (attList.length > 0) {
+      attBody.innerHTML = attList.map((a, i) => {
+        let dateStr = a.date;
+        try {
+          const parts = a.date.split('-');
+          if (parts.length === 3) {
+            const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+            dateStr = d.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+          }
+        } catch (e) {
+          dateStr = a.date;
+        }
+
+        let timeStr = '-';
+        if (a.created_at) {
+          try {
+            timeStr = new Date(a.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + ' WIB';
+          } catch (e) {
+            timeStr = '-';
+          }
+        }
+
+        const statusColors = {
+          hadir: 'background:#f0fdf4; color:#166534; border:1px solid #bbf7d0;',
+          izin: 'background:#fefce8; color:#854d0e; border:1px solid #fef08a;',
+          sakit: 'background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;',
+          alpa: 'background:#fef2f2; color:#991b1b; border:1px solid #fecaca;'
+        };
+        const statusStyle = statusColors[a.status] || 'background:#f4f4f5; color:#71717a;';
+
+        return `<tr>
+          <td style="font-size:0.85rem; color:#71717a;">${i + 1}</td>
+          <td style="font-size:0.85rem; font-weight:500; color:#18181b;">${escapeHtml(dateStr)}</td>
+          <td style="font-size:0.85rem; color:#71717a;"><i class="fa-regular fa-clock" style="font-size:0.75rem; margin-right:4px;"></i>${timeStr}</td>
+          <td><span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:4px; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; ${statusStyle}">${escapeHtml(a.status)}</span></td>
+        </tr>`;
+      }).join('');
+    } else {
+      attBody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:#a1a1aa; padding:1.5rem 0;">Belum ada riwayat absensi untuk anggota ini.</td></tr>';
+    }
+
+    // Sertifikat
+    const certContainer = document.getElementById('profile-cert-list');
+    const certCount = document.getElementById('profile-cert-count');
+    if (certCount) certCount.textContent = `${certificates.length} sertifikat`;
+
+    if (certificates.length === 0) {
+      certContainer.innerHTML = '<p style="color:#a1a1aa; font-size:0.85rem;">Belum ada sertifikat.</p>';
+    } else {
+      certContainer.innerHTML = certificates.map(c => {
+        const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
+        const isImage = c.file_path && c.file_path.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+        return `<div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+          <div style="width:40px; height:40px; background:#f4f4f5; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <i class="fa-solid ${isImage ? 'fa-image' : 'fa-file-pdf'}" style="color:#71717a; font-size:1rem;"></i>
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-weight:600; color:#18181b; font-size:0.9rem;">${escapeHtml(c.nama_sertifikat)}</div>
+            <div style="font-size:0.75rem; color:#a1a1aa; margin-top:0.2rem;">Diunggah oleh ${escapeHtml(c.uploaded_by_name)} - ${dateStr}</div>
+          </div>
+          <a href="${c.file_path}" target="_blank" class="btn btn-outline" style="font-size:0.8rem; padding:0.35rem 0.8rem; white-space:nowrap;">
+            <i class="fa-solid fa-download"></i> Unduh
+          </a>
+        </div>`;
+      }).join('');
+    }
+  } catch (err) {
+    console.error('loadProfileData error:', err);
+    alert('Gagal memuat data profil.');
+  }
+}
+
+// ========== MANAJEMEN SERTIFIKAT (Pengurus) ==========
+
+export async function loadCertificates() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/certificates`);
+    const data = await res.json();
+    const tbody = document.getElementById('table-sertifikat');
+    if (!tbody) return;
+
+    if (data.status !== 'success' || !data.data || data.data.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center" style="color:#71717a;">Belum ada sertifikat yang diunggah.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = data.data.map((c, i) => {
+      const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+      return `<tr>
+        <td>${i + 1}</td>
+        <td style="font-weight:500;">${escapeHtml(c.owner_name)}</td>
+        <td>${escapeHtml(c.nama_sertifikat)}</td>
+        <td style="font-size:0.85rem; color:#71717a;">${escapeHtml(c.uploaded_by_name)}</td>
+        <td style="font-size:0.85rem; color:#71717a;">${dateStr}</td>
+        <td>
+          <div style="display:flex; gap:0.4rem;">
+            <a href="${c.file_path}" target="_blank" title="Lihat" style="background:none; border:1px solid #e4e4e7; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#4b5563; font-size:0.8rem; text-decoration:none;"><i class="fa-solid fa-eye"></i></a>
+            <button onclick="deleteCertificate(${c.id})" title="Hapus" style="background:none; border:1px solid #fecaca; border-radius:5px; padding:0.3rem 0.5rem; cursor:pointer; color:#dc2626; font-size:0.8rem;"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  } catch (err) {
+    console.error('loadCertificates error:', err);
+  }
+}
+
+export async function showUploadCertModal(defaultUserId = null) {
+  // Muat daftar user ke dropdown
+  try {
+    const res = await fetchAuth(`${API_BASE}/users`);
+    const data = await res.json();
+    const select = document.getElementById('cert-user-select');
+    if (data.status === 'success' && data.data) {
+      select.innerHTML = '<option value="">-- Pilih Anggota --</option>' +
+        data.data.map(u => `<option value="${u.id}">${escapeHtml(u.nama_lengkap)} (${u.role})</option>`).join('');
+
+      const targetId = defaultUserId || _currentProfileUserId;
+      if (targetId) {
+        select.value = String(targetId);
+      }
+    }
+  } catch (err) {
+    console.error('Gagal memuat daftar user:', err);
+  }
+  document.getElementById('cert-nama').value = '';
+  document.getElementById('cert-file').value = '';
+  document.getElementById('modal-upload-cert').style.display = 'flex';
+}
+
+export function closeUploadCertModal() {
+  document.getElementById('modal-upload-cert').style.display = 'none';
+}
+
+export async function submitCertificate() {
+  const userId = document.getElementById('cert-user-select').value;
+  const nama = document.getElementById('cert-nama').value.trim();
+  const fileInput = document.getElementById('cert-file');
+
+  if (!userId) return alert('Pilih penerima sertifikat.');
+  if (!nama) return alert('Nama sertifikat wajib diisi.');
+  if (!fileInput.files[0]) return alert('Pilih file sertifikat.');
+
+  const btn = document.getElementById('btn-submit-cert');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Mengunggah...';
+
+  try {
+    const formData = new FormData();
+    formData.append('user_id', userId);
+    formData.append('nama_sertifikat', nama);
+    formData.append('certificate_file', fileInput.files[0]);
+
+    const res = await fetchAuth(`${API_BASE}/certificates`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal mengunggah sertifikat.');
+
+    closeUploadCertModal();
+    loadCertificates();
+    if (_currentProfileUserId && document.getElementById('tab-profil') && document.getElementById('tab-profil').style.display !== 'none') {
+      loadProfileData(_currentProfileUserId);
+    }
+    alert(data.message || 'Sertifikat berhasil diunggah.');
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
+export async function deleteCertificate(id) {
+  if (!confirm('Yakin ingin menghapus sertifikat ini?')) return;
+  try {
+    const res = await fetchAuth(`${API_BASE}/certificates/${id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal menghapus.');
+    loadCertificates();
+    if (_currentProfileUserId && document.getElementById('tab-profil') && document.getElementById('tab-profil').style.display !== 'none') {
+      loadProfileData(_currentProfileUserId);
+    }
+    alert(data.message || 'Sertifikat berhasil dihapus.');
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 export function showAddUserModal() {
@@ -391,4 +726,3 @@ export async function confirmDeleteUser() {
     alert(err.message);
   }
 }
-

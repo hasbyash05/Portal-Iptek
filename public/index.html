@@ -64,12 +64,13 @@
           <ul class="dropdown-menu" id="accountDropdown"
             style="right: 0; left: auto; padding: 0.8rem 1rem; min-width: 220px;">
             <li
-              style="padding: 0.2rem 0 0.6rem 0; border-bottom: 1px solid var(--border-color); margin-bottom: 0.6rem; cursor: default;"
-              onclick="event.stopPropagation()">
+              style="padding: 0.2rem 0 0.6rem 0; border-bottom: 1px solid var(--border-color); margin-bottom: 0.6rem; cursor: pointer;"
+              onclick="event.stopPropagation(); openMyProfile();">
               <strong id="nav-fullname"
                 style="display: block; font-size: 0.9rem; color: #18181b; line-height: 1.3;">Nama Lengkap</strong>
               <small id="nav-divisi"
                 style="font-size: 0.75rem; color: #71717a; display: block; margin-top: 2px;">Divisi</small>
+              <small style="font-size: 0.7rem; color: #a1a1aa; display: block; margin-top: 4px;"><i class="fa-solid fa-arrow-right" style="font-size: 0.6rem;"></i> Lihat Profil</small>
             </li>
             <li>
               <button class="btn btn-logout btn-block" onclick="logout()"
@@ -1131,6 +1132,106 @@
         </div>
       </div>
 
+      <!-- PROFIL ANGGOTA -->
+      <div id="tab-profil" class="tab-content" style="display: none;">
+        <div class="section-box">
+          <div style="margin-bottom: 1.5rem;">
+            <button onclick="closeProfile()" style="background:none; border:none; cursor:pointer; color:#71717a; font-size:0.85rem; padding:0; display:inline-flex; align-items:center; gap:0.4rem;" onmouseover="this.style.color='#18181b'" onmouseout="this.style.color='#71717a'">
+              <i class="fa-solid fa-arrow-left"></i> Kembali
+            </button>
+          </div>
+
+          <!-- Header Profil -->
+          <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; flex-wrap:wrap;">
+            <div style="width:72px; height:72px; background:#f4f4f5; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+              <i class="fa-solid fa-user" style="font-size:1.8rem; color:#a1a1aa;"></i>
+            </div>
+            <div>
+              <h2 id="profile-nama" style="font-family:'Outfit',sans-serif; font-size:1.5rem; font-weight:700; color:#18181b; margin:0;">Nama Lengkap</h2>
+              <p id="profile-role" style="color:#71717a; font-size:0.85rem; margin:0.25rem 0 0 0;">Role</p>
+              <p id="profile-joined" style="color:#a1a1aa; font-size:0.78rem; margin:0.15rem 0 0 0;">Bergabung: -</p>
+            </div>
+          </div>
+
+          <!-- Statistik Kehadiran -->
+          <div style="margin-bottom:2rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+              <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0;">Statistik Kehadiran</h3>
+              <span id="profile-attendance-rate-badge" style="font-size:0.8rem; font-weight:600; padding:0.25rem 0.65rem; border-radius:4px; background:#f4f4f5; color:#18181b;"></span>
+            </div>
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:0.75rem;">
+              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
+                <div id="profile-persentase" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#18181b;">0%</div>
+                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Tingkat Hadir</div>
+              </div>
+              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
+                <div id="profile-total-pertemuan" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#18181b;">0</div>
+                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Total Pertemuan</div>
+              </div>
+              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
+                <div id="profile-hadir" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#166534;">0</div>
+                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Hadir</div>
+              </div>
+              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
+                <div id="profile-izin" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#71717a;">0</div>
+                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Izin</div>
+              </div>
+              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
+                <div id="profile-sakit" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#71717a;">0</div>
+                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Sakit</div>
+              </div>
+              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
+                <div id="profile-alpa" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#dc2626;">0</div>
+                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Alpa</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Riwayat Lengkap Absensi -->
+          <div style="margin-bottom:2rem;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
+              <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0;">Riwayat Absensi & Kehadiran</h3>
+              <span id="profile-attendance-count" style="font-size:0.8rem; color:#71717a;"></span>
+            </div>
+
+            <!-- Banner Status Absen Hari Ini -->
+            <div id="profile-today-attendance" style="margin-bottom:1rem; display:none;"></div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width:50px;">No</th>
+                    <th>Hari & Tanggal</th>
+                    <th>Waktu Presensi</th>
+                    <th>Status Kehadiran</th>
+                  </tr>
+                </thead>
+                <tbody id="profile-attendance-list">
+                  <tr><td colspan="4" class="text-center">Memuat riwayat absensi...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sertifikat -->
+          <div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0;">Sertifikat</h3>
+                <span id="profile-cert-count" style="font-size:0.8rem; color:#71717a;"></span>
+              </div>
+              <button id="btn-upload-cert-profile" class="btn btn-primary" onclick="showUploadCertModal()" style="display:none; font-size:0.8rem; padding:0.35rem 0.8rem;">
+                <i class="fa-solid fa-upload"></i> Unggah Sertifikat
+              </button>
+            </div>
+            <div id="profile-cert-list" style="display:grid; gap:0.75rem;">
+              <p style="color:#a1a1aa; font-size:0.85rem;">Memuat sertifikat...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ANGGOTA -->
       <div id="tab-anggota" class="tab-content" style="display: none;">
         <div id="view-anggota-pengurus">
@@ -1185,6 +1286,67 @@
               </table>
             </div>
             <p id="anggota-count" style="color: #71717a; font-size: 0.8rem; margin-top: 0.75rem;"></p>
+          </div>
+
+          <!-- Panel Sertifikat (Pengurus) -->
+          <div id="view-sertifikat-pengurus" style="display:none; margin-top:2rem;">
+            <div class="section-box">
+              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+                <div>
+                  <h2 style="font-family:'Outfit',sans-serif; font-size:1.5rem; font-weight:700; color:#18181b; margin:0;">Manajemen Sertifikat</h2>
+                  <p style="color:#71717a; font-size:0.9rem; margin:0.25rem 0 0 0;">Unggah sertifikat untuk anggota. Nama file otomatis mengikuti nama lengkap penerima.</p>
+                </div>
+                <button class="btn btn-primary" onclick="showUploadCertModal()" style="white-space:nowrap;">
+                  <i class="fa-solid fa-upload"></i> Unggah Sertifikat
+                </button>
+              </div>
+
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>No</th>
+                      <th>Penerima</th>
+                      <th>Nama Sertifikat</th>
+                      <th>Diunggah Oleh</th>
+                      <th>Tanggal</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-sertifikat">
+                    <tr><td colspan="6" class="text-center">Memuat...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MODAL: Upload Sertifikat -->
+        <div id="modal-upload-cert"
+          style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+          <div style="background:#fff; border-radius:10px; padding:2rem; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.12);">
+            <h3 style="font-family:'Outfit',sans-serif; font-size:1.2rem; font-weight:700; color:#18181b; margin:0 0 1.5rem 0;">Unggah Sertifikat</h3>
+            <div style="margin-bottom:1rem;">
+              <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Penerima (Anggota)</label>
+              <select id="cert-user-select" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; background:#fff; box-sizing:border-box;">
+                <option value="">-- Pilih Anggota --</option>
+              </select>
+            </div>
+            <div style="margin-bottom:1rem;">
+              <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Nama Sertifikat</label>
+              <input type="text" id="cert-nama" placeholder="Contoh: Sertifikat Pelatihan Web Development" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+              <small style="color:#a1a1aa; font-size:0.75rem;">Nama file hasil akan otomatis: NamaLengkap_NamaSertifikat</small>
+            </div>
+            <div style="margin-bottom:1.5rem;">
+              <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">File Sertifikat</label>
+              <input type="file" id="cert-file" accept=".pdf,.jpg,.jpeg,.png,image/*" style="width:100%; padding:0.4rem; background:white; border:1px solid #d4d4d8; border-radius:6px; font-size:0.8rem; box-sizing:border-box;">
+              <small style="color:#a1a1aa; font-size:0.75rem;">Format: PDF, JPG, PNG (Maks 50MB)</small>
+            </div>
+            <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+              <button class="btn" onclick="closeUploadCertModal()" style="background:#f4f4f5; color:#4b5563; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Batal</button>
+              <button class="btn btn-primary" onclick="submitCertificate()" id="btn-submit-cert" style="padding:0.55rem 1.2rem; font-size:0.85rem;">Unggah</button>
+            </div>
           </div>
         </div>
 

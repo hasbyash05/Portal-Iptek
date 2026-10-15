@@ -79,8 +79,17 @@ window.closeResetResultModal = Dashboard.closeResetResultModal;
 window.showDeleteUserModal = Dashboard.showDeleteUserModal;
 window.closeDeleteModal = Dashboard.closeDeleteModal;
 window.confirmDeleteUser = Dashboard.confirmDeleteUser;
+window.openMyProfile = Dashboard.openMyProfile;
+window.openProfile = Dashboard.openProfile;
+window.closeProfile = Dashboard.closeProfile;
+window.loadProfileData = Dashboard.loadProfileData;
+window.loadCertificates = Dashboard.loadCertificates;
+window.showUploadCertModal = Dashboard.showUploadCertModal;
+window.closeUploadCertModal = Dashboard.closeUploadCertModal;
+window.submitCertificate = Dashboard.submitCertificate;
+window.deleteCertificate = Dashboard.deleteCertificate;
 
 document.addEventListener('DOMContentLoaded', () => { Auth.checkAuth(); });
 document.addEventListener('click', (e) => { const item = document.getElementById('nav-item-akun'); if (item && !item.contains(e.target)) item.classList.remove('active'); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const nav = document.getElementById('navMenu'); if (nav && nav.classList.contains('mobile-open')) Router.toggleMobileMenu(false); const item = document.getElementById('nav-item-akun'); if (item && item.classList.contains('active')) item.classList.remove('active'); const qrisModal = document.getElementById('qris-lock-modal'); if (qrisModal && qrisModal.style.display !== 'none') Finance.closeLockModalAndGoHome(); } });
-window.addEventListener('hashchange', () => { const hashTab = window.location.hash.replace('#', ''); const userStr = localStorage.getItem('iptek_user'); if (!userStr || !hashTab) return; const user = JSON.parse(userStr); const validTabs = (user.role === 'pengurus' || user.role === 'admin') ? ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'] : ['overview', 'materi', 'absensi', 'kas']; if (validTabs.includes(hashTab)) Router.switchNavTab(hashTab, true); });
+window.addEventListener('hashchange', () => { const hashTab = window.location.hash.replace('#', ''); const userStr = localStorage.getItem('iptek_user'); if (!userStr || !hashTab) return; const user = JSON.parse(userStr); if (hashTab === 'profil') { Dashboard.openMyProfile(); return; } const validTabs = (user.role === 'pengurus' || user.role === 'admin') ? ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'] : ['overview', 'materi', 'absensi', 'kas']; if (validTabs.includes(hashTab)) Router.switchNavTab(hashTab, true); });

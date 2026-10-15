@@ -16,6 +16,8 @@ const storage = multer.diskStorage({
       folder = 'public/uploads/materials';
     } else if (file.fieldname === 'template_file' || req.baseUrl.includes('templates')) {
       folder = 'public/uploads/templates';
+    } else if (file.fieldname === 'certificate_file' || req.baseUrl.includes('certificates')) {
+      folder = 'public/uploads/certificates';
     } else if (file.fieldname === 'attachment' || req.baseUrl.includes('reports')) {
       folder = 'public/uploads/reports';
     } else if (file.fieldname === 'proof_file' || req.baseUrl.includes('payments')) {

@@ -60,6 +60,12 @@ const { DocumentTemplate } = require('./DocumentTemplate');
 User.hasMany(DocumentTemplate, { foreignKey: 'uploaded_by', as: 'templates' });
 DocumentTemplate.belongsTo(User, { foreignKey: 'uploaded_by', as: 'uploader' });
 
+const { Certificate } = require('./Certificate');
+User.hasMany(Certificate, { foreignKey: 'user_id', as: 'certificates' });
+Certificate.belongsTo(User, { foreignKey: 'user_id', as: 'owner' });
+User.hasMany(Certificate, { foreignKey: 'uploaded_by', as: 'uploadedCertificates' });
+Certificate.belongsTo(User, { foreignKey: 'uploaded_by', as: 'uploader' });
+
 module.exports = {
   sequelize,
   User,
@@ -72,5 +78,6 @@ module.exports = {
   TeachingSchedule,
   ScheduleMaterial,
   DocumentTemplate,
-  KasExpense
+  KasExpense,
+  Certificate
 };

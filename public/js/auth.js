@@ -140,7 +140,11 @@ export function checkAuth() {
   const validTabsAnggota = ['overview', 'materi', 'absensi', 'kas'];
   const validTabs = (user.role === 'pengurus' || user.role === 'admin') ? validTabsPengurus : validTabsAnggota;
 
-  if (typeof window.switchNavTab === 'function') {
+  if (hashTab === 'profil') {
+    if (typeof window.openMyProfile === 'function') {
+      window.openMyProfile();
+    }
+  } else if (typeof window.switchNavTab === 'function') {
     if (hashTab && validTabs.includes(hashTab)) {
       window.switchNavTab(hashTab, true);
     } else {
