@@ -286,6 +286,16 @@ export async function loadProfileData(userId) {
     const btnUpload = document.getElementById('btn-upload-cert-profile');
     if (btnUpload) btnUpload.style.display = isPengurusOrAdmin ? 'inline-flex' : 'none';
 
+    // Avatar Monogram (Inisial nama, tanpa ikon karakter)
+    const avatarEl = document.getElementById('profile-avatar');
+    if (avatarEl) {
+      const parts = (user.nama_lengkap || '').trim().split(/\s+/).filter(Boolean);
+      const initials = parts.length > 1 
+        ? (parts[0][0] + parts[1][0]).toUpperCase() 
+        : (parts[0] ? parts[0].slice(0, 2).toUpperCase() : 'IP');
+      avatarEl.textContent = initials;
+    }
+
     // Statistik kehadiran
     const rateEl = document.getElementById('profile-persentase');
     if (rateEl) rateEl.textContent = `${attendance.persentase || 0}%`;
@@ -306,7 +316,7 @@ export async function loadProfileData(userId) {
     document.getElementById('profile-sakit').textContent = attendance.sakit || 0;
     document.getElementById('profile-alpa').textContent = attendance.alpa || 0;
 
-    // Status absen hari ini banner
+    // Status absen hari ini banner (tipografi bersih tanpa karakter ikon emoji)
     const todayBox = document.getElementById('profile-today-attendance');
     if (todayBox) {
       if (attendance.today) {
@@ -321,11 +331,8 @@ export async function loadProfileData(userId) {
         todayBox.style.display = 'block';
         todayBox.innerHTML = `
           <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #18181b; border-radius: 6px; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; font-size: 0.88rem; color: #18181b;">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <i class="fa-solid fa-circle-check" style="font-size: 1.1rem; color: #18181b;"></i>
-              <div><strong>Status Hari Ini:</strong> Tercatat sebagai <span style="background: #18181b; color: #ffffff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">${attendance.today.status}</span>${timeStr}</div>
-            </div>
-            <span style="font-size: 0.78rem; color: #71717a; font-weight: 600;"><i class="fa-solid fa-check" style="margin-right: 4px;"></i>Presensi Selesai</span>
+            <div><strong>Status Hari Ini:</strong> Tercatat sebagai <span style="background: #18181b; color: #ffffff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">${attendance.today.status}</span>${timeStr}</div>
+            <span style="font-size: 0.78rem; color: #71717a; font-weight: 600;">Presensi Selesai</span>
           </div>
         `;
       } else {
@@ -333,13 +340,10 @@ export async function loadProfileData(userId) {
         todayBox.style.display = 'block';
         todayBox.innerHTML = `
           <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #71717a; border-radius: 6px; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; font-size: 0.88rem; color: #4b5563;">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <i class="fa-solid fa-clock" style="font-size: 1.1rem; color: #71717a;"></i>
-              <div><strong>Status Hari Ini:</strong> Belum ada catatan absensi untuk hari ini.</div>
-            </div>
+            <div><strong>Status Hari Ini:</strong> Belum ada catatan absensi untuk hari ini.</div>
             ${isSelf ? `
               <button onclick="switchNavTab('absensi')" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.85rem; border-radius: 4px;">
-                Buka Presensi <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem; margin-left: 4px;"></i>
+                Buka Presensi
               </button>
             ` : ''}
           </div>
@@ -386,7 +390,7 @@ export async function loadProfileData(userId) {
         return `<tr>
           <td style="width: 60px; text-align: center; color: #71717a; font-size: 0.85rem;">${i + 1}</td>
           <td style="font-weight: 600; color: #18181b; font-size: 0.88rem;">${escapeHtml(dateStr)}</td>
-          <td style="color: #71717a; font-size: 0.85rem;">${a.created_at ? `<i class="fa-regular fa-clock" style="font-size: 0.75rem; margin-right: 6px;"></i>${timeStr}` : '-'}</td>
+          <td style="color: #71717a; font-size: 0.85rem;">${a.created_at ? timeStr : '-'}</td>
           <td><span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; ${statusStyle}">${escapeHtml(a.status)}</span></td>
         </tr>`;
       }).join('');
@@ -407,16 +411,16 @@ export async function loadProfileData(userId) {
         const isImage = c.file_path && c.file_path.match(/\.(jpg|jpeg|png|gif|webp)$/i);
         return `<div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 6px; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 1rem; min-width: 0;">
-            <div style="width: 44px; height: 44px; background: #f4f4f5; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #18181b;">
-              <i class="fa-solid ${isImage ? 'fa-image' : 'fa-file-pdf'}" style="font-size: 1.15rem;"></i>
+            <div style="width: 44px; height: 44px; background: #f4f4f5; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #18181b; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em;">
+              ${isImage ? 'IMG' : 'PDF'}
             </div>
             <div style="min-width: 0;">
               <div style="font-weight: 700; color: #18181b; font-size: 0.95rem; font-family: 'Outfit', sans-serif;">${escapeHtml(c.nama_sertifikat)}</div>
               <div style="font-size: 0.8rem; color: #71717a; margin-top: 0.2rem;">Diunggah oleh ${escapeHtml(c.uploaded_by_name)} • ${dateStr}</div>
             </div>
           </div>
-          <a href="${c.file_path}" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.95rem; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 6px; color: #18181b; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.03);" onmouseover="this.style.background='#f4f4f5'" onmouseout="this.style.background='#ffffff'">
-            <i class="fa-solid fa-download"></i> Unduh
+          <a href="${c.file_path}" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.95rem; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 6px; color: #18181b; display: inline-flex; align-items: center; font-weight: 600; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.03);" onmouseover="this.style.background='#f4f4f5'" onmouseout="this.style.background='#ffffff'">
+            Unduh
           </a>
         </div>`;
       }).join('');

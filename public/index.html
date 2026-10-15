@@ -1137,9 +1137,9 @@
         <!-- Top Navigation / Back Button -->
         <div style="margin-bottom: 1.25rem;">
           <button onclick="closeProfile()" class="btn btn-secondary"
-            style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; color: #18181b; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
+            style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; color: #18181b; display: inline-flex; align-items: center; cursor: pointer; transition: all 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
             onmouseover="this.style.background='#f4f4f5'" onmouseout="this.style.background='#ffffff'">
-            <i class="fa-solid fa-arrow-left"></i> Kembali
+            Kembali
           </button>
         </div>
 
@@ -1148,8 +1148,8 @@
           <div class="card-body" style="padding: 1.75rem 2rem;">
             <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
               <div style="display: flex; align-items: center; gap: 1.5rem;">
-                <div style="width: 64px; height: 64px; background: #18181b; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
-                  <i class="fa-solid fa-user"></i>
+                <div id="profile-avatar" style="width: 56px; height: 56px; background: #18181b; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; font-family: 'Outfit', sans-serif; flex-shrink: 0; letter-spacing: 0.04em;">
+                  IP
                 </div>
                 <div>
                   <h2 id="profile-nama" style="font-family: 'Outfit', sans-serif; font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 800; color: #18181b; margin: 0; line-height: 1.25;">
@@ -1180,8 +1180,8 @@
         <!-- Card 2: Statistik Kehadiran -->
         <div class="card" style="margin-bottom: 1.5rem; background: #ffffff;">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
-            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-chart-pie" style="font-size: 0.95rem; color: #71717a;"></i> Statistik Kehadiran
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b;">
+              Statistik Kehadiran
             </h3>
             <span id="profile-attendance-rate-badge" style="font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 4px; letter-spacing: 0.03em;">0% Kehadiran</span>
           </div>
@@ -1218,8 +1218,8 @@
         <!-- Card 3: Riwayat Lengkap Absensi -->
         <div class="card" style="margin-bottom: 1.5rem; background: #ffffff;">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
-            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b; display: flex; align-items: center; gap: 8px;">
-              <i class="fa-solid fa-clipboard-user" style="font-size: 0.95rem; color: #71717a;"></i> Riwayat Absensi & Kehadiran
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b;">
+              Riwayat Absensi & Kehadiran
             </h3>
             <span id="profile-attendance-count" style="font-size: 0.8rem; color: #71717a; font-weight: 600;">0 total presensi</span>
           </div>
@@ -1249,13 +1249,13 @@
         <div class="card" style="margin-bottom: 2rem; background: #ffffff;">
           <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-              <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b; display: flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-award" style="font-size: 0.95rem; color: #71717a;"></i> Sertifikat yang Diperoleh
+              <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b;">
+                Sertifikat yang Diperoleh
               </h3>
               <span id="profile-cert-count" style="font-size: 0.8rem; color: #71717a; font-weight: 600;"></span>
             </div>
             <button id="btn-upload-cert-profile" class="btn btn-primary" onclick="showUploadCertModal()" style="display: none; font-size: 0.8rem; padding: 0.35rem 0.85rem;">
-              <i class="fa-solid fa-upload"></i> Unggah Sertifikat
+              Unggah Sertifikat
             </button>
           </div>
           <div class="card-body" style="padding: 1.5rem;">
@@ -1272,14 +1272,14 @@
           <div class="card" style="background: #ffffff; margin-bottom: 1.5rem;">
             <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
               <div>
-                <h3 style="font-size: 1.15rem; font-weight: 700; color: #18181b; margin: 0; display: flex; align-items: center; gap: 8px;">
-                  <i class="fa-solid fa-users-gear" style="font-size: 1rem; color: #71717a;"></i> Manajemen Anggota & Pengurus
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #18181b; margin: 0;">
+                  Manajemen Anggota & Pengurus
                 </h3>
                 <p style="color: #71717a; font-size: 0.85rem; margin: 0.25rem 0 0 0;">Daftar akun anggota organisasi UKM IPTEK STIKES Semarang</p>
               </div>
               <div id="btn-add-user-container" style="display: none;">
                 <button class="btn btn-primary" onclick="showAddUserModal()" style="white-space: nowrap; font-size: 0.85rem; padding: 0.45rem 1rem;">
-                  <i class="fa-solid fa-user-plus"></i> Tambah Anggota
+                  Tambah Anggota
                 </button>
               </div>
             </div>
@@ -1326,13 +1326,13 @@
             <div class="card" style="background: #ffffff;">
               <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
                 <div>
-                  <h3 style="font-size: 1.15rem; font-weight: 700; color: #18181b; margin: 0; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-award" style="font-size: 1rem; color: #71717a;"></i> Manajemen Sertifikat Anggota
+                  <h3 style="font-size: 1.15rem; font-weight: 700; color: #18181b; margin: 0;">
+                    Manajemen Sertifikat Anggota
                   </h3>
                   <p style="color: #71717a; font-size: 0.85rem; margin: 0.25rem 0 0 0;">Unggah dan kelola sertifikat anggota organisasi UKM IPTEK</p>
                 </div>
                 <button class="btn btn-primary" onclick="showUploadCertModal()" style="white-space: nowrap; font-size: 0.85rem; padding: 0.45rem 1rem;">
-                  <i class="fa-solid fa-upload"></i> Unggah Sertifikat
+                  Unggah Sertifikat
                 </button>
               </div>
               <div class="card-body" style="padding: 1.5rem;">
