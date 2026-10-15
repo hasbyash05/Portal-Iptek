@@ -1,4 +1,4 @@
-const { Attendance, User, Payment, UserDevice } = require('../models');
+const { Attendance, User, Payment, UserDevice, AttendanceSession } = require('../models');
 const { getJakartaDateString } = require('../utils/dateHelper');
 const { Op } = require('sequelize');
 
@@ -261,8 +261,17 @@ const exportAttendanceCsv = async (req, res) => {
       order: [['date', 'ASC']]
     });
 
-    // 3. Ambil seluruh tanggal unik pertemuan (diurutkan kronologis)
-    const uniqueDates = [...new Set(attendances.map(a => a.date))].filter(Boolean).sort();
+    // 3. Ambil seluruh sesi yang dibuka oleh Ketua
+    const sessions = await AttendanceSession.findAll({
+      attributes: ['activated_at'],
+      order: [['activated_at', 'ASC']]
+    });
+    const sessionDates = sessions
+      .map(s => s.activated_at ? getJakartaDateString(new Date(s.activated_at)) : null)
+      .filter(Boolean);
+
+    // Ambil seluruh tanggal unik pertemuan (sesi ketua + tanggal presensi yang ada)
+    const uniqueDates = [...new Set([...attendances.map(a => a.date), ...sessionDates])].filter(Boolean).sort();
 
     // Mapping presensi untuk pencarian instan: `${user_id}_${date}` -> status
     const attendanceMap = new Map();

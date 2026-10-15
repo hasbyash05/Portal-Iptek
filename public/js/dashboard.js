@@ -289,6 +289,8 @@ export async function loadProfileData(userId) {
     // Statistik kehadiran
     const rateEl = document.getElementById('profile-persentase');
     if (rateEl) rateEl.textContent = `${attendance.persentase || 0}%`;
+    const rateHeader = document.getElementById('profile-persentase-header');
+    if (rateHeader) rateHeader.textContent = `${attendance.persentase || 0}%`;
     const rateBadge = document.getElementById('profile-attendance-rate-badge');
     if (rateBadge) {
       const p = attendance.persentase || 0;
@@ -348,7 +350,7 @@ export async function loadProfileData(userId) {
     // Riwayat absensi orang tersebut
     const attList = attendance.records || attendance.recent || [];
     const attCount = document.getElementById('profile-attendance-count');
-    if (attCount) attCount.textContent = `${attList.length} total presensi`;
+    if (attCount) attCount.textContent = `${attendance.total_pertemuan || attList.length} total pertemuan`;
 
     const attBody = document.getElementById('profile-attendance-list');
     if (attList.length > 0) {
@@ -377,14 +379,14 @@ export async function loadProfileData(userId) {
           hadir: 'background: #18181b; color: #ffffff;',
           izin: 'background: #f4f4f5; color: #52525b; border: 1px solid #e4e4e7;',
           sakit: 'background: #f4f4f5; color: #52525b; border: 1px solid #e4e4e7;',
-          alpa: 'background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;'
+          alpa: 'background: #f4f4f5; color: #71717a; border: 1px solid #e4e4e7;'
         };
         const statusStyle = statusColors[a.status] || 'background: #f4f4f5; color: #71717a;';
 
         return `<tr>
           <td style="width: 60px; text-align: center; color: #71717a; font-size: 0.85rem;">${i + 1}</td>
           <td style="font-weight: 600; color: #18181b; font-size: 0.88rem;">${escapeHtml(dateStr)}</td>
-          <td style="color: #71717a; font-size: 0.85rem;"><i class="fa-regular fa-clock" style="font-size: 0.75rem; margin-right: 6px;"></i>${timeStr}</td>
+          <td style="color: #71717a; font-size: 0.85rem;">${a.created_at ? `<i class="fa-regular fa-clock" style="font-size: 0.75rem; margin-right: 6px;"></i>${timeStr}` : '-'}</td>
           <td><span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; ${statusStyle}">${escapeHtml(a.status)}</span></td>
         </tr>`;
       }).join('');

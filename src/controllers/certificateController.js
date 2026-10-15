@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
 const { Op } = require('sequelize');
-const { Certificate, User, Attendance, Payment } = require('../models');
+const { Certificate, User, Attendance, Payment, AttendanceSession, sequelize } = require('../models');
 const { getJakartaDateString } = require('../utils/dateHelper');
 
 // GET /api/profile/:id - Ambil profil anggota beserta statistik kehadiran dan sertifikat
@@ -20,28 +20,143 @@ const getProfile = async (req, res) => {
       });
     }
 
-    // Statistik kehadiran
-    const totalHadir = await Attendance.count({ where: { user_id: id, status: 'hadir' } });
-    const totalIzin = await Attendance.count({ where: { user_id: id, status: 'izin' } });
-    const totalSakit = await Attendance.count({ where: { user_id: id, status: 'sakit' } });
-    const totalAlpa = await Attendance.count({ where: { user_id: id, status: 'alpa' } });
-    const totalPertemuan = totalHadir + totalIzin + totalSakit + totalAlpa;
-    const persentase = totalPertemuan > 0 ? Math.round((totalHadir / totalPertemuan) * 100) : 0;
-
-    // Cek kehadiran hari ini
-    const todayStr = getJakartaDateString();
-    const todayAttendance = await Attendance.findOne({
-      where: { user_id: id, date: todayStr }
+    // 1. Ambil seluruh sesi presensi resmi yang dibuka oleh Ketua
+    const allSessions = await AttendanceSession.findAll({
+      attributes: ['id', 'activated_by', 'activated_at', 'attendance_mode'],
+      order: [['activated_at', 'DESC'], ['id', 'DESC']]
     });
 
-    // Riwayat lengkap absensi orang tersebut
-    const attendanceRecords = await Attendance.findAll({
+    // 2. Ambil seluruh tanggal unik presensi dari seluruh user di organisasi
+    const distinctDates = await Attendance.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('date')), 'date']],
+      order: [['date', 'DESC']],
+      raw: true
+    });
+    const uniqueAttDates = distinctDates.map(d => d.date).filter(Boolean);
+
+    // 3. Ambil seluruh presensi user target
+    const userAttendances = await Attendance.findAll({
       where: { user_id: id },
       order: [['date', 'DESC'], ['created_at', 'DESC']],
       attributes: ['id', 'date', 'status', 'created_at']
     });
 
-    // Sertifikat milik anggota
+    const userAttMap = new Map();
+    let totalHadir = 0;
+    let totalIzin = 0;
+    let totalSakit = 0;
+
+    userAttendances.forEach(a => {
+      userAttMap.set(a.date, a);
+      const s = String(a.status).toLowerCase();
+      if (s === 'hadir') totalHadir++;
+      else if (s === 'izin') totalIzin++;
+      else if (s === 'sakit') totalSakit++;
+    });
+
+    // 4. Hitung parameter kehadiran berdasarkan pembukaan absensi dari Ketua
+    const allMeetingDatesSet = new Set();
+    allSessions.forEach(s => {
+      if (s.activated_at) {
+        allMeetingDatesSet.add(getJakartaDateString(new Date(s.activated_at)));
+      }
+    });
+    uniqueAttDates.forEach(d => {
+      if (d) allMeetingDatesSet.add(d);
+    });
+    userAttendances.forEach(a => {
+      if (a.date) allMeetingDatesSet.add(a.date);
+    });
+
+    // Parameter kehadiran: jumlah pembukaan presensi oleh Ketua
+    const totalSessionsOpened = allSessions.length;
+    const totalPertemuan = Math.max(
+      totalSessionsOpened,
+      allMeetingDatesSet.size,
+      (totalHadir + totalIzin + totalSakit)
+    );
+
+    // Alpa dihitung dari total pertemuan yang dibuka dikurangi jumlah hadir, izin, dan sakit
+    const totalAlpa = Math.max(0, totalPertemuan - (totalHadir + totalIzin + totalSakit));
+    const persentase = totalPertemuan > 0 ? Math.round((totalHadir / totalPertemuan) * 100) : 0;
+
+    // 5. Cek kehadiran hari ini
+    const todayStr = getJakartaDateString();
+    const todayAttendance = userAttendances.find(a => a.date === todayStr);
+
+    // 6. Susun riwayat pertemuan lengkap untuk anggota ini
+    let attendanceRecords = [];
+    const usedAttIds = new Set();
+
+    if (allSessions.length > 0) {
+      attendanceRecords = allSessions.map(session => {
+        const sessionDate = session.activated_at 
+          ? getJakartaDateString(new Date(session.activated_at)) 
+          : getJakartaDateString();
+
+        const matched = userAttendances.find(a => a.date === sessionDate && !usedAttIds.has(a.id));
+        if (matched) {
+          usedAttIds.add(matched.id);
+          return {
+            id: matched.id,
+            session_id: session.id,
+            date: sessionDate,
+            status: matched.status,
+            created_at: matched.created_at
+          };
+        } else {
+          return {
+            id: null,
+            session_id: session.id,
+            date: sessionDate,
+            status: 'alpa',
+            created_at: null
+          };
+        }
+      });
+
+      // Tambahkan riwayat absensi user yang belum terhubung ke sesi manapun (jika ada)
+      userAttendances.forEach(a => {
+        if (!usedAttIds.has(a.id)) {
+          attendanceRecords.push({
+            id: a.id,
+            session_id: null,
+            date: a.date,
+            status: a.status,
+            created_at: a.created_at
+          });
+        }
+      });
+    } else {
+      // Fallback jika belum ada data di attendance_sessions
+      const sortedMeetingDates = Array.from(allMeetingDatesSet).sort().reverse();
+      attendanceRecords = sortedMeetingDates.map(date => {
+        const matched = userAttendances.find(a => a.date === date && !usedAttIds.has(a.id));
+        if (matched) {
+          usedAttIds.add(matched.id);
+          return {
+            id: matched.id,
+            session_id: null,
+            date: date,
+            status: matched.status,
+            created_at: matched.created_at
+          };
+        } else {
+          return {
+            id: null,
+            session_id: null,
+            date: date,
+            status: 'alpa',
+            created_at: null
+          };
+        }
+      });
+    }
+
+    // Urutkan riwayat absensi berdasarkan tanggal (terbaru ke terlama)
+    attendanceRecords.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    // 7. Sertifikat milik anggota
     const certificates = await Certificate.findAll({
       where: { user_id: id },
       include: [{ model: User, as: 'uploader', attributes: ['nama_lengkap'] }],
