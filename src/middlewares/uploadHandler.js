@@ -15,4 +15,19 @@ const handleUpload = (fieldName) => {
   };
 };
 
-module.exports = { handleUpload };
+const handleUploadMultiple = (fieldName, maxCount = 200) => {
+  return (req, res, next) => {
+    const uploadMulti = upload.array(fieldName, maxCount);
+    uploadMulti(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          status: 'error',
+          message: err.message || 'Gagal mengunggah file-file sertifikat.'
+        });
+      }
+      next();
+    });
+  };
+};
+
+module.exports = { handleUpload, handleUploadMultiple };

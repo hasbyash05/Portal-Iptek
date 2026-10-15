@@ -1361,28 +1361,105 @@
         <!-- MODAL: Upload Sertifikat -->
         <div id="modal-upload-cert"
           style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-          <div style="background:#fff; border-radius:10px; padding:2rem; width:90%; max-width:500px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.12);">
-            <h3 style="font-family:'Outfit',sans-serif; font-size:1.2rem; font-weight:700; color:#18181b; margin:0 0 1.5rem 0;">Unggah Sertifikat</h3>
-            <div style="margin-bottom:1rem;">
-              <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Penerima (Anggota)</label>
-              <select id="cert-user-select" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; background:#fff; box-sizing:border-box;">
-                <option value="">-- Pilih Anggota --</option>
-              </select>
+          <div style="background:#fff; border-radius:10px; padding:2rem; width:90%; max-width:560px; max-height:90vh; overflow-y:auto; box-shadow:0 8px 30px rgba(0,0,0,0.12);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+              <h3 style="font-family:'Outfit',sans-serif; font-size:1.2rem; font-weight:700; color:#18181b; margin:0;">Unggah Sertifikat</h3>
+              <button type="button" onclick="closeUploadCertModal()" style="background:none; border:none; cursor:pointer; color:#71717a; font-size:1.1rem; padding:0.25rem;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div style="margin-bottom:1rem;">
-              <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Nama Sertifikat</label>
-              <input type="text" id="cert-nama" placeholder="Contoh: Sertifikat Pelatihan Web Development" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
-              <small style="color:#a1a1aa; font-size:0.75rem;">Nama file hasil akan otomatis: NamaLengkap_NamaSertifikat</small>
+
+            <!-- Tab Switcher -->
+            <div style="display:flex; border-bottom:1px solid #e4e4e7; margin-bottom:1.5rem; gap:1.25rem;">
+              <button type="button" id="tab-btn-cert-batch" onclick="switchCertUploadTab('batch')" style="background:none; border:none; border-bottom:2px solid #18181b; padding:0.5rem 0.25rem; font-size:0.9rem; font-weight:600; color:#18181b; cursor:pointer;">
+                Otomatis (Folder / Massal)
+              </button>
+              <button type="button" id="tab-btn-cert-single" onclick="switchCertUploadTab('single')" style="background:none; border:none; border-bottom:2px solid transparent; padding:0.5rem 0.25rem; font-size:0.9rem; font-weight:500; color:#71717a; cursor:pointer;">
+                Manual (Perorangan)
+              </button>
             </div>
-            <div style="margin-bottom:1.5rem;">
-              <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">File Sertifikat</label>
-              <input type="file" id="cert-file" accept=".pdf,.jpg,.jpeg,.png,image/*" style="width:100%; padding:0.4rem; background:white; border:1px solid #d4d4d8; border-radius:6px; font-size:0.8rem; box-sizing:border-box;">
-              <small style="color:#a1a1aa; font-size:0.75rem;">Format: PDF, JPG, PNG (Maks 50MB)</small>
+
+            <!-- TAB 1: OTOMATIS / FOLDER BATCH -->
+            <div id="cert-tab-batch">
+              <p style="font-size:0.85rem; color:#71717a; margin:0 0 1rem 0; line-height:1.45;">
+                Pilih folder atau beberapa file sertifikat sekaligus. Sistem akan mendeteksi nama pemilik dari nama file dan membagikannya ke tiap-tiap akun anggota secara otomatis.
+              </p>
+
+              <!-- Hidden inputs -->
+              <input type="file" id="cert-folder-input" webkitdirectory directory multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none;" onchange="handleBatchCertFilesSelected(this)">
+              <input type="file" id="cert-multi-input" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none;" onchange="handleBatchCertFilesSelected(this)">
+
+              <!-- Upload Selector Box -->
+              <div id="cert-batch-dropzone" style="border:2px dashed #d4d4d8; border-radius:8px; padding:1.5rem 1rem; text-align:center; background:#fafafa; margin-bottom:1rem;">
+                <div style="font-size:2rem; color:#71717a; margin-bottom:0.5rem;"><i class="fa-solid fa-folder-open"></i></div>
+                <div style="font-size:0.9rem; font-weight:600; color:#18181b; margin-bottom:0.25rem;">Pilih Kumpulan Sertifikat</div>
+                <div style="font-size:0.8rem; color:#71717a; margin-bottom:1rem;">
+                  Nama file harus memuat nama anggota (contoh: <code>Nama Anggota - Sertifikat.pdf</code>)
+                </div>
+                <div style="display:flex; justify-content:center; gap:0.5rem; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-primary" onclick="document.getElementById('cert-folder-input').click()" style="font-size:0.85rem; padding:0.45rem 1rem;">
+                    <i class="fa-solid fa-folder" style="margin-right:0.4rem;"></i> Pilih Folder
+                  </button>
+                  <button type="button" class="btn" onclick="document.getElementById('cert-multi-input').click()" style="background:#fff; color:#18181b; border:1px solid #d4d4d8; font-size:0.85rem; padding:0.45rem 1rem;">
+                    <i class="fa-solid fa-files" style="margin-right:0.4rem;"></i> Pilih Banyak File
+                  </button>
+                </div>
+              </div>
+
+              <!-- Preview Selected Files -->
+              <div id="cert-batch-preview-container" style="display:none; margin-bottom:1rem; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; background:#fff;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+                  <span style="font-size:0.85rem; font-weight:600; color:#18181b;" id="cert-batch-count-text">0 file dipilih</span>
+                  <button type="button" onclick="clearBatchCertSelection()" style="background:none; border:none; color:#dc2626; font-size:0.75rem; cursor:pointer; text-decoration:underline;">Hapus Pilihan</button>
+                </div>
+                <div id="cert-batch-file-list" style="max-height:140px; overflow-y:auto; font-size:0.8rem; color:#4b5563; border-top:1px solid #f4f4f5; padding-top:0.5rem;">
+                </div>
+              </div>
+
+              <div style="margin-bottom:1.5rem;">
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Judul Sertifikat Default (Opsional)</label>
+                <input type="text" id="cert-batch-default-title" placeholder="Contoh: Sertifikat Diklat IPTEK 2026" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+                <small style="color:#a1a1aa; font-size:0.75rem;">Jika dikosongkan, judul diambil dari sisa nama file atau default 'Sertifikat UKM IPTEK'.</small>
+              </div>
+
+              <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+                <button type="button" class="btn" onclick="closeUploadCertModal()" style="background:#f4f4f5; color:#4b5563; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="submitBatchCertificates()" id="btn-submit-batch-cert" style="padding:0.55rem 1.2rem; font-size:0.85rem;">
+                  Unggah & Bagikan Otomatis
+                </button>
+              </div>
             </div>
-            <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
-              <button class="btn" onclick="closeUploadCertModal()" style="background:#f4f4f5; color:#4b5563; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Batal</button>
-              <button class="btn btn-primary" onclick="submitCertificate()" id="btn-submit-cert" style="padding:0.55rem 1.2rem; font-size:0.85rem;">Unggah</button>
+
+            <!-- TAB 2: MANUAL / SINGLE PERORANGAN -->
+            <div id="cert-tab-single" style="display:none;">
+              <div style="margin-bottom:1rem;">
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Penerima (Anggota)</label>
+                <select id="cert-user-select" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; background:#fff; box-sizing:border-box;">
+                  <option value="">-- Pilih Anggota --</option>
+                </select>
+              </div>
+              <div style="margin-bottom:1rem;">
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">Nama Sertifikat</label>
+                <input type="text" id="cert-nama" placeholder="Contoh: Sertifikat Pelatihan Web Development" style="width:100%; padding:0.55rem 0.75rem; border:1px solid #e4e4e7; border-radius:6px; font-size:0.9rem; box-sizing:border-box;">
+                <small style="color:#a1a1aa; font-size:0.75rem;">Nama file hasil akan otomatis: NamaLengkap_NamaSertifikat</small>
+              </div>
+              <div style="margin-bottom:1.5rem;">
+                <label style="display:block; font-size:0.8rem; font-weight:600; color:#4b5563; margin-bottom:0.3rem;">File Sertifikat</label>
+                <input type="file" id="cert-file" accept=".pdf,.jpg,.jpeg,.png,image/*" style="width:100%; padding:0.4rem; background:white; border:1px solid #d4d4d8; border-radius:6px; font-size:0.8rem; box-sizing:border-box;">
+                <small style="color:#a1a1aa; font-size:0.75rem;">Format: PDF, JPG, PNG (Maks 50MB)</small>
+              </div>
+              <div style="display:flex; gap:0.75rem; justify-content:flex-end;">
+                <button type="button" class="btn" onclick="closeUploadCertModal()" style="background:#f4f4f5; color:#4b5563; border:none; padding:0.55rem 1.2rem; border-radius:6px; font-size:0.85rem; cursor:pointer;">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="submitCertificate()" id="btn-submit-cert" style="padding:0.55rem 1.2rem; font-size:0.85rem;">Unggah</button>
+              </div>
             </div>
+
+            <!-- RESULT SUMMARY CONTAINER -->
+            <div id="cert-batch-result" style="display:none;">
+              <div id="cert-batch-result-content"></div>
+              <div style="margin-top:1.5rem; display:flex; justify-content:flex-end;">
+                <button type="button" class="btn btn-primary" onclick="closeUploadCertModal()" style="padding:0.55rem 1.5rem; font-size:0.85rem;">Selesai</button>
+              </div>
+            </div>
+
           </div>
         </div>
 

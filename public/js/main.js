@@ -86,6 +86,10 @@ window.loadProfileData = Dashboard.loadProfileData;
 window.loadCertificates = Dashboard.loadCertificates;
 window.showUploadCertModal = Dashboard.showUploadCertModal;
 window.closeUploadCertModal = Dashboard.closeUploadCertModal;
+window.switchCertUploadTab = Dashboard.switchCertUploadTab;
+window.handleBatchCertFilesSelected = Dashboard.handleBatchCertFilesSelected;
+window.clearBatchCertSelection = Dashboard.clearBatchCertSelection;
+window.submitBatchCertificates = Dashboard.submitBatchCertificates;
 window.submitCertificate = Dashboard.submitCertificate;
 window.deleteCertificate = Dashboard.deleteCertificate;
 

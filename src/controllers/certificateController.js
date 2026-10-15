@@ -247,6 +247,179 @@ const uploadCertificate = async (req, res) => {
   }
 };
 
+// POST /api/certificates/batch - Upload folder / banyak sertifikat & bagikan otomatis ke tiap akun
+const uploadBatchCertificates = async (req, res) => {
+  try {
+    const files = req.files;
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Tidak ada file yang diunggah. Silakan pilih folder atau file sertifikat.'
+      });
+    }
+
+    const defaultTitle = (req.body.default_nama_sertifikat || '').trim();
+
+    // 1. Ambil seluruh anggota dan pengurus dari database
+    const users = await User.findAll({
+      attributes: ['id', 'username', 'nama_lengkap', 'role']
+    });
+
+    const successList = [];
+    const unmatchedList = [];
+
+    // Helper normalisasi nama file/string
+    const normalizeString = (str) => {
+      return (str || '')
+        .toLowerCase()
+        .replace(/[_\-\.\(\)\[\],0-9]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    // Fungsi cerdas mencocokkan nama file ke akun pemilik
+    const matchUser = (filename) => {
+      const ext = path.extname(filename);
+      const rawBase = path.basename(filename, ext);
+      const normBase = normalizeString(rawBase);
+      const fileWords = normBase.split(' ').filter(w => w.length > 1);
+
+      let bestUser = null;
+      let bestScore = 0;
+      let detectedTitle = '';
+
+      for (const u of users) {
+        const normFullName = normalizeString(u.nama_lengkap);
+        const userWords = normFullName.split(' ').filter(w => w.length > 1);
+
+        let score = 0;
+
+        // Level 1: Nama lengkap termuat persis di nama file
+        if (normBase.includes(normFullName)) {
+          score = 1000 + normFullName.length;
+        } else {
+          // Level 2: Hitung kecocokan kata-kata nama
+          let matchCount = 0;
+          for (const uw of userWords) {
+            if (fileWords.includes(uw)) {
+              matchCount++;
+            }
+          }
+
+          if (matchCount >= 2 || (userWords.length === 1 && matchCount === 1)) {
+            const pct = matchCount / userWords.length;
+            score = Math.round(pct * 500) + (matchCount * 50);
+          } else if (normBase.includes(normalizeString(u.username))) {
+            score = 250;
+          }
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestUser = u;
+        }
+      }
+
+      // Deteksi judul sertifikat dari sisa teks nama file
+      if (bestUser && bestScore >= 200) {
+        let remaining = rawBase;
+        try {
+          const nameRegex = new RegExp(bestUser.nama_lengkap.split(/\s+/).join('[\\s_\\-]+'), 'i');
+          remaining = remaining.replace(nameRegex, '');
+        } catch (e) {
+          // Abaikan jika regex error
+        }
+
+        const cleanRem = remaining
+          .replace(/[_\-]+/g, ' ')
+          .replace(/^[\s0-9\.\(\)]+/, '')
+          .replace(/[\s0-9\.\(\)]+$/, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (cleanRem.length >= 3) {
+          detectedTitle = cleanRem;
+        }
+      }
+
+      return {
+        matched: bestScore >= 200,
+        user: bestScore >= 200 ? bestUser : null,
+        detectedTitle
+      };
+    };
+
+    // 2. Proses pembagian setiap file ke akun masing-masing
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const match = matchUser(file.originalname);
+
+      if (!match.matched || !match.user) {
+        // Hapus file fisik sementara yang tidak cocok agar tidak membebani server
+        if (fs.existsSync(file.path)) {
+          try { fs.unlinkSync(file.path); } catch (e) {}
+        }
+        unmatchedList.push({
+          filename: file.originalname,
+          reason: 'Nama pemilik tidak ditemukan di data anggota'
+        });
+        continue;
+      }
+
+      const targetUser = match.user;
+      const certTitle = defaultTitle || match.detectedTitle || 'Sertifikat UKM IPTEK';
+
+      // Rename file agar rapi dan unik: NamaLengkap_Judul_Timestamp_Index.ext
+      const ext = path.extname(file.originalname);
+      const sanitizedName = targetUser.nama_lengkap.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+      const sanitizedCertName = certTitle.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+      const newFilename = `${sanitizedName}_${sanitizedCertName}_${Date.now()}_${i}${ext}`;
+      const newPath = path.join(file.destination, newFilename);
+
+      if (fs.existsSync(file.path)) {
+        fs.renameSync(file.path, newPath);
+      }
+
+      const filePath = `/uploads/certificates/${newFilename}`;
+
+      const certificate = await Certificate.create({
+        user_id: targetUser.id,
+        nama_sertifikat: certTitle,
+        file_path: filePath,
+        uploaded_by: req.user.id
+      });
+
+      successList.push({
+        id: certificate.id,
+        filename: file.originalname,
+        user_id: targetUser.id,
+        user_name: targetUser.nama_lengkap,
+        nama_sertifikat: certTitle,
+        file_path: filePath
+      });
+    }
+
+    return res.status(200).json({
+      status: 'success',
+      message: `Berhasil memproses ${files.length} file. ${successList.length} sertifikat berhasil dibagikan ke masing-masing akun anggota.${unmatchedList.length > 0 ? ` (${unmatchedList.length} file tidak cocok)` : ''}`,
+      data: {
+        total_files: files.length,
+        success_count: successList.length,
+        unmatched_count: unmatchedList.length,
+        success_list: successList,
+        unmatched_list: unmatchedList
+      }
+    });
+  } catch (error) {
+    console.error('uploadBatchCertificates error:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Gagal memproses unggah sertifikat massal.',
+      error: error.message
+    });
+  }
+};
+
 // GET /api/certificates - Daftar semua sertifikat (Pengurus only)
 const getAllCertificates = async (req, res) => {
   try {
@@ -319,4 +492,4 @@ const deleteCertificate = async (req, res) => {
   }
 };
 
-module.exports = { getProfile, uploadCertificate, getAllCertificates, deleteCertificate };
+module.exports = { getProfile, uploadCertificate, uploadBatchCertificates, getAllCertificates, deleteCertificate };

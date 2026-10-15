@@ -466,7 +466,214 @@ export async function loadCertificates() {
   }
 }
 
+let _selectedBatchCertFiles = [];
+
+export function switchCertUploadTab(mode) {
+  const btnBatch = document.getElementById('tab-btn-cert-batch');
+  const btnSingle = document.getElementById('tab-btn-cert-single');
+  const tabBatch = document.getElementById('cert-tab-batch');
+  const tabSingle = document.getElementById('cert-tab-single');
+  const tabResult = document.getElementById('cert-batch-result');
+
+  if (tabResult) tabResult.style.display = 'none';
+
+  if (mode === 'batch') {
+    if (btnBatch) {
+      btnBatch.style.borderBottom = '2px solid #18181b';
+      btnBatch.style.color = '#18181b';
+      btnBatch.style.fontWeight = '600';
+    }
+    if (btnSingle) {
+      btnSingle.style.borderBottom = '2px solid transparent';
+      btnSingle.style.color = '#71717a';
+      btnSingle.style.fontWeight = '500';
+    }
+    if (tabBatch) tabBatch.style.display = 'block';
+    if (tabSingle) tabSingle.style.display = 'none';
+  } else {
+    if (btnSingle) {
+      btnSingle.style.borderBottom = '2px solid #18181b';
+      btnSingle.style.color = '#18181b';
+      btnSingle.style.fontWeight = '600';
+    }
+    if (btnBatch) {
+      btnBatch.style.borderBottom = '2px solid transparent';
+      btnBatch.style.color = '#71717a';
+      btnBatch.style.fontWeight = '500';
+    }
+    if (tabSingle) tabSingle.style.display = 'block';
+    if (tabBatch) tabBatch.style.display = 'none';
+  }
+}
+
+export function handleBatchCertFilesSelected(input) {
+  const files = Array.from(input.files || []);
+  if (!files || files.length === 0) return;
+
+  const allowedExts = ['.pdf', '.jpg', '.jpeg', '.png'];
+  const validFiles = files.filter(f => {
+    const name = f.name.toLowerCase();
+    return allowedExts.some(ext => name.endsWith(ext));
+  });
+
+  if (validFiles.length === 0) {
+    alert('Tidak ditemukan file sertifikat valid (.pdf, .jpg, .png) pada folder atau pilihan file.');
+    return;
+  }
+
+  _selectedBatchCertFiles = validFiles;
+
+  const countEl = document.getElementById('cert-batch-count-text');
+  if (countEl) countEl.textContent = `${validFiles.length} file sertifikat terpilih`;
+
+  const listEl = document.getElementById('cert-batch-file-list');
+  if (listEl) {
+    listEl.innerHTML = validFiles.slice(0, 50).map((f) => {
+      const ext = f.name.split('.').pop().toUpperCase();
+      const sizeKb = Math.round(f.size / 1024);
+      return `<div style="display:flex; justify-content:space-between; align-items:center; padding:0.25rem 0; border-bottom:1px solid #fafafa;">
+        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%;" title="${escapeHtml(f.name)}">
+          <i class="fa-solid fa-file" style="margin-right:0.4rem; color:#71717a;"></i> ${escapeHtml(f.name)}
+        </span>
+        <span style="font-size:0.75rem; color:#a1a1aa;">${ext} · ${sizeKb} KB</span>
+      </div>`;
+    }).join('') + (validFiles.length > 50 ? `<div style="padding-top:0.4rem; text-align:center; color:#71717a; font-size:0.75rem;">...dan ${validFiles.length - 50} file lainnya</div>` : '');
+  }
+
+  const previewContainer = document.getElementById('cert-batch-preview-container');
+  if (previewContainer) previewContainer.style.display = 'block';
+}
+
+export function clearBatchCertSelection() {
+  _selectedBatchCertFiles = [];
+  const folderInput = document.getElementById('cert-folder-input');
+  if (folderInput) folderInput.value = '';
+  const multiInput = document.getElementById('cert-multi-input');
+  if (multiInput) multiInput.value = '';
+  const previewContainer = document.getElementById('cert-batch-preview-container');
+  if (previewContainer) previewContainer.style.display = 'none';
+}
+
+export async function submitBatchCertificates() {
+  if (!_selectedBatchCertFiles || _selectedBatchCertFiles.length === 0) {
+    return alert('Silakan pilih folder atau file sertifikat terlebih dahulu.');
+  }
+
+  const defaultTitle = (document.getElementById('cert-batch-default-title')?.value || '').trim();
+  const btn = document.getElementById('btn-submit-batch-cert');
+  const originalText = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memproses ${_selectedBatchCertFiles.length} file...`;
+
+  try {
+    const formData = new FormData();
+    if (defaultTitle) {
+      formData.append('default_nama_sertifikat', defaultTitle);
+    }
+
+    for (const f of _selectedBatchCertFiles) {
+      formData.append('certificate_files', f);
+    }
+
+    const res = await fetchAuth(`${API_BASE}/certificates/batch`, {
+      method: 'POST',
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal memproses unggah sertifikat massal.');
+
+    document.getElementById('cert-tab-batch').style.display = 'none';
+    document.getElementById('cert-tab-single').style.display = 'none';
+    const tabResult = document.getElementById('cert-batch-result');
+    const resultContent = document.getElementById('cert-batch-result-content');
+
+    const resData = data.data || {};
+    const successList = resData.success_list || [];
+    const unmatchedList = resData.unmatched_list || [];
+
+    let resultHtml = `
+      <div style="text-align:center; margin-bottom:1.25rem;">
+        <div style="display:inline-flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; background:#f4f4f5; color:#18181b; font-size:1.4rem; margin-bottom:0.75rem;">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <h4 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0 0 0.25rem 0;">Pemrosesan Selesai</h4>
+        <p style="font-size:0.85rem; color:#71717a; margin:0;">
+          ${resData.success_count || 0} dari ${resData.total_files || 0} sertifikat berhasil dibagikan ke akun anggota.
+        </p>
+      </div>
+    `;
+
+    if (successList.length > 0) {
+      resultHtml += `
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:0.8rem; font-weight:600; color:#18181b; margin-bottom:0.4rem;">
+            Daftar Sertifikat Terdistribusi (${successList.length})
+          </div>
+          <div style="max-height:160px; overflow-y:auto; border:1px solid #e4e4e7; border-radius:6px; background:#fafafa; padding:0.5rem 0.75rem; font-size:0.8rem;">
+            ${successList.map(item => `
+              <div style="padding:0.35rem 0; border-bottom:1px solid #f4f4f5; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-weight:600; color:#18181b;">${escapeHtml(item.user_name)}</div>
+                  <div style="font-size:0.75rem; color:#71717a;">${escapeHtml(item.nama_sertifikat)}</div>
+                </div>
+                <span style="font-size:0.75rem; color:#16a34a; font-weight:500;">
+                  <i class="fa-solid fa-check" style="margin-right:0.2rem;"></i> Berhasil
+                </span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    if (unmatchedList.length > 0) {
+      resultHtml += `
+        <div style="margin-bottom:1rem;">
+          <div style="font-size:0.8rem; font-weight:600; color:#dc2626; margin-bottom:0.4rem;">
+            File Tidak Cocok (${unmatchedList.length})
+          </div>
+          <div style="max-height:120px; overflow-y:auto; border:1px solid #fee2e2; border-radius:6px; background:#fef2f2; padding:0.5rem 0.75rem; font-size:0.75rem; color:#991b1b;">
+            ${unmatchedList.map(item => `
+              <div style="padding:0.25rem 0; border-bottom:1px solid #fecaca; display:flex; justify-content:space-between;">
+                <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:65%;" title="${escapeHtml(item.filename)}">${escapeHtml(item.filename)}</span>
+                <span style="font-size:0.7rem; color:#b91c1c;">${escapeHtml(item.reason)}</span>
+              </div>
+            `).join('')}
+          </div>
+          <small style="color:#71717a; font-size:0.75rem; display:block; margin-top:0.3rem;">
+            Pastikan nama file memuat nama lengkap atau nama panggilan anggota yang terdaftar di sistem.
+          </small>
+        </div>
+      `;
+    }
+
+    if (resultContent) resultContent.innerHTML = resultHtml;
+    if (tabResult) tabResult.style.display = 'block';
+
+    clearBatchCertSelection();
+    const dtEl = document.getElementById('cert-batch-default-title');
+    if (dtEl) dtEl.value = '';
+
+    loadCertificates();
+    if (_currentProfileUserId && document.getElementById('tab-profil') && document.getElementById('tab-profil').style.display !== 'none') {
+      loadProfileData(_currentProfileUserId);
+    }
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalText;
+  }
+}
+
 export async function showUploadCertModal(defaultUserId = null) {
+  clearBatchCertSelection();
+  const defaultTitleInput = document.getElementById('cert-batch-default-title');
+  if (defaultTitleInput) defaultTitleInput.value = '';
+  const resultDiv = document.getElementById('cert-batch-result');
+  if (resultDiv) resultDiv.style.display = 'none';
+
   // Muat daftar user ke dropdown
   try {
     const res = await fetchAuth(`${API_BASE}/users`);
@@ -486,6 +693,13 @@ export async function showUploadCertModal(defaultUserId = null) {
   }
   document.getElementById('cert-nama').value = '';
   document.getElementById('cert-file').value = '';
+
+  if (defaultUserId) {
+    switchCertUploadTab('single');
+  } else {
+    switchCertUploadTab('batch');
+  }
+
   document.getElementById('modal-upload-cert').style.display = 'flex';
 }
 
