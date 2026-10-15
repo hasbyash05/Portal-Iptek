@@ -1,4 +1,4 @@
-const { Attendance, User, Payment, UserDevice, AttendanceSession } = require('../models');
+const { Attendance, User, Payment, UserDevice, AttendanceSession, sequelize } = require('../models');
 const { getJakartaDateString } = require('../utils/dateHelper');
 const { Op } = require('sequelize');
 
@@ -174,42 +174,210 @@ const getMyHistory = async (req, res) => {
 const getReport = async (req, res) => {
   try {
     const { startDate, endDate, divisi } = req.query;
-    const whereClause = {};
 
-    if (startDate && endDate) {
-      whereClause.date = { [Op.between]: [startDate, endDate] };
-    } else if (startDate) {
-      whereClause.date = { [Op.gte]: startDate };
-    } else if (endDate) {
-      whereClause.date = { [Op.lte]: endDate };
+    // 1. Auto-clean duplicate/garbage sessions agar selalu sinkron dengan sistem resmi
+    try {
+      const distinctAttDates = await Attendance.findAll({
+        attributes: [[sequelize.fn('DISTINCT', sequelize.col('date')), 'date']],
+        raw: true
+      });
+      const validDates = new Set(distinctAttDates.map(d => d.date).filter(Boolean));
+
+      const existingSessions = await AttendanceSession.findAll({ order: [['id', 'ASC']] });
+      const keptIds = new Set();
+      const coveredDates = new Set();
+
+      for (const s of existingSessions) {
+        if (s.is_active) {
+          keptIds.add(s.id);
+          continue;
+        }
+        const sDate = s.activated_at 
+          ? getJakartaDateString(new Date(s.activated_at)) 
+          : null;
+
+        // Hanya simpan 1 sesi per tanggal yang benar-benar ada presensinya (sisakan 2 yang hadir itu)
+        if (sDate && validDates.has(sDate) && !coveredDates.has(sDate)) {
+          keptIds.add(s.id);
+          coveredDates.add(sDate);
+        }
+      }
+
+      // Hapus seluruh sesi sampah/duplikat lainnya
+      if (keptIds.size > 0 && existingSessions.length > keptIds.size) {
+        await AttendanceSession.destroy({
+          where: {
+            id: { [Op.notIn]: Array.from(keptIds) }
+          }
+        });
+      }
+    } catch (cleanErr) {
+      console.warn('[Auto-clean sessions warning in getReport]:', cleanErr.message);
     }
 
+    // 2. Ambil seluruh sesi presensi resmi yang tersisa
+    const allSessions = await AttendanceSession.findAll({
+      attributes: ['id', 'activated_by', 'activated_at', 'attendance_mode', 'is_active'],
+      order: [['activated_at', 'DESC'], ['id', 'DESC']]
+    });
+
+    // 3. Ambil seluruh tanggal unik presensi dari seluruh user di organisasi
+    const distinctDates = await Attendance.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('date')), 'date']],
+      order: [['date', 'DESC']],
+      raw: true
+    });
+    const uniqueAttDates = distinctDates.map(d => d.date).filter(Boolean);
+
+    // 4. Susun daftar tanggal pertemuan resmi unik (Hari & Tanggal)
+    const meetingDatesSet = new Set();
+    allSessions.forEach(s => {
+      if (s.activated_at) {
+        meetingDatesSet.add(getJakartaDateString(new Date(s.activated_at)));
+      }
+    });
+    uniqueAttDates.forEach(d => {
+      if (d) meetingDatesSet.add(d);
+    });
+
+    const allSortedMeetingDates = Array.from(meetingDatesSet).sort().reverse();
+
+    // 5. Terapkan filter tanggal (jika ada)
+    let filteredMeetingDates = allSortedMeetingDates;
+    if (startDate && endDate) {
+      filteredMeetingDates = allSortedMeetingDates.filter(d => d >= startDate && d <= endDate);
+    } else if (startDate) {
+      filteredMeetingDates = allSortedMeetingDates.filter(d => d >= startDate);
+    } else if (endDate) {
+      filteredMeetingDates = allSortedMeetingDates.filter(d => d <= endDate);
+    }
+
+    // 6. Ambil seluruh anggota dan pengurus (filter divisi jika ada)
     const userWhereClause = {};
     if (divisi) {
       userWhereClause.divisi = divisi;
     }
+    const users = await User.findAll({
+      where: userWhereClause,
+      attributes: ['id', 'username', 'nama_lengkap', 'role', 'divisi'],
+      order: [
+        ['role', 'DESC'], // Pengurus dulu, lalu Anggota
+        ['nama_lengkap', 'ASC']
+      ]
+    });
+
+    // 7. Ambil seluruh absensi pada tanggal-tanggal pertemuan yang difilter
+    const attendanceWhere = {};
+    if (filteredMeetingDates.length > 0) {
+      attendanceWhere.date = { [Op.in]: filteredMeetingDates };
+    } else {
+      attendanceWhere.date = '1970-01-01';
+    }
 
     const attendances = await Attendance.findAll({
-      where: whereClause,
-      include: [
-        {
-          model: User,
-          as: 'user',
-          where: userWhereClause,
-          attributes: ['id', 'username', 'nama_lengkap', 'role', 'divisi']
-        }
-      ],
-      order: [['date', 'DESC']]
+      where: attendanceWhere,
+      attributes: ['id', 'user_id', 'date', 'status', 'created_at'],
+      order: [['date', 'DESC'], ['created_at', 'DESC']]
     });
+
+    // Mapping: `${user_id}_${date}` -> attendance
+    const attMap = new Map();
+    attendances.forEach(a => {
+      if (!attMap.has(`${a.user_id}_${a.date}`)) {
+        attMap.set(`${a.user_id}_${a.date}`, a);
+      }
+    });
+
+    // 8. Susun matriks rekapitulasi anggota (Rekapitulasi Anggota)
+    const totalMeetings = filteredMeetingDates.length;
+    let totalHadirAll = 0;
+    let totalAlpaAll = 0;
+
+    const rekapMembers = users.map((u, index) => {
+      let hadirCount = 0;
+      let izinCount = 0;
+      let sakitCount = 0;
+
+      const dateStatuses = filteredMeetingDates.map(d => {
+        const att = attMap.get(`${u.id}_${d}`);
+        const status = att ? att.status : 'alpa';
+        if (status === 'hadir') hadirCount++;
+        else if (status === 'izin') izinCount++;
+        else if (status === 'sakit') sakitCount++;
+        return {
+          date: d,
+          status: status,
+          id: att ? att.id : null,
+          created_at: att ? att.created_at : null
+        };
+      });
+
+      const alpaCount = Math.max(0, totalMeetings - (hadirCount + izinCount + sakitCount));
+      const pct = totalMeetings > 0 ? Math.round((hadirCount / totalMeetings) * 100) : 0;
+
+      totalHadirAll += hadirCount;
+      totalAlpaAll += alpaCount;
+
+      return {
+        no: index + 1,
+        id: u.id,
+        nama_lengkap: u.nama_lengkap,
+        role: u.role,
+        divisi: u.divisi || '-',
+        hadir: hadirCount,
+        izin: izinCount,
+        sakit: sakitCount,
+        alpa: alpaCount,
+        total_pertemuan: totalMeetings,
+        persentase: pct,
+        date_statuses: dateStatuses
+      };
+    });
+
+    // 9. Susun detail baris log per pertemuan (Detail Log Pertemuan)
+    const items = [];
+    filteredMeetingDates.forEach(date => {
+      users.forEach(u => {
+        const att = attMap.get(`${u.id}_${date}`);
+        items.push({
+          id: att ? att.id : null,
+          date: date,
+          status: att ? att.status : 'alpa',
+          created_at: att ? att.created_at : null,
+          user_id: u.id,
+          user: {
+            id: u.id,
+            username: u.username,
+            nama_lengkap: u.nama_lengkap,
+            role: u.role,
+            divisi: u.divisi || '-'
+          }
+        });
+      });
+    });
+
+    const avgPct = users.length > 0 
+      ? Math.round(rekapMembers.reduce((acc, m) => acc + m.persentase, 0) / users.length) 
+      : 0;
 
     return res.status(200).json({
       status: 'success',
       data: {
-        total: attendances.length,
-        items: attendances
+        summary: {
+          total_pertemuan: totalMeetings,
+          total_members: users.length,
+          total_hadir: totalHadirAll,
+          total_alpa: totalAlpaAll,
+          avg_persentase: avgPct,
+          meeting_dates: filteredMeetingDates
+        },
+        rekap_members: rekapMembers,
+        items: items,
+        total: items.length
       }
     });
   } catch (error) {
+    console.error('getReport error:', error);
     return res.status(500).json({
       status: 'error',
       message: 'Terjadi kesalahan saat mengambil rekap absensi.',
@@ -222,15 +390,15 @@ const getReport = async (req, res) => {
  * GET /api/attendance/export-csv
  * Ekspor matriks rekap kehadiran ke format CSV:
  * - Baris: Semua anggota organisasi (pengurus & anggota)
- * - Kolom: Tanggal-tanggal pertemuan
- * - Nilai: HADIR atau TIDAK HADIR
- * - Rekapitulasi: Total Hadir, Total Tidak Hadir, Persentase Kehadiran
+ * - Kolom: Tanggal-tanggal pertemuan resmi yang dibuka Ketua
+ * - Nilai: HADIR atau ALPA
+ * - Rekapitulasi: Total Hadir, Total Alpa, Total Pertemuan, Persentase Kehadiran
  */
 const exportAttendanceCsv = async (req, res) => {
   try {
     const { startDate, endDate, divisi } = req.query;
 
-    // 1. Ambil seluruh anggota dan pengurus (urutan pengurus dulu, lalu anggota, abjad nama)
+    // 1. Ambil seluruh anggota dan pengurus
     const userWhereClause = {};
     if (divisi) {
       userWhereClause.divisi = divisi;
@@ -245,38 +413,58 @@ const exportAttendanceCsv = async (req, res) => {
       ]
     });
 
-    // 2. Ambil seluruh data absensi dengan filter tanggal (jika ada)
-    const attendanceWhere = {};
+    // 2. Ambil seluruh sesi presensi resmi
+    const allSessions = await AttendanceSession.findAll({
+      attributes: ['id', 'activated_by', 'activated_at', 'attendance_mode'],
+      order: [['activated_at', 'ASC']]
+    });
+
+    const distinctDates = await Attendance.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('date')), 'date']],
+      order: [['date', 'ASC']],
+      raw: true
+    });
+    const uniqueAttDates = distinctDates.map(d => d.date).filter(Boolean);
+
+    const meetingDatesSet = new Set();
+    allSessions.forEach(s => {
+      if (s.activated_at) {
+        meetingDatesSet.add(getJakartaDateString(new Date(s.activated_at)));
+      }
+    });
+    uniqueAttDates.forEach(d => {
+      if (d) meetingDatesSet.add(d);
+    });
+
+    const allSortedMeetingDates = Array.from(meetingDatesSet).sort(); // Urutan kronologis ASC
+
+    // Filter tanggal
+    let filteredMeetingDates = allSortedMeetingDates;
     if (startDate && endDate) {
-      attendanceWhere.date = { [Op.between]: [startDate, endDate] };
+      filteredMeetingDates = allSortedMeetingDates.filter(d => d >= startDate && d <= endDate);
     } else if (startDate) {
-      attendanceWhere.date = { [Op.gte]: startDate };
+      filteredMeetingDates = allSortedMeetingDates.filter(d => d >= startDate);
     } else if (endDate) {
-      attendanceWhere.date = { [Op.lte]: endDate };
+      filteredMeetingDates = allSortedMeetingDates.filter(d => d <= endDate);
+    }
+
+    const attendanceWhere = {};
+    if (filteredMeetingDates.length > 0) {
+      attendanceWhere.date = { [Op.in]: filteredMeetingDates };
+    } else {
+      attendanceWhere.date = '1970-01-01';
     }
 
     const attendances = await Attendance.findAll({
       where: attendanceWhere,
-      attributes: ['user_id', 'date', 'status'],
-      order: [['date', 'ASC']]
+      attributes: ['user_id', 'date', 'status']
     });
 
-    // 3. Ambil seluruh sesi yang dibuka oleh Ketua
-    const sessions = await AttendanceSession.findAll({
-      attributes: ['activated_at'],
-      order: [['activated_at', 'ASC']]
-    });
-    const sessionDates = sessions
-      .map(s => s.activated_at ? getJakartaDateString(new Date(s.activated_at)) : null)
-      .filter(Boolean);
-
-    // Ambil seluruh tanggal unik pertemuan (sesi ketua + tanggal presensi yang ada)
-    const uniqueDates = [...new Set([...attendances.map(a => a.date), ...sessionDates])].filter(Boolean).sort();
-
-    // Mapping presensi untuk pencarian instan: `${user_id}_${date}` -> status
     const attendanceMap = new Map();
     attendances.forEach(a => {
-      attendanceMap.set(`${a.user_id}_${a.date}`, a.status);
+      if (!attendanceMap.has(`${a.user_id}_${a.date}`)) {
+        attendanceMap.set(`${a.user_id}_${a.date}`, a.status);
+      }
     });
 
     // 4. Susun baris CSV
@@ -285,9 +473,10 @@ const exportAttendanceCsv = async (req, res) => {
       'Nama Anggota',
       'Role',
       'Divisi',
-      ...uniqueDates,
+      ...filteredMeetingDates.map(d => `Pertemuan (${d})`),
       'Total Hadir',
-      'Total Tidak Hadir',
+      'Total Alpa (Tidak Hadir)',
+      'Total Pertemuan',
       'Persentase Kehadiran'
     ];
 
@@ -299,9 +488,9 @@ const exportAttendanceCsv = async (req, res) => {
 
     const rows = users.map((u, idx) => {
       let userHadirCount = 0;
-      let userTidakHadirCount = 0;
+      let userAlpaCount = 0;
 
-      const dateStatuses = uniqueDates.map(d => {
+      const dateStatuses = filteredMeetingDates.map(d => {
         const rawStatus = attendanceMap.get(`${u.id}_${d}`);
         if (rawStatus === 'hadir') {
           userHadirCount++;
@@ -311,12 +500,12 @@ const exportAttendanceCsv = async (req, res) => {
         } else if (rawStatus === 'sakit') {
           return 'SAKIT';
         } else {
-          userTidakHadirCount++;
-          return 'TIDAK HADIR';
+          userAlpaCount++;
+          return 'ALPA';
         }
       });
 
-      const totalMeetings = uniqueDates.length;
+      const totalMeetings = filteredMeetingDates.length;
       const pct = totalMeetings > 0 
         ? Math.round((userHadirCount / totalMeetings) * 100) + '%' 
         : '0%';
@@ -328,7 +517,8 @@ const exportAttendanceCsv = async (req, res) => {
         escapeCsv(u.divisi || '-'),
         ...dateStatuses.map(s => escapeCsv(s)),
         userHadirCount,
-        userTidakHadirCount,
+        userAlpaCount,
+        totalMeetings,
         escapeCsv(pct)
       ].join(',');
     });

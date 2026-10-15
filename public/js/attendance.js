@@ -222,7 +222,140 @@ export async function setAttendanceMode(mode) {
     loadSessionStatus();
   }
 }
-window.setAttendanceMode = setAttendanceMode;
+const escapeHtml = (str) => {
+  return String(str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m]);
+};
+
+let _currentRekapData = null;
+let _currentRekapView = 'rekap'; // 'rekap' | 'log'
+
+export function switchRekapViewMode(mode) {
+  _currentRekapView = mode;
+  const btnRekap = document.getElementById('btn-view-rekap-member');
+  const btnLog = document.getElementById('btn-view-rekap-log');
+
+  if (mode === 'rekap') {
+    if (btnRekap) {
+      btnRekap.style.borderBottom = '2px solid #18181b';
+      btnRekap.style.color = '#18181b';
+      btnRekap.style.fontWeight = '600';
+    }
+    if (btnLog) {
+      btnLog.style.borderBottom = '2px solid transparent';
+      btnLog.style.color = '#71717a';
+      btnLog.style.fontWeight = '500';
+    }
+  } else {
+    if (btnLog) {
+      btnLog.style.borderBottom = '2px solid #18181b';
+      btnLog.style.color = '#18181b';
+      btnLog.style.fontWeight = '600';
+    }
+    if (btnRekap) {
+      btnRekap.style.borderBottom = '2px solid transparent';
+      btnRekap.style.color = '#71717a';
+      btnRekap.style.fontWeight = '500';
+    }
+  }
+
+  renderRekapTable();
+}
+
+function renderRekapTable() {
+  const thead = document.getElementById('thead-rekap-absensi');
+  const tbody = document.getElementById('table-rekap-absensi');
+  if (!tbody || !_currentRekapData) return;
+
+  if (_currentRekapView === 'rekap') {
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width: 50px; text-align: center;">No</th>
+          <th>Nama Anggota</th>
+          <th>Role</th>
+          <th>Divisi</th>
+          <th style="text-align: center;">Hadir</th>
+          <th style="text-align: center;">Alpa</th>
+          <th style="text-align: center;">Total Pertemuan</th>
+          <th style="text-align: center;">Persentase</th>
+          <th style="text-align: center;">Aksi</th>
+        </tr>
+      `;
+    }
+
+    const members = _currentRekapData.rekap_members || [];
+    if (members.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="padding: 2rem 0; color: #a1a1aa;">Belum ada data anggota yang sesuai filter.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = members.map(m => {
+      const pctBadge = m.persentase >= 75
+        ? `<span style="font-weight: 700; color: #18181b;">${m.persentase}%</span>`
+        : m.persentase >= 50
+        ? `<span style="font-weight: 600; color: #4b5563;">${m.persentase}%</span>`
+        : `<span style="font-weight: 600; color: #71717a;">${m.persentase}%</span>`;
+
+      return `
+        <tr>
+          <td style="text-align: center; color: #71717a;">${m.no}</td>
+          <td>
+            <a href="javascript:void(0)" onclick="openProfile(${m.id})" style="font-weight: 600; color: #18181b; text-decoration: none;">
+              ${escapeHtml(m.nama_lengkap)}
+            </a>
+          </td>
+          <td><span class="user-badge">${escapeHtml(m.role)}</span></td>
+          <td>${escapeHtml(m.divisi)}</td>
+          <td style="text-align: center;"><strong style="color: #18181b;">${m.hadir}</strong></td>
+          <td style="text-align: center;"><span style="color: ${m.alpa > 0 ? '#71717a' : '#a1a1aa'};">${m.alpa}</span></td>
+          <td style="text-align: center; color: #71717a;">${m.total_pertemuan}</td>
+          <td style="text-align: center;">${pctBadge}</td>
+          <td style="text-align: center;">
+            <button class="btn btn-secondary" onclick="openProfile(${m.id})" style="font-size: 0.75rem; padding: 0.25rem 0.65rem; border: 1px solid #e4e4e7; background: #fff; border-radius: 4px; cursor: pointer;">
+              Lihat Profil
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } else {
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th>Tanggal</th>
+          <th>Nama Anggota</th>
+          <th>Role</th>
+          <th>Divisi</th>
+          <th>Status</th>
+        </tr>
+      `;
+    }
+
+    const items = _currentRekapData.items || [];
+    if (items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="padding: 2rem 0; color: #a1a1aa;">Belum ada log presensi yang sesuai filter.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = items.map(a => `
+      <tr>
+        <td><strong>${a.date}</strong></td>
+        <td>
+          <a href="javascript:void(0)" onclick="openProfile(${a.user ? a.user.id : 0})" style="color: #18181b; text-decoration: none; font-weight: 500;">
+            ${a.user ? escapeHtml(a.user.nama_lengkap) : '-'}
+          </a>
+        </td>
+        <td><span class="user-badge">${a.user ? escapeHtml(a.user.role) : '-'}</span></td>
+        <td>${a.user && a.user.divisi ? escapeHtml(a.user.divisi) : '-'}</td>
+        <td>
+          <strong style="color: ${a.status === 'hadir' ? '#18181b' : '#71717a'}; font-size: 0.82rem; letter-spacing: 0.03em;">
+            ${(a.status || 'ALPA').toUpperCase()}
+          </strong>
+        </td>
+      </tr>
+    `).join('');
+  }
+}
 
 export async function loadPengurusAbsensi(query = '') {
   try {
@@ -230,24 +363,28 @@ export async function loadPengurusAbsensi(query = '') {
 
     const res = await fetchAuth(`${API_BASE}/attendance/report${query}`);
     const data = await res.json();
-    const tbody = document.getElementById('table-rekap-absensi');
-    const items = data.data ? data.data.items : [];
+    if (!res.ok) throw new Error(data.message || 'Gagal memuat rekap absensi');
 
-    if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="5" class="text-center">Belum ada data absensi yang sesuai filter.</td></tr>`;
-    } else {
-      tbody.innerHTML = items.map(a => `
-        <tr>
-          <td><strong>${a.date}</strong></td>
-          <td>${a.user ? a.user.nama_lengkap : '-'}</td>
-          <td><span class="user-badge">${a.user ? a.user.role : '-'}</span></td>
-          <td>${a.user && a.user.divisi ? a.user.divisi : '-'}</td>
-          <td><strong style="color: ${a.status === 'hadir' ? '#18181b' : '#71717a'}">${a.status.toUpperCase()}</strong></td>
-        </tr>
-      `).join('');
-    }
+    _currentRekapData = data.data || {};
+    const summary = _currentRekapData.summary || {};
+
+    const elPertemuan = document.getElementById('stat-rekap-pertemuan');
+    const elAnggota = document.getElementById('stat-rekap-anggota');
+    const elHadir = document.getElementById('stat-rekap-hadir');
+    const elPersen = document.getElementById('stat-rekap-persen');
+
+    if (elPertemuan) elPertemuan.textContent = `${summary.total_pertemuan || 0} Sesi Resmi`;
+    if (elAnggota) elAnggota.textContent = `${summary.total_members || 0} Orang`;
+    if (elHadir) elHadir.textContent = `${summary.total_hadir || 0} Kali Hadir`;
+    if (elPersen) elPersen.textContent = `${summary.avg_persentase || 0}%`;
+
+    renderRekapTable();
   } catch (err) {
     console.error('Gagal memuat absensi:', err);
+    const tbody = document.getElementById('table-rekap-absensi');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="padding: 2rem 0; color: #dc2626;">Error: ${escapeHtml(err.message)}</td></tr>`;
+    }
   }
 }
 
@@ -263,6 +400,16 @@ export function filterAbsensi(e) {
   if (div) params.append('divisi', div);
 
   loadPengurusAbsensi(`?${params.toString()}`);
+}
+
+export function resetFilterAbsensi() {
+  const startEl = document.getElementById('filter-start-date');
+  const endEl = document.getElementById('filter-end-date');
+  const divEl = document.getElementById('filter-divisi');
+  if (startEl) startEl.value = '';
+  if (endEl) endEl.value = '';
+  if (divEl) divEl.value = '';
+  loadPengurusAbsensi();
 }
 
 export async function submitAbsensiAnggota(e) {
