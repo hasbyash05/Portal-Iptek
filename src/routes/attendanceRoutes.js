@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { submitAttendance, getMyHistory, getReport, exportAttendanceCsv } = require('../controllers/attendanceController');
-const { openSession, closeSession, setAttendanceMode, getSessionStatus } = require('../controllers/attendanceSessionController');
+const { openSession, closeSession, setAttendanceMode, getSessionStatus, cleanupDuplicateSessions } = require('../controllers/attendanceSessionController');
 const { authenticate } = require('../middlewares/auth');
 const { isKetuaWakil, isKetua, isPengurus } = require('../middlewares/roleCheck');
 const { checkAttendanceActive } = require('../middlewares/checkAttendanceActive');
@@ -22,6 +22,7 @@ router.get('/export-csv', isPengurus, exportAttendanceCsv);
 // Khusus Ketua & Wakil: kelola sesi presensi dan lihat rekap (otomatis invalidate cache sesi)
 router.post('/session/open', isKetuaWakil, clearCacheOnSuccess('attendance:session'), openSession);
 router.post('/session/close', isKetuaWakil, clearCacheOnSuccess('attendance:session'), closeSession);
+router.post('/session/cleanup', isKetuaWakil, cleanupDuplicateSessions);
 router.get('/report', isPengurus, getReport);
 
 // Khusus Ketua saja: ubah mode presensi (onsite / anywhere)

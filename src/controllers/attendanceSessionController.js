@@ -174,5 +174,100 @@ const getSessionStatus = async (req, res) => {
   }
 };
 
-module.exports = { openSession, closeSession, setAttendanceMode, getSessionStatus };
+/**
+ * POST /api/attendance/session/cleanup
+ * Membersihkan sesi duplikat / uji coba dan menyisakan sesi resmi yang memiliki riwayat presensi.
+ */
+const cleanupDuplicateSessions = async (req, res) => {
+  try {
+    const { Attendance, AttendanceSession, sequelize } = require('../models');
+    const { getJakartaDateString } = require('../utils/dateHelper');
+    const { clearServerCache } = require('../middlewares/cache');
+    const { Op } = require('sequelize');
+
+    // 1. Ambil seluruh tanggal unik yang benar-benar dihadiri
+    const distinctDates = await Attendance.findAll({
+      attributes: [[sequelize.fn('DISTINCT', sequelize.col('date')), 'date']],
+      raw: true
+    });
+    const validDates = new Set(distinctDates.map(d => d.date).filter(Boolean));
+
+    // 2. Ambil seluruh sesi yang ada
+    const allSessions = await AttendanceSession.findAll({
+      order: [['id', 'ASC']]
+    });
+
+    const keptIds = new Set();
+    const coveredDates = new Set();
+
+    for (const session of allSessions) {
+      if (session.is_active) {
+        keptIds.add(session.id);
+        continue;
+      }
+
+      const sDate = session.activated_at 
+        ? getJakartaDateString(new Date(session.activated_at)) 
+        : null;
+
+      // Hanya simpan 1 sesi per tanggal pertemuan resmi yang dihadiri
+      if (sDate && validDates.has(sDate) && !coveredDates.has(sDate)) {
+        keptIds.add(session.id);
+        coveredDates.add(sDate);
+      }
+    }
+
+    // Pastikan setiap tanggal valid memiliki 1 sesi
+    for (const vDate of validDates) {
+      if (!coveredDates.has(vDate)) {
+        const s = await AttendanceSession.create({
+          is_active: false,
+          activated_by: null,
+          activated_at: new Date(`${vDate}T09:00:00+07:00`),
+          attendance_mode: 'onsite'
+        });
+        keptIds.add(s.id);
+        coveredDates.add(vDate);
+      }
+    }
+
+    // 3. Hapus seluruh sesi sampah / duplikat lainnya
+    let deletedCount = 0;
+    if (keptIds.size > 0 && allSessions.length > keptIds.size) {
+      deletedCount = await AttendanceSession.destroy({
+        where: {
+          id: {
+            [Op.notIn]: Array.from(keptIds)
+          }
+        }
+      });
+    }
+
+    clearServerCache();
+
+    const remainingSessions = await AttendanceSession.findAll({
+      attributes: ['id', 'activated_at', 'is_active', 'attendance_mode']
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: `Pembersihan berhasil. ${deletedCount} sesi duplikat/sampah dihapus, tersisa ${remainingSessions.length} sesi pertemuan resmi.`,
+      data: {
+        deletedCount,
+        remainingCount: remainingSessions.length,
+        remainingSessions
+      }
+    });
+  } catch (error) {
+    console.error('[CLEANUP SESSIONS ERROR]', error);
+    return res.status(500).json({
+      status: 'error',
+      message: 'Gagal membersihkan sesi presensi.',
+      error: error.message
+    });
+  }
+};
+
+module.exports = { openSession, closeSession, setAttendanceMode, getSessionStatus, cleanupDuplicateSessions };
+
 

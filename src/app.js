@@ -145,6 +145,36 @@ sequelize.authenticate()
       } catch (cleanErr) {
         console.warn('[DB] Auto-reject pending no-proof:', cleanErr.message);
       }
+
+      // Pembersihan otomatis sesi presensi duplikat & sampah (sisakan sesi resmi yang dihadiri)
+      try {
+        const [attDates] = await sequelize.query("SELECT DISTINCT `date` FROM `attendances`");
+        const validDates = attDates.map(r => r.date).filter(Boolean);
+        if (validDates.length > 0) {
+          const [sessions] = await sequelize.query("SELECT `id`, `activated_at`, `is_active` FROM `attendance_sessions` ORDER BY `id` ASC");
+          const keptIds = [];
+          const covered = new Set();
+          for (const s of sessions) {
+            if (s.is_active) {
+              keptIds.push(s.id);
+              continue;
+            }
+            const sDate = s.activated_at 
+              ? new Date(s.activated_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Jakarta' }) 
+              : null;
+            if (sDate && validDates.includes(sDate) && !covered.has(sDate)) {
+              keptIds.push(s.id);
+              covered.add(sDate);
+            }
+          }
+          if (keptIds.length > 0 && sessions.length > keptIds.length) {
+            await sequelize.query(`DELETE FROM \`attendance_sessions\` WHERE \`id\` NOT IN (${keptIds.join(',')})`);
+            console.log(`[DB] Pembersihan sesi presensi selesai. Menyisakan ${keptIds.length} sesi pertemuan resmi.`);
+          }
+        }
+      } catch (cleanSessErr) {
+        console.warn('[DB] Pembersihan sesi presensi:', cleanSessErr.message);
+      }
     }
   })
   .catch((error) => {

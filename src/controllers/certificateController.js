@@ -20,13 +20,53 @@ const getProfile = async (req, res) => {
       });
     }
 
-    // 1. Ambil seluruh sesi presensi resmi yang dibuka oleh Ketua
+    // 1. Bersihkan sesi presensi duplikat & sampah (sisakan hanya 1 sesi per tanggal pertemuan resmi yang dihadiri)
+    try {
+      const distinctAttDates = await Attendance.findAll({
+        attributes: [[sequelize.fn('DISTINCT', sequelize.col('date')), 'date']],
+        raw: true
+      });
+      const validDates = new Set(distinctAttDates.map(d => d.date).filter(Boolean));
+
+      const existingSessions = await AttendanceSession.findAll({ order: [['id', 'ASC']] });
+      const keptIds = new Set();
+      const coveredDates = new Set();
+
+      for (const s of existingSessions) {
+        if (s.is_active) {
+          keptIds.add(s.id);
+          continue;
+        }
+        const sDate = s.activated_at 
+          ? getJakartaDateString(new Date(s.activated_at)) 
+          : null;
+
+        // Hanya simpan 1 sesi per tanggal yang benar-benar ada presensinya (sisakan 2 yang hadir itu)
+        if (sDate && validDates.has(sDate) && !coveredDates.has(sDate)) {
+          keptIds.add(s.id);
+          coveredDates.add(sDate);
+        }
+      }
+
+      // Hapus seluruh sesi sampah/duplikat lainnya
+      if (keptIds.size > 0 && existingSessions.length > keptIds.size) {
+        await AttendanceSession.destroy({
+          where: {
+            id: { [Op.notIn]: Array.from(keptIds) }
+          }
+        });
+      }
+    } catch (cleanErr) {
+      console.warn('[Auto-clean sessions warning]:', cleanErr.message);
+    }
+
+    // 2. Ambil seluruh sesi presensi resmi yang tersisa
     const allSessions = await AttendanceSession.findAll({
       attributes: ['id', 'activated_by', 'activated_at', 'attendance_mode'],
       order: [['activated_at', 'DESC'], ['id', 'DESC']]
     });
 
-    // 2. Ambil seluruh tanggal unik presensi dari seluruh user di organisasi
+    // 3. Ambil seluruh tanggal unik presensi dari seluruh user di organisasi
     const distinctDates = await Attendance.findAll({
       attributes: [[sequelize.fn('DISTINCT', sequelize.col('date')), 'date']],
       order: [['date', 'DESC']],
@@ -34,7 +74,7 @@ const getProfile = async (req, res) => {
     });
     const uniqueAttDates = distinctDates.map(d => d.date).filter(Boolean);
 
-    // 3. Ambil seluruh presensi user target
+    // 4. Ambil seluruh presensi user target
     const userAttendances = await Attendance.findAll({
       where: { user_id: id },
       order: [['date', 'DESC'], ['created_at', 'DESC']],
@@ -54,107 +94,48 @@ const getProfile = async (req, res) => {
       else if (s === 'sakit') totalSakit++;
     });
 
-    // 4. Hitung parameter kehadiran berdasarkan pembukaan absensi dari Ketua
-    const allMeetingDatesSet = new Set();
+    // 5. Susun daftar tanggal pertemuan resmi unik (Hari & Tanggal)
+    const meetingDatesSet = new Set();
     allSessions.forEach(s => {
       if (s.activated_at) {
-        allMeetingDatesSet.add(getJakartaDateString(new Date(s.activated_at)));
+        meetingDatesSet.add(getJakartaDateString(new Date(s.activated_at)));
       }
     });
     uniqueAttDates.forEach(d => {
-      if (d) allMeetingDatesSet.add(d);
-    });
-    userAttendances.forEach(a => {
-      if (a.date) allMeetingDatesSet.add(a.date);
+      if (d) meetingDatesSet.add(d);
     });
 
-    // Parameter kehadiran: jumlah pembukaan presensi oleh Ketua
-    const totalSessionsOpened = allSessions.length;
-    const totalPertemuan = Math.max(
-      totalSessionsOpened,
-      allMeetingDatesSet.size,
-      (totalHadir + totalIzin + totalSakit)
-    );
+    // Urutkan tanggal pertemuan dari yang terbaru ke terlama
+    const sortedMeetingDates = Array.from(meetingDatesSet).sort().reverse();
 
-    // Alpa dihitung dari total pertemuan yang dibuka dikurangi jumlah hadir, izin, dan sakit
+    // Total pertemuan diambil dari jumlah tanggal pertemuan resmi (sisakan 2 pertemuan yang dihadiri)
+    const totalPertemuan = sortedMeetingDates.length;
     const totalAlpa = Math.max(0, totalPertemuan - (totalHadir + totalIzin + totalSakit));
     const persentase = totalPertemuan > 0 ? Math.round((totalHadir / totalPertemuan) * 100) : 0;
 
-    // 5. Cek kehadiran hari ini
+    // 6. Cek kehadiran hari ini
     const todayStr = getJakartaDateString();
     const todayAttendance = userAttendances.find(a => a.date === todayStr);
 
-    // 6. Susun riwayat pertemuan lengkap untuk anggota ini
-    let attendanceRecords = [];
-    const usedAttIds = new Set();
-
-    if (allSessions.length > 0) {
-      attendanceRecords = allSessions.map(session => {
-        const sessionDate = session.activated_at 
-          ? getJakartaDateString(new Date(session.activated_at)) 
-          : getJakartaDateString();
-
-        const matched = userAttendances.find(a => a.date === sessionDate && !usedAttIds.has(a.id));
-        if (matched) {
-          usedAttIds.add(matched.id);
-          return {
-            id: matched.id,
-            session_id: session.id,
-            date: sessionDate,
-            status: matched.status,
-            created_at: matched.created_at
-          };
-        } else {
-          return {
-            id: null,
-            session_id: session.id,
-            date: sessionDate,
-            status: 'alpa',
-            created_at: null
-          };
-        }
-      });
-
-      // Tambahkan riwayat absensi user yang belum terhubung ke sesi manapun (jika ada)
-      userAttendances.forEach(a => {
-        if (!usedAttIds.has(a.id)) {
-          attendanceRecords.push({
-            id: a.id,
-            session_id: null,
-            date: a.date,
-            status: a.status,
-            created_at: a.created_at
-          });
-        }
-      });
-    } else {
-      // Fallback jika belum ada data di attendance_sessions
-      const sortedMeetingDates = Array.from(allMeetingDatesSet).sort().reverse();
-      attendanceRecords = sortedMeetingDates.map(date => {
-        const matched = userAttendances.find(a => a.date === date && !usedAttIds.has(a.id));
-        if (matched) {
-          usedAttIds.add(matched.id);
-          return {
-            id: matched.id,
-            session_id: null,
-            date: date,
-            status: matched.status,
-            created_at: matched.created_at
-          };
-        } else {
-          return {
-            id: null,
-            session_id: null,
-            date: date,
-            status: 'alpa',
-            created_at: null
-          };
-        }
-      });
-    }
-
-    // Urutkan riwayat absensi berdasarkan tanggal (terbaru ke terlama)
-    attendanceRecords.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    // 7. Susun riwayat pertemuan untuk tabel profil (1 baris per tanggal pertemuan resmi)
+    const attendanceRecords = sortedMeetingDates.map(date => {
+      if (userAttMap.has(date)) {
+        const att = userAttMap.get(date);
+        return {
+          id: att.id,
+          date: att.date,
+          status: att.status,
+          created_at: att.created_at
+        };
+      } else {
+        return {
+          id: null,
+          date: date,
+          status: 'alpa',
+          created_at: null
+        };
+      }
+    });
 
     // 7. Sertifikat milik anggota
     const certificates = await Certificate.findAll({
