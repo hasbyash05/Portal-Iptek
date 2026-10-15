@@ -269,10 +269,15 @@ export async function loadProfileData(userId) {
 
     // Header
     document.getElementById('profile-nama').textContent = user.nama_lengkap;
-    const roleText = user.divisi ? `${user.divisi} (${user.role.toUpperCase()})` : user.role.toUpperCase();
-    document.getElementById('profile-role').textContent = roleText;
+    document.getElementById('profile-role').textContent = user.role.toUpperCase();
+    const divBadge = document.getElementById('profile-divisi-badge');
+    if (divBadge) divBadge.textContent = user.divisi ? user.divisi : (user.role === 'admin' ? 'Administrator' : 'Anggota Organisasi');
     const joinDate = user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
     document.getElementById('profile-joined').textContent = `Bergabung: ${joinDate}`;
+
+    // Header Persentase
+    const pHeader = document.getElementById('profile-persentase-header');
+    if (pHeader) pHeader.textContent = `${attendance.persentase || 0}%`;
 
     // Tombol upload sertifikat (khusus Pengurus / Admin)
     const curUserStr = localStorage.getItem('iptek_user');
@@ -288,8 +293,9 @@ export async function loadProfileData(userId) {
     if (rateBadge) {
       const p = attendance.persentase || 0;
       rateBadge.textContent = `${p}% Kehadiran`;
-      rateBadge.style.color = p >= 75 ? '#166534' : (p >= 50 ? '#854d0e' : '#991b1b');
-      rateBadge.style.background = p >= 75 ? '#f0fdf4' : (p >= 50 ? '#fefce8' : '#fef2f2');
+      rateBadge.style.color = '#18181b';
+      rateBadge.style.background = '#f4f4f5';
+      rateBadge.style.border = '1px solid #e4e4e7';
     }
 
     document.getElementById('profile-total-pertemuan').textContent = attendance.total_pertemuan || 0;
@@ -312,26 +318,26 @@ export async function loadProfileData(userId) {
         }
         todayBox.style.display = 'block';
         todayBox.innerHTML = `
-          <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:0.75rem 1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; font-size:0.85rem; color:#166534;">
-            <div style="display:flex; align-items:center; gap:0.6rem;">
-              <i class="fa-solid fa-circle-check" style="font-size:1.1rem; color:#16a34a;"></i>
-              <div><strong>Absensi Hari Ini:</strong> Tercatat sebagai <span style="text-transform:uppercase; font-weight:700; background:#dcfce7; padding:0.15rem 0.5rem; border-radius:4px; font-size:0.8rem;">${attendance.today.status}</span>${timeStr}</div>
+          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #18181b; border-radius: 6px; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; font-size: 0.88rem; color: #18181b;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <i class="fa-solid fa-circle-check" style="font-size: 1.1rem; color: #18181b;"></i>
+              <div><strong>Status Hari Ini:</strong> Tercatat sebagai <span style="background: #18181b; color: #ffffff; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">${attendance.today.status}</span>${timeStr}</div>
             </div>
-            <span style="font-size:0.75rem; color:#15803d; font-weight:600;"><i class="fa-solid fa-check"></i> Selesai</span>
+            <span style="font-size: 0.78rem; color: #71717a; font-weight: 600;"><i class="fa-solid fa-check" style="margin-right: 4px;"></i>Presensi Selesai</span>
           </div>
         `;
       } else {
         const isSelf = curUser && String(curUser.id) === String(userId);
         todayBox.style.display = 'block';
         todayBox.innerHTML = `
-          <div style="background:#f8f9fa; border:1px solid #e4e4e7; border-radius:8px; padding:0.75rem 1rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem; font-size:0.85rem; color:#71717a;">
-            <div style="display:flex; align-items:center; gap:0.6rem;">
-              <i class="fa-solid fa-clock" style="font-size:1.1rem; color:#a1a1aa;"></i>
-              <div><strong>Absensi Hari Ini:</strong> Belum ada catatan absensi untuk hari ini.</div>
+          <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #71717a; border-radius: 6px; padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; font-size: 0.88rem; color: #4b5563;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <i class="fa-solid fa-clock" style="font-size: 1.1rem; color: #71717a;"></i>
+              <div><strong>Status Hari Ini:</strong> Belum ada catatan absensi untuk hari ini.</div>
             </div>
             ${isSelf ? `
-              <button onclick="switchNavTab('absensi')" class="btn btn-outline" style="font-size:0.78rem; padding:0.3rem 0.75rem; color:#18181b;">
-                Buka Absensi <i class="fa-solid fa-arrow-right" style="font-size:0.65rem;"></i>
+              <button onclick="switchNavTab('absensi')" class="btn btn-primary" style="font-size: 0.8rem; padding: 0.35rem 0.85rem; border-radius: 4px;">
+                Buka Presensi <i class="fa-solid fa-arrow-right" style="font-size: 0.7rem; margin-left: 4px;"></i>
               </button>
             ` : ''}
           </div>
@@ -368,22 +374,22 @@ export async function loadProfileData(userId) {
         }
 
         const statusColors = {
-          hadir: 'background:#f0fdf4; color:#166534; border:1px solid #bbf7d0;',
-          izin: 'background:#fefce8; color:#854d0e; border:1px solid #fef08a;',
-          sakit: 'background:#fff7ed; color:#9a3412; border:1px solid #fed7aa;',
-          alpa: 'background:#fef2f2; color:#991b1b; border:1px solid #fecaca;'
+          hadir: 'background: #18181b; color: #ffffff;',
+          izin: 'background: #f4f4f5; color: #52525b; border: 1px solid #e4e4e7;',
+          sakit: 'background: #f4f4f5; color: #52525b; border: 1px solid #e4e4e7;',
+          alpa: 'background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;'
         };
-        const statusStyle = statusColors[a.status] || 'background:#f4f4f5; color:#71717a;';
+        const statusStyle = statusColors[a.status] || 'background: #f4f4f5; color: #71717a;';
 
         return `<tr>
-          <td style="font-size:0.85rem; color:#71717a;">${i + 1}</td>
-          <td style="font-size:0.85rem; font-weight:500; color:#18181b;">${escapeHtml(dateStr)}</td>
-          <td style="font-size:0.85rem; color:#71717a;"><i class="fa-regular fa-clock" style="font-size:0.75rem; margin-right:4px;"></i>${timeStr}</td>
-          <td><span style="display:inline-block; padding:0.2rem 0.6rem; border-radius:4px; font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; ${statusStyle}">${escapeHtml(a.status)}</span></td>
+          <td style="width: 60px; text-align: center; color: #71717a; font-size: 0.85rem;">${i + 1}</td>
+          <td style="font-weight: 600; color: #18181b; font-size: 0.88rem;">${escapeHtml(dateStr)}</td>
+          <td style="color: #71717a; font-size: 0.85rem;"><i class="fa-regular fa-clock" style="font-size: 0.75rem; margin-right: 6px;"></i>${timeStr}</td>
+          <td><span style="display: inline-block; padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; ${statusStyle}">${escapeHtml(a.status)}</span></td>
         </tr>`;
       }).join('');
     } else {
-      attBody.innerHTML = '<tr><td colspan="4" class="text-center" style="color:#a1a1aa; padding:1.5rem 0;">Belum ada riwayat absensi untuk anggota ini.</td></tr>';
+      attBody.innerHTML = '<tr><td colspan="4" class="text-center" style="color: #a1a1aa; padding: 2rem 0;">Belum ada riwayat absensi untuk anggota ini.</td></tr>';
     }
 
     // Sertifikat
@@ -392,20 +398,22 @@ export async function loadProfileData(userId) {
     if (certCount) certCount.textContent = `${certificates.length} sertifikat`;
 
     if (certificates.length === 0) {
-      certContainer.innerHTML = '<p style="color:#a1a1aa; font-size:0.85rem;">Belum ada sertifikat.</p>';
+      certContainer.innerHTML = '<p style="color: #a1a1aa; font-size: 0.85rem; padding: 1rem 0;">Belum ada sertifikat yang diperoleh.</p>';
     } else {
       certContainer.innerHTML = certificates.map(c => {
         const dateStr = c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) : '-';
         const isImage = c.file_path && c.file_path.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-        return `<div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
-          <div style="width:40px; height:40px; background:#f4f4f5; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-            <i class="fa-solid ${isImage ? 'fa-image' : 'fa-file-pdf'}" style="color:#71717a; font-size:1rem;"></i>
+        return `<div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 6px; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 1rem; min-width: 0;">
+            <div style="width: 44px; height: 44px; background: #f4f4f5; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #18181b;">
+              <i class="fa-solid ${isImage ? 'fa-image' : 'fa-file-pdf'}" style="font-size: 1.15rem;"></i>
+            </div>
+            <div style="min-width: 0;">
+              <div style="font-weight: 700; color: #18181b; font-size: 0.95rem; font-family: 'Outfit', sans-serif;">${escapeHtml(c.nama_sertifikat)}</div>
+              <div style="font-size: 0.8rem; color: #71717a; margin-top: 0.2rem;">Diunggah oleh ${escapeHtml(c.uploaded_by_name)} • ${dateStr}</div>
+            </div>
           </div>
-          <div style="flex:1; min-width:0;">
-            <div style="font-weight:600; color:#18181b; font-size:0.9rem;">${escapeHtml(c.nama_sertifikat)}</div>
-            <div style="font-size:0.75rem; color:#a1a1aa; margin-top:0.2rem;">Diunggah oleh ${escapeHtml(c.uploaded_by_name)} - ${dateStr}</div>
-          </div>
-          <a href="${c.file_path}" target="_blank" class="btn btn-outline" style="font-size:0.8rem; padding:0.35rem 0.8rem; white-space:nowrap;">
+          <a href="${c.file_path}" target="_blank" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.95rem; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 6px; color: #18181b; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.03);" onmouseover="this.style.background='#f4f4f5'" onmouseout="this.style.background='#ffffff'">
             <i class="fa-solid fa-download"></i> Unduh
           </a>
         </div>`;

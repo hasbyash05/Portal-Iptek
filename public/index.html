@@ -1134,99 +1134,133 @@
 
       <!-- PROFIL ANGGOTA -->
       <div id="tab-profil" class="tab-content" style="display: none;">
-        <div class="section-box">
-          <div style="margin-bottom: 1.5rem;">
-            <button onclick="closeProfile()" style="background:none; border:none; cursor:pointer; color:#71717a; font-size:0.85rem; padding:0; display:inline-flex; align-items:center; gap:0.4rem;" onmouseover="this.style.color='#18181b'" onmouseout="this.style.color='#71717a'">
-              <i class="fa-solid fa-arrow-left"></i> Kembali
-            </button>
-          </div>
+        <!-- Top Navigation / Back Button -->
+        <div style="margin-bottom: 1.25rem;">
+          <button onclick="closeProfile()" class="btn btn-secondary"
+            style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 6px; padding: 0.45rem 1rem; font-size: 0.85rem; font-weight: 600; color: #18181b; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.15s; box-shadow: 0 1px 2px rgba(0,0,0,0.03);"
+            onmouseover="this.style.background='#f4f4f5'" onmouseout="this.style.background='#ffffff'">
+            <i class="fa-solid fa-arrow-left"></i> Kembali
+          </button>
+        </div>
 
-          <!-- Header Profil -->
-          <div style="display:flex; align-items:center; gap:1.5rem; margin-bottom:2rem; flex-wrap:wrap;">
-            <div style="width:72px; height:72px; background:#f4f4f5; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
-              <i class="fa-solid fa-user" style="font-size:1.8rem; color:#a1a1aa;"></i>
-            </div>
-            <div>
-              <h2 id="profile-nama" style="font-family:'Outfit',sans-serif; font-size:1.5rem; font-weight:700; color:#18181b; margin:0;">Nama Lengkap</h2>
-              <p id="profile-role" style="color:#71717a; font-size:0.85rem; margin:0.25rem 0 0 0;">Role</p>
-              <p id="profile-joined" style="color:#a1a1aa; font-size:0.78rem; margin:0.15rem 0 0 0;">Bergabung: -</p>
-            </div>
-          </div>
-
-          <!-- Statistik Kehadiran -->
-          <div style="margin-bottom:2rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-              <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0;">Statistik Kehadiran</h3>
-              <span id="profile-attendance-rate-badge" style="font-size:0.8rem; font-weight:600; padding:0.25rem 0.65rem; border-radius:4px; background:#f4f4f5; color:#18181b;"></span>
-            </div>
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:0.75rem;">
-              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
-                <div id="profile-persentase" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#18181b;">0%</div>
-                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Tingkat Hadir</div>
+        <!-- Card 1: Identitas Profil -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #ffffff;">
+          <div class="card-body" style="padding: 1.75rem 2rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;">
+              <div style="display: flex; align-items: center; gap: 1.5rem;">
+                <div style="width: 64px; height: 64px; background: #18181b; color: #ffffff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.08);">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <div>
+                  <h2 id="profile-nama" style="font-family: 'Outfit', sans-serif; font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 800; color: #18181b; margin: 0; line-height: 1.25;">
+                    Nama Lengkap
+                  </h2>
+                  <div style="display: flex; align-items: center; gap: 0.6rem; margin-top: 0.4rem; flex-wrap: wrap;">
+                    <span id="profile-role" style="background: #18181b; color: #ffffff; font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                      Role
+                    </span>
+                    <span id="profile-divisi-badge" style="font-size: 0.85rem; color: #4b5563; font-weight: 500;">
+                      Divisi
+                    </span>
+                    <span style="color: #d4d4d8;">•</span>
+                    <span id="profile-joined" style="font-size: 0.8rem; color: #71717a;">
+                      Bergabung: -
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
-                <div id="profile-total-pertemuan" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#18181b;">0</div>
-                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Total Pertemuan</div>
-              </div>
-              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
-                <div id="profile-hadir" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#166534;">0</div>
-                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Hadir</div>
-              </div>
-              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
-                <div id="profile-izin" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#71717a;">0</div>
-                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Izin</div>
-              </div>
-              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
-                <div id="profile-sakit" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#71717a;">0</div>
-                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Sakit</div>
-              </div>
-              <div style="background:#fff; border:1px solid #e4e4e7; border-radius:8px; padding:1rem; text-align:center;">
-                <div id="profile-alpa" style="font-family:'Outfit',sans-serif; font-size:1.6rem; font-weight:800; color:#dc2626;">0</div>
-                <div style="font-size:0.75rem; color:#71717a; font-weight:500; margin-top:0.2rem;">Alpa</div>
+              <div style="text-align: right; padding-left: 1.5rem; border-left: 1px solid #f3f4f6;">
+                <span style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 0.2rem;">Tingkat Hadir</span>
+                <span id="profile-persentase-header" style="font-family: 'Outfit', sans-serif; font-size: 1.8rem; font-weight: 800; color: #18181b; line-height: 1;">0%</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Riwayat Lengkap Absensi -->
-          <div style="margin-bottom:2rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem; flex-wrap:wrap; gap:0.5rem;">
-              <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0;">Riwayat Absensi & Kehadiran</h3>
-              <span id="profile-attendance-count" style="font-size:0.8rem; color:#71717a;"></span>
+        <!-- Card 2: Statistik Kehadiran -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #ffffff;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-chart-pie" style="font-size: 0.95rem; color: #71717a;"></i> Statistik Kehadiran
+            </h3>
+            <span id="profile-attendance-rate-badge" style="font-size: 0.75rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 4px; letter-spacing: 0.03em;">0% Kehadiran</span>
+          </div>
+          <div class="card-body" style="padding: 1.5rem;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem;">
+              <div style="padding: 1.25rem 1rem; background: #f8f9fa; border-radius: 6px; text-align: center;">
+                <span style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.4rem;">Tingkat Hadir</span>
+                <div id="profile-persentase" style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #18181b; line-height: 1;">0%</div>
+              </div>
+              <div style="padding: 1.25rem 1rem; background: #f8f9fa; border-radius: 6px; text-align: center;">
+                <span style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.4rem;">Total Pertemuan</span>
+                <div id="profile-total-pertemuan" style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #18181b; line-height: 1;">0</div>
+              </div>
+              <div style="padding: 1.25rem 1rem; background: #f8f9fa; border-radius: 6px; text-align: center;">
+                <span style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.4rem;">Hadir</span>
+                <div id="profile-hadir" style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #18181b; line-height: 1;">0</div>
+              </div>
+              <div style="padding: 1.25rem 1rem; background: #f8f9fa; border-radius: 6px; text-align: center;">
+                <span style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.4rem;">Izin</span>
+                <div id="profile-izin" style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #71717a; line-height: 1;">0</div>
+              </div>
+              <div style="padding: 1.25rem 1rem; background: #f8f9fa; border-radius: 6px; text-align: center;">
+                <span style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.4rem;">Sakit</span>
+                <div id="profile-sakit" style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #71717a; line-height: 1;">0</div>
+              </div>
+              <div style="padding: 1.25rem 1rem; background: #f8f9fa; border-radius: 6px; text-align: center;">
+                <span style="font-family: 'Outfit', sans-serif; font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.06em; display: block; margin-bottom: 0.4rem;">Alpa</span>
+                <div id="profile-alpa" style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #71717a; line-height: 1;">0</div>
+              </div>
             </div>
+          </div>
+        </div>
 
+        <!-- Card 3: Riwayat Lengkap Absensi -->
+        <div class="card" style="margin-bottom: 1.5rem; background: #ffffff;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
+            <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b; display: flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-clipboard-user" style="font-size: 0.95rem; color: #71717a;"></i> Riwayat Absensi & Kehadiran
+            </h3>
+            <span id="profile-attendance-count" style="font-size: 0.8rem; color: #71717a; font-weight: 600;">0 total presensi</span>
+          </div>
+          <div class="card-body" style="padding: 1.5rem;">
             <!-- Banner Status Absen Hari Ini -->
-            <div id="profile-today-attendance" style="margin-bottom:1rem; display:none;"></div>
+            <div id="profile-today-attendance" style="margin-bottom: 1.25rem; display: none;"></div>
 
             <div class="table-responsive">
-              <table class="data-table">
+              <table class="table">
                 <thead>
                   <tr>
-                    <th style="width:50px;">No</th>
+                    <th style="width: 60px; text-align: center;">No</th>
                     <th>Hari & Tanggal</th>
                     <th>Waktu Presensi</th>
                     <th>Status Kehadiran</th>
                   </tr>
                 </thead>
                 <tbody id="profile-attendance-list">
-                  <tr><td colspan="4" class="text-center">Memuat riwayat absensi...</td></tr>
+                  <tr><td colspan="4" class="text-center" style="padding: 2rem 0; color: #a1a1aa;">Memuat riwayat absensi...</td></tr>
                 </tbody>
               </table>
             </div>
           </div>
+        </div>
 
-          <!-- Sertifikat -->
-          <div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem;">
-              <div style="display:flex; align-items:center; gap:0.5rem;">
-                <h3 style="font-family:'Outfit',sans-serif; font-size:1.1rem; font-weight:700; color:#18181b; margin:0;">Sertifikat</h3>
-                <span id="profile-cert-count" style="font-size:0.8rem; color:#71717a;"></span>
-              </div>
-              <button id="btn-upload-cert-profile" class="btn btn-primary" onclick="showUploadCertModal()" style="display:none; font-size:0.8rem; padding:0.35rem 0.8rem;">
-                <i class="fa-solid fa-upload"></i> Unggah Sertifikat
-              </button>
+        <!-- Card 4: Sertifikat yang Diperoleh -->
+        <div class="card" style="margin-bottom: 2rem; background: #ffffff;">
+          <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+              <h3 style="margin: 0; font-size: 1.05rem; font-weight: 700; color: #18181b; display: flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-award" style="font-size: 0.95rem; color: #71717a;"></i> Sertifikat yang Diperoleh
+              </h3>
+              <span id="profile-cert-count" style="font-size: 0.8rem; color: #71717a; font-weight: 600;"></span>
             </div>
-            <div id="profile-cert-list" style="display:grid; gap:0.75rem;">
-              <p style="color:#a1a1aa; font-size:0.85rem;">Memuat sertifikat...</p>
+            <button id="btn-upload-cert-profile" class="btn btn-primary" onclick="showUploadCertModal()" style="display: none; font-size: 0.8rem; padding: 0.35rem 0.85rem;">
+              <i class="fa-solid fa-upload"></i> Unggah Sertifikat
+            </button>
+          </div>
+          <div class="card-body" style="padding: 1.5rem;">
+            <div id="profile-cert-list" style="display: grid; gap: 0.75rem;">
+              <p style="color: #a1a1aa; font-size: 0.85rem;">Memuat sertifikat...</p>
             </div>
           </div>
         </div>
@@ -1235,88 +1269,90 @@
       <!-- ANGGOTA -->
       <div id="tab-anggota" class="tab-content" style="display: none;">
         <div id="view-anggota-pengurus">
-          <div class="section-box">
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="card" style="background: #ffffff; margin-bottom: 1.5rem;">
+            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
               <div>
-                <h2
-                  style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 700; color: #18181b; margin: 0;">
-                  Manajemen Anggota & Pengurus</h2>
-                <p style="color: #71717a; font-size: 0.9rem; margin: 0.25rem 0 0 0;">Daftar anggota organisasi
-                  (Penambahan & Pengurangan khusus Admin)</p>
+                <h3 style="font-size: 1.15rem; font-weight: 700; color: #18181b; margin: 0; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-users-gear" style="font-size: 1rem; color: #71717a;"></i> Manajemen Anggota & Pengurus
+                </h3>
+                <p style="color: #71717a; font-size: 0.85rem; margin: 0.25rem 0 0 0;">Daftar akun anggota organisasi UKM IPTEK STIKES Semarang</p>
               </div>
               <div id="btn-add-user-container" style="display: none;">
-                <button class="btn btn-primary" onclick="showAddUserModal()" style="white-space: nowrap;">
+                <button class="btn btn-primary" onclick="showAddUserModal()" style="white-space: nowrap; font-size: 0.85rem; padding: 0.45rem 1rem;">
                   <i class="fa-solid fa-user-plus"></i> Tambah Anggota
                 </button>
               </div>
             </div>
+            <div class="card-body" style="padding: 1.5rem;">
+              <!-- Filter & Search -->
+              <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
+                <select id="filter-user-role" onchange="loadAnggotaList()"
+                  style="padding: 0.5rem 0.75rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.85rem; background: #fff; color: #18181b; min-width: 140px;">
+                  <option value="">Semua Role</option>
+                  <option value="pengurus">Pengurus</option>
+                  <option value="anggota">Anggota</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <input type="text" id="search-user" placeholder="Cari nama atau username..." oninput="loadAnggotaList()"
+                  style="padding: 0.5rem 0.75rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.85rem; flex: 1; min-width: 200px; color: #18181b;">
+              </div>
 
-            <!-- Filter & Search -->
-            <div style="display: flex; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap;">
-              <select id="filter-user-role" onchange="loadAnggotaList()"
-                style="padding: 0.5rem 0.75rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.85rem; background: #fff; color: #18181b; min-width: 140px;">
-                <option value="">Semua Role</option>
-                <option value="pengurus">Pengurus</option>
-                <option value="anggota">Anggota</option>
-                <option value="admin">Admin</option>
-              </select>
-              <input type="text" id="search-user" placeholder="Cari nama atau username..." oninput="loadAnggotaList()"
-                style="padding: 0.5rem 0.75rem; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.85rem; flex: 1; min-width: 200px; color: #18181b;">
+              <!-- Tabel Anggota -->
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th style="width: 50px; text-align: center;">No</th>
+                      <th>Nama Lengkap</th>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th>Divisi</th>
+                      <th style="text-align: center;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-anggota">
+                    <tr>
+                      <td colspan="6" class="text-center" style="padding: 2rem 0; color: #a1a1aa;">Memuat data...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p id="anggota-count" style="color: #71717a; font-size: 0.8rem; margin-top: 0.75rem;"></p>
             </div>
-
-            <!-- Tabel Anggota -->
-            <div class="table-responsive">
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Lengkap</th>
-                    <th>Username</th>
-                    <th>Role</th>
-                    <th>Divisi</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody id="table-anggota">
-                  <tr>
-                    <td colspan="6" class="text-center">Memuat data...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p id="anggota-count" style="color: #71717a; font-size: 0.8rem; margin-top: 0.75rem;"></p>
           </div>
 
           <!-- Panel Sertifikat (Pengurus) -->
-          <div id="view-sertifikat-pengurus" style="display:none; margin-top:2rem;">
-            <div class="section-box">
-              <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+          <div id="view-sertifikat-pengurus" style="display: none; margin-top: 1.5rem;">
+            <div class="card" style="background: #ffffff;">
+              <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; background: #ffffff; border-bottom: 1px solid #f3f4f6; padding: 1.25rem 1.5rem;">
                 <div>
-                  <h2 style="font-family:'Outfit',sans-serif; font-size:1.5rem; font-weight:700; color:#18181b; margin:0;">Manajemen Sertifikat</h2>
-                  <p style="color:#71717a; font-size:0.9rem; margin:0.25rem 0 0 0;">Unggah sertifikat untuk anggota. Nama file otomatis mengikuti nama lengkap penerima.</p>
+                  <h3 style="font-size: 1.15rem; font-weight: 700; color: #18181b; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i class="fa-solid fa-award" style="font-size: 1rem; color: #71717a;"></i> Manajemen Sertifikat Anggota
+                  </h3>
+                  <p style="color: #71717a; font-size: 0.85rem; margin: 0.25rem 0 0 0;">Unggah dan kelola sertifikat anggota organisasi UKM IPTEK</p>
                 </div>
-                <button class="btn btn-primary" onclick="showUploadCertModal()" style="white-space:nowrap;">
+                <button class="btn btn-primary" onclick="showUploadCertModal()" style="white-space: nowrap; font-size: 0.85rem; padding: 0.45rem 1rem;">
                   <i class="fa-solid fa-upload"></i> Unggah Sertifikat
                 </button>
               </div>
-
-              <div class="table-responsive">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>No</th>
-                      <th>Penerima</th>
-                      <th>Nama Sertifikat</th>
-                      <th>Diunggah Oleh</th>
-                      <th>Tanggal</th>
-                      <th>Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody id="table-sertifikat">
-                    <tr><td colspan="6" class="text-center">Memuat...</td></tr>
-                  </tbody>
-                </table>
+              <div class="card-body" style="padding: 1.5rem;">
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th style="width: 50px; text-align: center;">No</th>
+                        <th>Penerima</th>
+                        <th>Nama Sertifikat</th>
+                        <th>Diunggah Oleh</th>
+                        <th>Tanggal</th>
+                        <th style="text-align: center;">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="table-sertifikat">
+                      <tr><td colspan="6" class="text-center" style="padding: 2rem 0; color: #a1a1aa;">Memuat...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
