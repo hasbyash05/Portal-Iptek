@@ -8,7 +8,6 @@ let hasVoted = false;
 let userVotedAt = null;
 let selectedCandidateForVote = null;
 let barChartInstance = null;
-let donutChartInstance = null;
 let autoRefreshTimer = null;
 let votersAuditData = [];
 
@@ -21,19 +20,7 @@ export function switchPemiluSubtab(subtabName) {
     const el = document.getElementById(`pemilu-subtab-${t}`);
     const btn = document.getElementById(`pemilu-tab-btn-${t}`);
     if (el) el.style.display = (t === subtabName) ? 'block' : 'none';
-    if (btn) {
-      if (t === subtabName) {
-        btn.classList.add('active');
-        btn.style.color = '#18181b';
-        btn.style.borderBottom = '2px solid #18181b';
-        btn.style.fontWeight = '700';
-      } else {
-        btn.classList.remove('active');
-        btn.style.color = '#71717a';
-        btn.style.borderBottom = '2px solid transparent';
-        btn.style.fontWeight = '500';
-      }
-    }
+    if (btn) btn.classList.toggle('active', t === subtabName);
   });
 
   if (subtabName === 'bilik') {
@@ -50,7 +37,6 @@ export function switchPemiluSubtab(subtabName) {
 
 function startAutoRefresh() {
   stopAutoRefresh();
-  // Refresh data monitoring setiap 15 detik jika subtab monitoring aktif
   autoRefreshTimer = setInterval(() => {
     const monitoringEl = document.getElementById('pemilu-subtab-monitoring');
     if (monitoringEl && monitoringEl.style.display !== 'none') {
@@ -82,9 +68,8 @@ export async function loadElectionData() {
 
   try {
     container.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: #71717a;">
-        <i class="fa-solid fa-spinner fa-spin" style="font-size: 1.8rem; margin-bottom: 0.8rem; display: block;"></i>
-        Memuat data bilik suara pemilihan...
+      <div style="grid-column: 1 / -1; text-align: center; padding: 2rem 1rem; color: #71717a;">
+        Memuat data bilik suara...
       </div>
     `;
 
@@ -93,8 +78,7 @@ export async function loadElectionData() {
 
     if (result.status !== 'success' || !result.data) {
       container.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 2.5rem 1rem; color: #dc2626; background: #fef2f2; border-radius: 8px;">
-          <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.5rem; margin-bottom: 0.5rem; display: block;"></i>
+        <div style="grid-column: 1 / -1; text-align: center; padding: 1.5rem 1rem; color: #dc2626; background: #ffffff; border-radius: 6px;">
           ${result.message || 'Gagal memuat pemilihan.'}
         </div>
       `;
@@ -107,12 +91,10 @@ export async function loadElectionData() {
     hasVoted = !!userHasVoted;
     userVotedAt = votedAt;
 
-    // Update Header Pemilihan
     if (titleEl) titleEl.textContent = election.judul || 'Pemilihan Calon Ketua Umum UKM IPTEK';
     if (periodeEl) periodeEl.textContent = `Periode ${election.periode || '2026/2027'}`;
     if (descEl) descEl.textContent = election.deskripsi || 'Sistem e-voting terpadu UKM IPTEK STIKES Semarang.';
 
-    // Update Panitia Subtab Visibility (Hanya untuk Pengurus & Admin)
     const userStr = localStorage.getItem('iptek_user');
     const user = userStr ? JSON.parse(userStr) : null;
     const isPanitia = user && (user.role === 'admin' || user.role === 'pengurus');
@@ -121,17 +103,14 @@ export async function loadElectionData() {
       panitiaTabBtn.style.display = isPanitia ? 'inline-block' : 'none';
     }
 
-    // Render Status Banner
     renderVoterBanner(banner, election, hasVoted, userVotedAt);
-
-    // Render Daftar Calon
     renderCandidates(container, currentCandidates, election, hasVoted);
 
   } catch (err) {
     console.error('loadElectionData error:', err);
     if (container) {
       container.innerHTML = `
-        <div style="grid-column: 1 / -1; text-align: center; padding: 2.5rem 1rem; color: #dc2626; background: #fef2f2; border-radius: 8px;">
+        <div style="grid-column: 1 / -1; text-align: center; padding: 1.5rem 1rem; color: #dc2626; background: #ffffff; border-radius: 6px;">
           Terjadi kesalahan koneksi saat memuat data bilik suara.
         </div>
       `;
@@ -147,19 +126,16 @@ function renderVoterBanner(bannerEl, election, userVoted, votedAt) {
 
   if (isClosed) {
     bannerEl.innerHTML = `
-      <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #18181b; border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <div style="width: 44px; height: 44px; border-radius: 8px; background: #18181b; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
-            <i class="fa-solid fa-lock"></i>
-          </div>
+      <div class="card mb-4">
+        <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <h4 style="margin: 0; font-size: 1rem; color: #18181b; font-weight: 700;">Pemilihan Resmi Ditutup</h4>
-            <p style="margin: 2px 0 0 0; font-size: 0.85rem; color: #71717a;">Periode pemungutan suara telah berakhir. Silakan lihat hasil akhir dan penetapan pemenang di tab Monitoring Suara.</p>
+            <h4 style="margin: 0 0 4px 0; font-size: 0.95rem; font-weight: 700; color: #18181b;">Bilik Suara Ditutup</h4>
+            <p style="margin: 0; font-size: 0.85rem; color: #4b5563;">Periode pemungutan suara telah selesai. Silakan periksa hasil akhir pada tab Monitoring Suara.</p>
           </div>
+          <button onclick="switchPemiluSubtab('monitoring')" class="btn btn-outline" style="font-size: 0.85rem;">
+            Lihat Hasil Akhir
+          </button>
         </div>
-        <button onclick="switchPemiluSubtab('monitoring')" class="btn btn-outline" style="border-color: #18181b; color: #18181b; font-size: 0.85rem; padding: 0.5rem 1rem;">
-          <i class="fa-solid fa-chart-column"></i> Lihat Hasil Akhir
-        </button>
       </div>
     `;
     return;
@@ -167,13 +143,10 @@ function renderVoterBanner(bannerEl, election, userVoted, votedAt) {
 
   if (isDraft) {
     bannerEl.innerHTML = `
-      <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #71717a; border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="width: 44px; height: 44px; border-radius: 8px; background: #f4f4f5; color: #18181b; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
-          <i class="fa-solid fa-hourglass-start"></i>
-        </div>
-        <div>
-          <h4 style="margin: 0; font-size: 1rem; color: #18181b; font-weight: 700;">Pemilihan Masih Dalam Tahap Persiapan</h4>
-          <p style="margin: 2px 0 0 0; font-size: 0.85rem; color: #71717a;">Panitia pemilihan belum membuka bilik suara. Pemungutan suara akan dimulai segera setelah jadwal diumumkan.</p>
+      <div class="card mb-4">
+        <div class="card-body">
+          <h4 style="margin: 0 0 4px 0; font-size: 0.95rem; font-weight: 700; color: #18181b;">Tahap Persiapan</h4>
+          <p style="margin: 0; font-size: 0.85rem; color: #4b5563;">Bilik suara belum dibuka oleh panitia pemilihan.</p>
         </div>
       </div>
     `;
@@ -192,40 +165,24 @@ function renderVoterBanner(bannerEl, election, userVoted, votedAt) {
     }) : 'Waktu tercatat';
 
     bannerEl.innerHTML = `
-      <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #18181b; border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-          <div style="width: 44px; height: 44px; border-radius: 8px; background: #18181b; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
-            <i class="fa-solid fa-check"></i>
-          </div>
+      <div class="card mb-4">
+        <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div>
-            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2px;">
-              <h4 style="margin: 0; font-size: 1rem; color: #18181b; font-weight: 700;">Hak Suara Anda Telah Digunakan</h4>
-              <span style="font-size: 0.7rem; font-weight: 700; background: #f4f4f5; color: #18181b; border: 1px solid #e4e4e7; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">1 Akun 1 Suara Sah</span>
-            </div>
-            <p style="margin: 0; font-size: 0.85rem; color: #71717a;">
-              Tercatat pada ${formattedDate} WIB. Pilihan Anda dijamin rahasia dan telah masuk ke dalam rekapitulasi sistem.
-            </p>
+            <h4 style="margin: 0 0 4px 0; font-size: 0.95rem; font-weight: 700; color: #18181b;">Hak Suara Telah Digunakan</h4>
+            <p style="margin: 0; font-size: 0.85rem; color: #4b5563;">Pilihan Anda tercatat pada ${formattedDate} WIB. Setiap akun hanya memiliki 1 hak suara sah.</p>
           </div>
+          <button onclick="switchPemiluSubtab('monitoring')" class="btn btn-outline" style="font-size: 0.85rem;">
+            Lihat Monitoring Suara
+          </button>
         </div>
-        <button onclick="switchPemiluSubtab('monitoring')" class="btn btn-outline" style="border-color: #18181b; color: #18181b; font-size: 0.85rem; padding: 0.5rem 1.1rem;">
-          <i class="fa-solid fa-chart-column"></i> Pantau Live Count
-        </button>
       </div>
     `;
   } else {
     bannerEl.innerHTML = `
-      <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 4px solid #18181b; border-radius: 8px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; display: flex; align-items: center; gap: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-        <div style="width: 44px; height: 44px; border-radius: 8px; background: #18181b; color: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0;">
-          <i class="fa-solid fa-check-to-slot"></i>
-        </div>
-        <div style="flex: 1;">
-          <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 2px;">
-            <h4 style="margin: 0; font-size: 1rem; color: #18181b; font-weight: 700;">Bilik Pemilihan Dibuka</h4>
-            <span style="font-size: 0.7rem; font-weight: 700; background: #f4f4f5; color: #18181b; border: 1px solid #e4e4e7; padding: 2px 8px; border-radius: 4px; text-transform: uppercase;">Belum Memberikan Suara</span>
-          </div>
-          <p style="margin: 0; font-size: 0.85rem; color: #71717a;">
-            Setiap akun terdaftar berhak memberikan 1 suara sah. Pelajari visi, misi, dan program kerja para calon sebelum menetapkan pilihan Anda.
-          </p>
+      <div class="card mb-4">
+        <div class="card-body">
+          <h4 style="margin: 0 0 4px 0; font-size: 0.95rem; font-weight: 700; color: #18181b;">Pemungutan Suara Sedang Berlangsung</h4>
+          <p style="margin: 0; font-size: 0.85rem; color: #4b5563;">Setiap akun berhak memberikan satu suara sah. Silakan pelajari profil calon ketua umum dan gunakan hak suara Anda.</p>
         </div>
       </div>
     `;
@@ -235,10 +192,11 @@ function renderVoterBanner(bannerEl, election, userVoted, votedAt) {
 function renderCandidates(container, candidates, election, userVoted) {
   if (!candidates || candidates.length === 0) {
     container.innerHTML = `
-      <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 8px;">
-        <i class="fa-solid fa-users-slash" style="font-size: 2rem; color: #a1a1aa; margin-bottom: 0.8rem; display: block;"></i>
-        <h4 style="color: #18181b; margin-bottom: 0.4rem; font-size: 1.1rem;">Belum Ada Calon Terdaftar</h4>
-        <p style="color: #71717a; font-size: 0.9rem; max-width: 480px; margin: 0 auto;">Panitia pemilihan belum mendaftarkan calon ketua umum. Silakan cek kembali nanti atau hubungi panitia pemilihan.</p>
+      <div class="card" style="grid-column: 1 / -1;">
+        <div class="card-body text-center" style="padding: 2.5rem 1rem;">
+          <h4 style="color: #18181b; margin-bottom: 0.35rem; font-size: 1rem;">Belum Ada Calon Terdaftar</h4>
+          <p style="color: #71717a; font-size: 0.85rem; margin: 0;">Panitia pemilihan belum mendaftarkan calon ketua umum.</p>
+        </div>
       </div>
     `;
     return;
@@ -249,64 +207,46 @@ function renderCandidates(container, candidates, election, userVoted) {
   const html = candidates.map(c => {
     const numDisplay = String(c.nomor_urut).padStart(2, '0');
     const photoHtml = c.foto_url 
-      ? `<img src="${c.foto_url}" alt="Foto Calon ${c.nama_calon}" style="width: 100%; height: 260px; object-fit: cover; border-radius: 8px 8px 0 0; background: #f4f4f5;">`
-      : `<div style="width: 100%; height: 260px; background: #f4f4f5; border-radius: 8px 8px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a1a1aa;">
-           <i class="fa-solid fa-user-tie" style="font-size: 4rem; margin-bottom: 0.5rem; color: #71717a;"></i>
-           <span style="font-size: 0.8rem; font-weight: 500;">Foto Belum Diunggah</span>
-         </div>`;
+      ? `<img src="${c.foto_url}" alt="Foto Calon" style="width: 100%; height: 100%; object-fit: cover;">`
+      : `<div style="text-align: center; color: #9ca3af;"><i class="fa-solid fa-user" style="font-size: 3rem;"></i></div>`;
 
     const buttonHtml = isVotingActive
-      ? `<button onclick="openVoteConfirmModal(${c.id})" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem 1rem; font-size: 0.95rem; font-weight: 700; margin-top: 0.75rem; background: #18181b; color: #ffffff;">
-           <i class="fa-solid fa-check-to-slot"></i> Beri Suara untuk No. ${numDisplay}
+      ? `<button onclick="openVoteConfirmModal(${c.id})" class="btn btn-primary" style="width: 100%; font-size: 0.85rem; padding: 0.55rem;">
+           Pilih Calon Ini
          </button>`
       : userVoted
-        ? `<button disabled class="btn btn-outline" style="width: 100%; justify-content: center; padding: 0.7rem 1rem; font-size: 0.85rem; margin-top: 0.75rem; background: #f4f4f5; color: #a1a1aa; border-color: #e4e4e7; cursor: not-allowed;">
-             <i class="fa-solid fa-check"></i> Suara Telah Digunakan
+        ? `<button disabled class="btn btn-outline" style="width: 100%; font-size: 0.85rem; padding: 0.55rem; cursor: not-allowed; opacity: 0.6;">
+             Suara Telah Digunakan
            </button>`
-        : `<button disabled class="btn btn-outline" style="width: 100%; justify-content: center; padding: 0.7rem 1rem; font-size: 0.85rem; margin-top: 0.75rem; background: #f4f4f5; color: #a1a1aa; border-color: #e4e4e7; cursor: not-allowed;">
-             <i class="fa-solid fa-lock"></i> Pemilihan Tidak Aktif
+        : `<button disabled class="btn btn-outline" style="width: 100%; font-size: 0.85rem; padding: 0.55rem; cursor: not-allowed; opacity: 0.6;">
+             Pemilihan Tidak Aktif
            </button>`;
 
-    // Potongan visi untuk preview singkat
-    const visiSnippet = c.visi && c.visi.length > 120 ? c.visi.substring(0, 120) + '...' : (c.visi || 'Visi belum diisi.');
+    const visiSnippet = c.visi && c.visi.length > 110 ? c.visi.substring(0, 110) + '...' : (c.visi || 'Visi belum diisi.');
 
     return `
-      <div class="card" style="border: none; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); background: #ffffff; display: flex; flex-direction: column; overflow: hidden; position: relative;">
-        <!-- Nomor Urut Badge -->
-        <div style="position: absolute; top: 12px; left: 12px; background: #18181b; color: #ffffff; font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 800; padding: 0.25rem 0.75rem; border-radius: 6px; z-index: 2; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">
-          ${numDisplay}
+      <div class="card" style="display: flex; flex-direction: column;">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 0.85rem 1.25rem;">
+          <strong style="font-family: 'Outfit', sans-serif; font-size: 0.9rem; color: #18181b; text-transform: uppercase;">Calon Nomor ${numDisplay}</strong>
+          <span style="font-size: 0.8rem; color: #71717a;">${escapeHtml(c.prodi || 'UKM IPTEK')}</span>
         </div>
-
-        ${photoHtml}
-
-        <div style="padding: 1.5rem; display: flex; flex-direction: column; flex-grow: 1;">
-          <div style="margin-bottom: 0.75rem;">
-            <div style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px;">
-              Calon Ketua Umum
-            </div>
-            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; color: #18181b; margin: 0 0 4px 0; line-height: 1.3;">
-              ${escapeHtml(c.nama_calon)}
-            </h3>
-            ${(c.nim || c.prodi) ? `
-              <div style="font-size: 0.8rem; color: #71717a; font-weight: 500;">
-                ${c.nim ? escapeHtml(c.nim) : ''} ${c.nim && c.prodi ? '&bull;' : ''} ${c.prodi ? escapeHtml(c.prodi) : ''}
-              </div>
-            ` : ''}
+        <div style="width: 100%; height: 240px; background: #f8f9fa; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; overflow: hidden;">
+          ${photoHtml}
+        </div>
+        <div class="card-body" style="display: flex; flex-direction: column; flex-grow: 1; padding: 1.25rem;">
+          <h4 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; color: #18181b; margin: 0 0 2px 0;">
+            ${escapeHtml(c.nama_calon)}
+          </h4>
+          <div style="font-size: 0.8rem; color: #71717a; margin-bottom: 0.85rem;">
+            ${c.nim ? `NIM ${escapeHtml(c.nim)}` : ''}
           </div>
-
-          <!-- Cuplikan Visi -->
-          <div style="margin: 0.5rem 0 1rem 0; flex-grow: 1;">
-            <span style="font-size: 0.75rem; font-weight: 700; color: #18181b; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 3px;">
-              Visi Utama:
-            </span>
-            <p style="font-size: 0.88rem; color: #4b5563; line-height: 1.55; margin: 0;">
-              ${escapeHtml(visisnippet)}
-            </p>
+          <div style="margin-bottom: 1.25rem; flex-grow: 1;">
+            <div style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; margin-bottom: 3px;">Ringkasan Visi</div>
+            <p style="font-size: 0.85rem; color: #4b5563; line-height: 1.5; margin: 0;">${escapeHtml(visiSnippet)}</p>
           </div>
-
-          <div style="border-top: 1px solid #f4f4f5; padding-top: 1rem; margin-top: auto;">
-            <button type="button" onclick="openCandidateDetailModal(${c.id})" class="btn btn-outline" style="width: 100%; justify-content: center; padding: 0.55rem 0.8rem; font-size: 0.85rem; border-color: #e4e4e7; color: #18181b;">
-              <i class="fa-solid fa-file-lines"></i> Pelajari Visi & Misi Lengkap
+          <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: auto;">
+            <button type="button" onclick="openCandidateDetailModal(${c.id})" class="btn btn-outline" style="width: 100%; font-size: 0.82rem; padding: 0.5rem;">
+              Visi dan Misi Lengkap
             </button>
             ${buttonHtml}
           </div>
@@ -331,69 +271,55 @@ export function openCandidateDetailModal(candidateId) {
 
   const numDisplay = String(candidate.nomor_urut).padStart(2, '0');
 
-  // Format misi menjadi list teratur
   const misiLines = candidate.misi 
     ? candidate.misi.split('\n').filter(line => line.trim().length > 0)
     : [];
 
   const misiHtml = misiLines.length > 0
-    ? `<ul style="padding-left: 1.25rem; margin: 0; font-size: 0.9rem; color: #4b5563; line-height: 1.7;">
+    ? `<ol style="padding-left: 1.25rem; margin: 0; font-size: 0.88rem; color: #4b5563; line-height: 1.6;">
          ${misiLines.map(line => `<li>${escapeHtml(line.replace(/^[-*•\d.]\s*/, ''))}</li>`).join('')}
-       </ul>`
-    : `<p style="font-size: 0.9rem; color: #71717a; margin: 0;">Misi belum diisi.</p>`;
+       </ol>`
+    : `<p style="font-size: 0.88rem; color: #71717a; margin: 0;">Misi belum diisi.</p>`;
 
   body.innerHTML = `
-    <div style="display: flex; gap: 1.5rem; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid #f4f4f5; padding-bottom: 1.5rem; flex-wrap: wrap;">
-      ${candidate.foto_url 
-        ? `<img src="${candidate.foto_url}" alt="Foto ${candidate.nama_calon}" style="width: 120px; height: 140px; object-fit: cover; border-radius: 8px; background: #f4f4f5; flex-shrink: 0;">`
-        : `<div style="width: 120px; height: 140px; background: #f4f4f5; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #a1a1aa; flex-shrink: 0;">
-             <i class="fa-solid fa-user-tie" style="font-size: 3rem;"></i>
-           </div>`
-      }
+    <div style="display: flex; gap: 1.25rem; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.25rem; flex-wrap: wrap;">
+      <div style="width: 90px; height: 110px; background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        ${candidate.foto_url 
+          ? `<img src="${candidate.foto_url}" alt="Foto Calon" style="width: 100%; height: 100%; object-fit: cover;">`
+          : `<i class="fa-solid fa-user" style="font-size: 2.2rem; color: #9ca3af;"></i>`
+        }
+      </div>
       <div style="flex: 1; min-width: 200px;">
-        <div style="display: inline-block; background: #18181b; color: #ffffff; font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 800; padding: 0.2rem 0.6rem; border-radius: 4px; margin-bottom: 0.4rem;">
-          NOMOR URUT ${numDisplay}
-        </div>
-        <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.4rem; font-weight: 800; color: #18181b; margin: 0 0 4px 0;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase;">Calon Nomor ${numDisplay}</span>
+        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #18181b; margin: 2px 0 2px 0;">
           ${escapeHtml(candidate.nama_calon)}
-        </h2>
-        <div style="font-size: 0.85rem; color: #71717a;">
-          ${candidate.nim ? `NIM: ${escapeHtml(candidate.nim)}` : ''} 
-          ${candidate.nim && candidate.prodi ? '&bull;' : ''}
-          ${candidate.prodi ? escapeHtml(candidate.prodi) : ''}
+        </h3>
+        <div style="font-size: 0.82rem; color: #71717a;">
+          ${candidate.nim ? `NIM ${escapeHtml(candidate.nim)}, ` : ''}${escapeHtml(candidate.prodi || 'UKM IPTEK')}
         </div>
       </div>
     </div>
 
-    <!-- Visi -->
-    <div style="margin-bottom: 1.5rem;">
-      <h4 style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 800; color: #18181b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;">
-        Visi Calon Ketua Umum
-      </h4>
-      <div style="background: #f8f9fa; padding: 1rem 1.25rem; border-radius: 6px; font-size: 0.92rem; color: #18181b; line-height: 1.65; border-left: 3px solid #18181b;">
+    <div style="margin-bottom: 1.25rem;">
+      <div style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; margin-bottom: 4px;">Visi</div>
+      <p style="font-size: 0.9rem; color: #18181b; line-height: 1.6; margin: 0; background: #f8f9fa; padding: 0.85rem 1rem; border-radius: 4px;">
         ${escapeHtml(candidate.visi || '-')}
-      </div>
+      </p>
     </div>
 
-    <!-- Misi -->
-    <div style="margin-bottom: 1.5rem;">
-      <h4 style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 800; color: #18181b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;">
-        Misi & Program Aksi
-      </h4>
-      <div style="background: #ffffff; border: 1px solid #e4e4e7; padding: 1rem 1.25rem; border-radius: 6px;">
+    <div style="margin-bottom: 1.25rem;">
+      <div style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; margin-bottom: 4px;">Misi</div>
+      <div style="background: #ffffff; border: 1px solid var(--border-color); padding: 0.85rem 1rem; border-radius: 4px;">
         ${misiHtml}
       </div>
     </div>
 
-    <!-- Program Unggulan -->
     ${candidate.program_unggulan ? `
-      <div style="margin-bottom: 1rem;">
-        <h4 style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 800; color: #18181b; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;">
-          Program Kerja Unggulan / Gagasan Utama
-        </h4>
-        <div style="background: #f8f9fa; padding: 1rem 1.25rem; border-radius: 6px; font-size: 0.9rem; color: #4b5563; line-height: 1.65;">
+      <div>
+        <div style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; margin-bottom: 4px;">Program Kerja Unggulan</div>
+        <p style="font-size: 0.88rem; color: #4b5563; line-height: 1.6; margin: 0; background: #f8f9fa; padding: 0.85rem 1rem; border-radius: 4px;">
           ${escapeHtml(candidate.program_unggulan).replace(/\n/g, '<br>')}
-        </div>
+        </p>
       </div>
     ` : ''}
   `;
@@ -421,41 +347,34 @@ export function openVoteConfirmModal(candidateId) {
   const numDisplay = String(candidate.nomor_urut).padStart(2, '0');
 
   body.innerHTML = `
-    <div style="text-align: center; padding: 1rem 0;">
-      <div style="width: 80px; height: 80px; border-radius: 50%; background: #18181b; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 2rem; margin-bottom: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
-        <i class="fa-solid fa-check-to-slot"></i>
-      </div>
-      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 800; color: #18181b; margin-bottom: 0.5rem;">
+    <div style="padding: 0.5rem 0;">
+      <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 800; color: #18181b; margin-bottom: 0.5rem;">
         Konfirmasi Pilihan Suara
       </h3>
-      <p style="font-size: 0.9rem; color: #71717a; margin-bottom: 1.5rem;">
-        Anda akan memberikan 1 suara sah Anda untuk calon ketua umum berikut:
+      <p style="font-size: 0.88rem; color: #4b5563; margin-bottom: 1.25rem;">
+        Anda akan memberikan satu suara untuk calon berikut:
       </p>
 
-      <div style="background: #f8f9fa; border: 1px solid #e4e4e7; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; text-align: left; display: flex; align-items: center; gap: 1rem;">
-        <div style="background: #18181b; color: #ffffff; font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; width: 48px; height: 48px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-          ${numDisplay}
-        </div>
-        <div>
-          <div style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.05em;">Calon Pilihan Anda</div>
-          <h4 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b; margin: 2px 0 0 0;">
+      <div class="card mb-3" style="background: #f8f9fa; box-shadow: none; border: 1px solid var(--border-color);">
+        <div class="card-body" style="padding: 1rem;">
+          <span style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase;">Calon Nomor ${numDisplay}</span>
+          <h4 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b; margin: 2px 0 2px 0;">
             ${escapeHtml(candidate.nama_calon)}
           </h4>
-          ${candidate.prodi ? `<div style="font-size: 0.8rem; color: #71717a;">${escapeHtml(candidate.prodi)}</div>` : ''}
+          <div style="font-size: 0.8rem; color: #71717a;">${escapeHtml(candidate.prodi || 'UKM IPTEK')}</div>
         </div>
       </div>
 
-      <div style="background: #fef2f2; border-left: 3px solid #dc2626; padding: 0.75rem 1rem; border-radius: 4px; text-align: left; margin-bottom: 1.5rem; font-size: 0.8rem; color: #991b1b; line-height: 1.5;">
-        <i class="fa-solid fa-circle-exclamation" style="margin-right: 4px;"></i>
-        <strong>Perhatian:</strong> Sesuai asas 1 Akun 1 Suara, pilihan yang telah dikonfirmasi bersifat <strong>final dan tidak dapat diubah</strong> kembali.
-      </div>
+      <p style="font-size: 0.8rem; color: #71717a; margin-bottom: 1.5rem;">
+        Pilihan ini bersifat final dan tidak dapat diubah setelah dikonfirmasi.
+      </p>
 
-      <div style="display: flex; gap: 0.75rem;">
-        <button type="button" onclick="closeVoteConfirmModal()" class="btn btn-outline" style="flex: 1; justify-content: center; padding: 0.75rem;">
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <button type="button" onclick="closeVoteConfirmModal()" class="btn btn-outline" style="font-size: 0.85rem;">
           Batal
         </button>
-        <button type="button" id="btn-submit-vote" onclick="submitCastVote()" class="btn btn-primary" style="flex: 1.5; justify-content: center; padding: 0.75rem; background: #18181b; color: #ffffff; font-weight: 700;">
-          <i class="fa-solid fa-check"></i> Ya, Kirim Suara Saya
+        <button type="button" id="btn-submit-vote" onclick="submitCastVote()" class="btn btn-primary" style="font-size: 0.85rem;">
+          Konfirmasi Suara
         </button>
       </div>
     </div>
@@ -476,7 +395,7 @@ export async function submitCastVote() {
   const btn = document.getElementById('btn-submit-vote');
   if (btn) {
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Merekam Suara...';
+    btn.textContent = 'Merekam Suara...';
   }
 
   try {
@@ -491,14 +410,13 @@ export async function submitCastVote() {
 
     if (result.status === 'success') {
       closeVoteConfirmModal();
-      alert(result.message || 'Suara Anda berhasil dicatat secara resmi.');
-      // Muat ulang data bilik suara agar status berubah menjadi sudah memilih
+      alert(result.message || 'Suara Anda berhasil dicatat.');
       await loadElectionData();
     } else {
       alert(result.message || 'Gagal mengirimkan suara.');
       if (btn) {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Ya, Kirim Suara Saya';
+        btn.textContent = 'Konfirmasi Suara';
       }
     }
   } catch (err) {
@@ -506,7 +424,7 @@ export async function submitCastVote() {
     alert('Terjadi kesalahan jaringan saat mengirimkan suara.');
     if (btn) {
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-check"></i> Ya, Kirim Suara Saya';
+      btn.textContent = 'Konfirmasi Suara';
     }
   }
 }
@@ -522,24 +440,11 @@ export async function loadMonitoringData(isSilent = false) {
 
   if (!statsBox && !leaderBox) return;
 
-  if (!isSilent && statsBox) {
-    statsBox.style.opacity = '0.5';
-  }
-
   try {
     const res = await fetchAuth(`${API_BASE}/elections/monitoring`);
     const result = await res.json();
 
-    if (statsBox) statsBox.style.opacity = '1';
-
     if (result.status !== 'success' || !result.data) {
-      if (!isSilent && leaderBox) {
-        leaderBox.innerHTML = `
-          <div style="padding: 2rem; text-align: center; color: #dc2626; background: #fef2f2; border-radius: 8px;">
-            ${result.message || 'Gagal memuat monitoring suara.'}
-          </div>
-        `;
-      }
       return;
     }
 
@@ -549,31 +454,22 @@ export async function loadMonitoringData(isSilent = false) {
       const timeStr = new Date(last_updated).toLocaleTimeString('id-ID', {
         timeZone: 'Asia/Jakarta',
         hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
+        minute: '2-digit'
       });
-      lastUpdatedEl.textContent = `Pembaruan Terakhir: ${timeStr} WIB`;
+      lastUpdatedEl.textContent = `Pembaruan terakhir: ${timeStr} WIB`;
     }
 
-    // 1. Render 4 Stat Cards
-    renderMonitoringStats(statsBox, stats, election);
-
-    // 2. Render Winner / Leader Card
+    renderMonitoringStats(statsBox, stats);
     renderWinnerCard(leaderBox, leader, election, stats);
-
-    // 3. Render Leaderboard Table
-    renderLeaderboardTable(tableBody, candidates, stats.total_voted);
-
-    // 4. Render Visualisasi Grafik Suara (Chart.js)
+    renderLeaderboardTable(tableBody, candidates);
     renderElectionCharts(chart_data, stats);
 
   } catch (err) {
     console.error('loadMonitoringData error:', err);
-    if (statsBox) statsBox.style.opacity = '1';
   }
 }
 
-function renderMonitoringStats(container, stats, election) {
+function renderMonitoringStats(container, stats) {
   if (!container) return;
 
   const totalDpt = stats.total_dpt || 0;
@@ -582,37 +478,43 @@ function renderMonitoringStats(container, stats, election) {
   const rate = stats.participation_rate || 0;
 
   container.innerHTML = `
-    <div class="stat-card" style="background:#ffffff !important; border:1px solid #e4e4e7 !important; padding:1.25rem 1.5rem !important; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04) !important;">
-      <span class="stat-label">Total Pemilih (DPT)</span>
-      <h3 class="stat-value" style="font-size: 2rem; font-weight: 800; color: #18181b; margin-top: 0.25rem;">
-        ${totalDpt.toLocaleString('id-ID')}
-      </h3>
-      <span style="font-size: 0.75rem; color: #71717a; display: block; margin-top: 4px;">Seluruh Akun Terdaftar</span>
+    <div class="card">
+      <div class="card-body">
+        <span class="stat-label">Total Pemilih</span>
+        <h3 class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #18181b; margin-top: 0.25rem;">
+          ${totalDpt.toLocaleString('id-ID')}
+        </h3>
+        <div style="font-size: 0.78rem; color: #71717a; margin-top: 4px;">Daftar Pemilih Tetap</div>
+      </div>
     </div>
 
-    <div class="stat-card" style="background:#ffffff !important; border:1px solid #e4e4e7 !important; padding:1.25rem 1.5rem !important; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04) !important;">
-      <span class="stat-label">Suara Masuk (Sah)</span>
-      <h3 class="stat-value" style="font-size: 2rem; font-weight: 800; color: #18181b; margin-top: 0.25rem;">
-        ${totalVoted.toLocaleString('id-ID')}
-      </h3>
-      <span style="font-size: 0.75rem; color: #71717a; display: block; margin-top: 4px;">Akun Telah Memilih</span>
+    <div class="card">
+      <div class="card-body">
+        <span class="stat-label">Suara Masuk</span>
+        <h3 class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #18181b; margin-top: 0.25rem;">
+          ${totalVoted.toLocaleString('id-ID')}
+        </h3>
+        <div style="font-size: 0.78rem; color: #71717a; margin-top: 4px;">Suara Sah Tercatat</div>
+      </div>
     </div>
 
-    <div class="stat-card" style="background:#ffffff !important; border:1px solid #e4e4e7 !important; padding:1.25rem 1.5rem !important; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04) !important;">
-      <span class="stat-label">Belum Memberikan Suara</span>
-      <h3 class="stat-value" style="font-size: 2rem; font-weight: 800; color: #71717a; margin-top: 0.25rem;">
-        ${totalUnvoted.toLocaleString('id-ID')}
-      </h3>
-      <span style="font-size: 0.75rem; color: #71717a; display: block; margin-top: 4px;">Sisa Pemilih Terdaftar</span>
+    <div class="card">
+      <div class="card-body">
+        <span class="stat-label">Belum Memilih</span>
+        <h3 class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #71717a; margin-top: 0.25rem;">
+          ${totalUnvoted.toLocaleString('id-ID')}
+        </h3>
+        <div style="font-size: 0.78rem; color: #71717a; margin-top: 4px;">Sisa Pemilih Terdaftar</div>
+      </div>
     </div>
 
-    <div class="stat-card" style="background:#ffffff !important; border:1px solid #e4e4e7 !important; padding:1.25rem 1.5rem !important; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.04) !important;">
-      <span class="stat-label">Tingkat Partisipasi</span>
-      <h3 class="stat-value" style="font-size: 2rem; font-weight: 800; color: #18181b; margin-top: 0.25rem;">
-        ${rate}%
-      </h3>
-      <div style="width: 100%; height: 5px; background: #f4f4f5; border-radius: 3px; margin-top: 8px; overflow: hidden;">
-        <div style="width: ${rate}%; height: 100%; background: #18181b; border-radius: 3px;"></div>
+    <div class="card">
+      <div class="card-body">
+        <span class="stat-label">Tingkat Partisipasi</span>
+        <h3 class="stat-value" style="font-size: 1.8rem; font-weight: 800; color: #18181b; margin-top: 0.25rem;">
+          ${rate}%
+        </h3>
+        <div style="font-size: 0.78rem; color: #71717a; margin-top: 4px;">Partisipasi Pemilih</div>
       </div>
     </div>
   `;
@@ -625,140 +527,95 @@ function renderWinnerCard(container, leader, election, stats) {
 
   if (!leader || stats.total_voted === 0) {
     container.innerHTML = `
-      <div style="background: #ffffff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 2.5rem; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 2rem;">
-        <div style="width: 56px; height: 56px; border-radius: 50%; background: #f4f4f5; color: #71717a; display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 0.75rem;">
-          <i class="fa-solid fa-square-poll-vertical"></i>
+      <div class="card mb-4">
+        <div class="card-body text-center" style="padding: 2rem 1rem;">
+          <h4 style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; font-weight: 700; color: #18181b; margin-bottom: 0.25rem;">
+            Menunggu Suara Masuk
+          </h4>
+          <p style="font-size: 0.85rem; color: #71717a; margin: 0;">
+            Data perolehan suara tertinggi akan ditampilkan setelah suara masuk tercatat.
+          </p>
         </div>
-        <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 800; color: #18181b; margin-bottom: 0.35rem;">
-          Menunggu Suara Masuk
-        </h3>
-        <p style="font-size: 0.88rem; color: #71717a; margin: 0; max-width: 440px; margin: 0 auto;">
-          Belum ada suara yang tercatat di bilik suara. Pemimpin suara terbanyak akan ditampilkan segera setelah suara pertama masuk.
-        </p>
       </div>
     `;
     return;
   }
 
   const numDisplay = String(leader.nomor_urut).padStart(2, '0');
-  const badgeTitle = isClosed ? 'KETUA UMUM TERPILIH' : 'MEMIMPIN PEROLEHAN SUARA SEMENTARA';
-  const badgeIcon = isClosed ? 'fa-trophy' : 'fa-award';
+  const title = isClosed ? 'Ketua Umum Terpilih' : 'Perolehan Suara Tertinggi Sementara';
+  const subtext = isClosed ? 'Keputusan Akhir' : 'Data Sementara';
 
   container.innerHTML = `
-    <div style="background: #ffffff; border: 1px solid #e4e4e7; border-left: 5px solid #18181b; border-radius: 8px; padding: 1.75rem 2rem; margin-bottom: 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap;">
-      <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
-        ${leader.foto_url 
-          ? `<img src="${leader.foto_url}" alt="Foto ${leader.nama_calon}" style="width: 100px; height: 115px; object-fit: cover; border-radius: 8px; background: #f4f4f5; flex-shrink: 0; border: 1px solid #e4e4e7;">`
-          : `<div style="width: 100px; height: 115px; border-radius: 8px; background: #f4f4f5; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: #71717a; flex-shrink: 0;">
-               <i class="fa-solid fa-user-tie"></i>
-             </div>`
-        }
-        <div>
-          <div style="display: inline-flex; align-items: center; gap: 0.4rem; background: #18181b; color: #ffffff; font-size: 0.72rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;">
-            <i class="fa-solid ${badgeIcon}"></i> ${badgeTitle}
-          </div>
-          <h2 style="font-family: 'Outfit', sans-serif; font-size: clamp(1.4rem, 2.5vw, 1.8rem); font-weight: 800; color: #18181b; margin: 0 0 4px 0; line-height: 1.2;">
-            No. ${numDisplay} &mdash; ${escapeHtml(leader.nama_calon)}
-          </h2>
-          <div style="font-size: 0.88rem; color: #71717a;">
-            ${leader.nim ? `NIM: ${escapeHtml(leader.nim)}` : ''} 
-            ${leader.nim && leader.prodi ? '&bull;' : ''}
-            ${leader.prodi ? escapeHtml(leader.prodi) : ''}
-          </div>
-        </div>
+    <div class="card mb-4">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3>${title}</h3>
+        <span style="font-size: 0.8rem; color: #71717a;">${subtext}</span>
       </div>
-
-      <div style="display: flex; gap: 2.5rem; align-items: center; text-align: right; margin-left: auto;">
-        <div>
-          <span style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.08em; display: block;">Perolehan Suara</span>
-          <div style="font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800; color: #18181b; line-height: 1;">
-            ${leader.vote_count.toLocaleString('id-ID')}
+      <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1.25rem;">
+          <div style="width: 64px; height: 64px; border-radius: 4px; background: #f8f9fa; border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            ${leader.foto_url 
+              ? `<img src="${leader.foto_url}" alt="Foto Calon" style="width: 100%; height: 100%; object-fit: cover;">`
+              : `<i class="fa-solid fa-user" style="font-size: 1.8rem; color: #71717a;"></i>`
+            }
           </div>
-          <span style="font-size: 0.8rem; font-weight: 600; color: #4b5563;">suara sah</span>
+          <div>
+            <div style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase;">Calon Nomor ${numDisplay}</div>
+            <h4 style="font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 800; color: #18181b; margin: 2px 0 2px 0;">
+              ${escapeHtml(leader.nama_calon)}
+            </h4>
+            <div style="font-size: 0.82rem; color: #71717a;">
+              ${leader.nim ? `NIM ${escapeHtml(leader.nim)}, ` : ''}${escapeHtml(leader.prodi || 'UKM IPTEK')}
+            </div>
+          </div>
         </div>
-
-        <div style="border-left: 1px solid #e4e4e7; padding-left: 2.5rem;">
-          <span style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.08em; display: block;">Persentase</span>
-          <div style="font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 800; color: #18181b; line-height: 1;">
-            ${leader.percentage}%
+        <div style="text-align: right;">
+          <div style="font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 800; color: #18181b; line-height: 1;">
+            ${leader.vote_count.toLocaleString('id-ID')} Suara
           </div>
-          <span style="font-size: 0.8rem; font-weight: 600; color: #4b5563;">dari total suara</span>
+          <div style="font-size: 0.85rem; color: #71717a; margin-top: 4px;">
+            ${leader.percentage}% dari total suara masuk
+          </div>
         </div>
       </div>
     </div>
   `;
 }
 
-function renderLeaderboardTable(tableBody, candidates, totalVoted) {
+function renderLeaderboardTable(tableBody, candidates) {
   if (!tableBody) return;
 
   if (!candidates || candidates.length === 0) {
     tableBody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align: center; padding: 2rem; color: #71717a;">Belum ada data calon.</td>
+        <td colspan="5" class="text-center" style="padding: 1.5rem; color: #71717a;">Belum ada data calon.</td>
       </tr>
     `;
     return;
   }
 
-  tableBody.innerHTML = candidates.map((c, index) => {
-    const rank = index + 1;
+  tableBody.innerHTML = candidates.map(c => {
     const numDisplay = String(c.nomor_urut).padStart(2, '0');
-    const isFirst = rank === 1 && c.vote_count > 0;
-
     return `
-      <tr style="${isFirst ? 'background: #fafafa;' : ''}">
-        <td style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.1rem; color: ${isFirst ? '#18181b' : '#71717a'}; text-align: center; width: 60px;">
-          ${isFirst ? '<i class="fa-solid fa-trophy" style="font-size: 0.95rem; margin-right: 4px;"></i>' : ''} ${rank}
-        </td>
-        <td style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1rem; color: #18181b; text-align: center; width: 80px;">
-          ${numDisplay}
-        </td>
-        <td>
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            ${c.foto_url 
-              ? `<img src="${c.foto_url}" alt="${c.nama_calon}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; background: #f4f4f5;">`
-              : `<div style="width: 40px; height: 40px; border-radius: 6px; background: #f4f4f5; display: flex; align-items: center; justify-content: center; color: #71717a;"><i class="fa-solid fa-user"></i></div>`
-            }
-            <div>
-              <strong style="color: #18181b; font-size: 0.95rem; display: block;">${escapeHtml(c.nama_calon)}</strong>
-              <small style="color: #71717a; font-size: 0.78rem;">${c.prodi ? escapeHtml(c.prodi) : 'UKM IPTEK'}</small>
-            </div>
-          </div>
-        </td>
-        <td style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.1rem; color: #18181b; text-align: right; width: 140px;">
-          ${c.vote_count.toLocaleString('id-ID')}
-        </td>
-        <td style="width: 220px;">
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <div style="flex: 1; height: 8px; background: #f4f4f5; border-radius: 4px; overflow: hidden;">
-              <div style="width: ${c.percentage}%; height: 100%; background: ${isFirst ? '#18181b' : '#71717a'}; border-radius: 4px;"></div>
-            </div>
-            <strong style="font-family: 'Outfit', sans-serif; font-size: 0.95rem; color: #18181b; min-width: 48px; text-align: right;">
-              ${c.percentage}%
-            </strong>
-          </div>
-        </td>
-        <td style="text-align: center; width: 120px;">
-          <span style="font-size: 0.72rem; font-weight: 700; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; ${isFirst ? 'background: #18181b; color: #ffffff;' : 'background: #f4f4f5; color: #71717a; border: 1px solid #e4e4e7;'}">
-            ${isFirst ? 'Peringkat 1' : `Peringkat ${rank}`}
-          </span>
-        </td>
+      <tr>
+        <td style="text-align: center; font-weight: 700; color: #18181b;">${numDisplay}</td>
+        <td style="font-weight: 600; color: #18181b;">${escapeHtml(c.nama_calon)}</td>
+        <td style="color: #4b5563;">${escapeHtml(c.prodi || '-')}</td>
+        <td style="text-align: right; font-weight: 700; color: #18181b;">${c.vote_count.toLocaleString('id-ID')}</td>
+        <td style="text-align: right; font-weight: 600; color: #18181b;">${c.percentage}%</td>
       </tr>
     `;
   }).join('');
 }
 
 // ==========================================
-// RENDER GRAFIK CHART.JS (BAR & DONUT)
+// RENDER GRAFIK CHART.JS (BAR MINIMALIS)
 // ==========================================
 function renderElectionCharts(chartData, stats) {
   if (typeof window.Chart === 'undefined') {
-    console.warn('Chart.js library belum siap.');
     return;
   }
 
-  // 1. Horizontal Bar Chart (Suara Terbanyak)
   const barCanvas = document.getElementById('chart-votes-bar');
   if (barCanvas && chartData) {
     if (barChartInstance) {
@@ -774,14 +631,14 @@ function renderElectionCharts(chartData, stats) {
         datasets: [{
           label: 'Jumlah Suara',
           data: chartData.votes,
-          backgroundColor: chartData.colors || ['#18181b', '#3f3f46', '#71717a', '#a1a1aa'],
-          borderRadius: 6,
-          barPercentage: 0.6,
-          categoryPercentage: 0.8
+          backgroundColor: '#18181b',
+          borderRadius: 4,
+          barPercentage: 0.5,
+          categoryPercentage: 0.7
         }]
       },
       options: {
-        indexAxis: 'y', // Horizontal Bar Chart
+        indexAxis: 'y',
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -790,10 +647,10 @@ function renderElectionCharts(chartData, stats) {
           },
           tooltip: {
             backgroundColor: '#18181b',
-            titleFont: { family: 'Outfit', size: 13, weight: 'bold' },
+            titleFont: { family: 'Outfit', size: 12, weight: 'bold' },
             bodyFont: { family: 'Inter', size: 12 },
-            padding: 10,
-            cornerRadius: 6,
+            padding: 8,
+            cornerRadius: 4,
             callbacks: {
               label: function(context) {
                 const val = context.raw || 0;
@@ -829,77 +686,13 @@ function renderElectionCharts(chartData, stats) {
       }
     });
   }
-
-  // 2. Donut Chart (Persentase Distribusi)
-  const donutCanvas = document.getElementById('chart-votes-donut');
-  if (donutCanvas && chartData) {
-    if (donutChartInstance) {
-      donutChartInstance.destroy();
-      donutChartInstance = null;
-    }
-
-    const ctxDonut = donutCanvas.getContext('2d');
-    const hasAnyVote = stats.total_voted > 0;
-
-    const donutLabels = hasAnyVote ? chartData.shortLabels : ['Belum Ada Suara'];
-    const donutData = hasAnyVote ? chartData.votes : [1];
-    const donutColors = hasAnyVote 
-      ? (chartData.colors || ['#18181b', '#3f3f46', '#71717a', '#a1a1aa'])
-      : ['#e4e4e7'];
-
-    donutChartInstance = new window.Chart(ctxDonut, {
-      type: 'doughnut',
-      data: {
-        labels: donutLabels,
-        datasets: [{
-          data: donutData,
-          backgroundColor: donutColors,
-          borderWidth: 2,
-          borderColor: '#ffffff',
-          hoverOffset: 4
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '72%',
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              font: { family: 'Inter', size: 11, weight: '500' },
-              color: '#18181b',
-              padding: 12,
-              usePointStyle: true,
-              pointStyle: 'circle'
-            }
-          },
-          tooltip: {
-            enabled: hasAnyVote,
-            backgroundColor: '#18181b',
-            titleFont: { family: 'Outfit', size: 12, weight: 'bold' },
-            bodyFont: { family: 'Inter', size: 12 },
-            cornerRadius: 6,
-            callbacks: {
-              label: function(context) {
-                const val = context.raw || 0;
-                const total = stats.total_voted || 1;
-                const pct = ((val / total) * 100).toFixed(1);
-                return ` ${val} Suara (${pct}%)`;
-              }
-            }
-          }
-        }
-      }
-    });
-  }
 }
 
 // ==========================================
 // 3. PANEL PANITIA PEMILIHAN
 // ==========================================
 export async function loadPanitiaData() {
-  await loadElectionData(); // Memastikan currentElection & currentCandidates termuat
+  await loadElectionData();
   renderPanitiaCandidatesTable();
   renderPanitiaElectionSettings();
   loadVotersAudit();
@@ -936,11 +729,11 @@ export async function submitElectionSettings(e) {
 
     const result = await res.json();
     if (result.status === 'success') {
-      alert(result.message || 'Status dan pengaturan pemilihan berhasil diperbarui.');
+      alert(result.message || 'Pengaturan berhasil diperbarui.');
       currentElection = result.data;
       loadElectionData();
     } else {
-      alert(result.message || 'Gagal memperbarui pengaturan pemilihan.');
+      alert(result.message || 'Gagal memperbarui pengaturan.');
     }
   } catch (err) {
     console.error('submitElectionSettings error:', err);
@@ -955,8 +748,8 @@ function renderPanitiaCandidatesTable() {
   if (!currentCandidates || currentCandidates.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 2rem; color: #71717a;">
-          Belum ada calon ketua umum yang didaftarkan. Klik tombol "+ Tambah Calon Baru" di atas.
+        <td colspan="5" class="text-center" style="padding: 1.5rem; color: #71717a;">
+          Belum ada calon ketua umum. Gunakan tombol Tambah Calon di atas.
         </td>
       </tr>
     `;
@@ -967,37 +760,23 @@ function renderPanitiaCandidatesTable() {
     const numDisplay = String(c.nomor_urut).padStart(2, '0');
     return `
       <tr>
-        <td style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.1rem; color: #18181b; text-align: center;">
-          ${numDisplay}
-        </td>
+        <td style="text-align: center; font-weight: 700; color: #18181b;">${numDisplay}</td>
         <td>
-          <div style="display: flex; align-items: center; gap: 0.75rem;">
-            ${c.foto_url 
-              ? `<img src="${c.foto_url}" alt="${c.nama_calon}" style="width: 44px; height: 50px; object-fit: cover; border-radius: 6px; background: #f4f4f5;">`
-              : `<div style="width: 44px; height: 50px; border-radius: 6px; background: #f4f4f5; display: flex; align-items: center; justify-content: center; color: #71717a;"><i class="fa-solid fa-user"></i></div>`
-            }
-            <div>
-              <strong style="color: #18181b; font-size: 0.95rem; display: block;">${escapeHtml(c.nama_calon)}</strong>
-              <small style="color: #71717a; font-size: 0.78rem;">${c.nim ? `${escapeHtml(c.nim)} &bull; ` : ''}${c.prodi ? escapeHtml(c.prodi) : '-'}</small>
-            </div>
-          </div>
+          <strong style="color: #18181b; font-size: 0.9rem; display: block;">${escapeHtml(c.nama_calon)}</strong>
+          <small style="color: #71717a; font-size: 0.78rem;">${c.nim ? `NIM ${escapeHtml(c.nim)}, ` : ''}${escapeHtml(c.prodi || '-')}</small>
         </td>
-        <td style="max-width: 250px;">
-          <div style="font-size: 0.85rem; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            ${escapeHtml(c.visi || '-')}
-          </div>
+        <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #4b5563;">
+          ${escapeHtml(c.visi || '-')}
         </td>
-        <td style="max-width: 250px;">
-          <div style="font-size: 0.85rem; color: #4b5563; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            ${escapeHtml(c.misi || '-')}
-          </div>
+        <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #4b5563;">
+          ${escapeHtml(c.misi || '-')}
         </td>
         <td style="text-align: right; white-space: nowrap;">
-          <button onclick="openEditCandidateModal(${c.id})" class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; margin-right: 4px;" title="Edit Calon">
-            <i class="fa-solid fa-pen-to-square"></i> Edit
+          <button onclick="openEditCandidateModal(${c.id})" class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; margin-right: 4px;">
+            Edit
           </button>
-          <button onclick="confirmDeleteCandidate(${c.id}, '${escapeHtml(c.nama_calon)}')" class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; color: #dc2626; border-color: #fecaca;" title="Hapus Calon">
-            <i class="fa-solid fa-trash"></i>
+          <button onclick="confirmDeleteCandidate(${c.id}, '${escapeHtml(c.nama_calon)}')" class="btn btn-outline" style="padding: 0.35rem 0.65rem; font-size: 0.8rem; color: #dc2626;">
+            Hapus
           </button>
         </td>
       </tr>
@@ -1005,7 +784,6 @@ function renderPanitiaCandidatesTable() {
   }).join('');
 }
 
-// Form Modal Tambah / Edit Calon
 export function openAddCandidateModal() {
   const modal = document.getElementById('modal-candidate-form');
   const title = document.getElementById('modal-candidate-form-title');
@@ -1016,7 +794,6 @@ export function openAddCandidateModal() {
   document.getElementById('candidate-form-id').value = '';
   if (title) title.textContent = 'Pendaftaran Calon Ketua Umum';
 
-  // Otomatis tentukan nomor urut berikutnya
   const nextNum = currentCandidates.length > 0 
     ? Math.max(...currentCandidates.map(c => c.nomor_urut)) + 1 
     : 1;
@@ -1033,7 +810,7 @@ export function openEditCandidateModal(candidateId) {
   const title = document.getElementById('modal-candidate-form-title');
   if (!modal) return;
 
-  if (title) title.textContent = 'Edit Data Calon Ketua Umum';
+  if (title) title.textContent = 'Edit Calon Ketua Umum';
   document.getElementById('candidate-form-id').value = candidate.id;
   document.getElementById('candidate-form-nomor').value = candidate.nomor_urut;
   document.getElementById('candidate-form-nama').value = candidate.nama_calon;
@@ -1091,12 +868,12 @@ export async function submitCandidateForm(e) {
 
     const result = await res.json();
     if (result.status === 'success') {
-      alert(result.message || 'Calon berhasil disimpan.');
+      alert(result.message || 'Data calon berhasil disimpan.');
       closeCandidateFormModal();
       await loadElectionData();
       renderPanitiaCandidatesTable();
     } else {
-      alert(result.message || 'Gagal menyimpan data calon.');
+      alert(result.message || 'Gagal menyimpan calon.');
     }
   } catch (err) {
     console.error('submitCandidateForm error:', err);
@@ -1105,7 +882,7 @@ export async function submitCandidateForm(e) {
 }
 
 export async function confirmDeleteCandidate(candidateId, candidateName) {
-  if (!confirm(`Apakah Anda yakin ingin menghapus Calon "${candidateName}"?\nSeluruh suara yang terkait calon ini juga akan terhapus.`)) {
+  if (!confirm(`Hapus calon "${candidateName}" beserta seluruh suara yang telah masuk?`)) {
     return;
   }
 
@@ -1124,24 +901,20 @@ export async function confirmDeleteCandidate(candidateId, candidateName) {
     }
   } catch (err) {
     console.error('deleteCandidate error:', err);
-    alert('Terjadi kesalahan jaringan saat menghapus calon.');
+    alert('Terjadi kesalahan jaringan.');
   }
 }
 
-// Rekapitulasi & Audit Pemilih (Siapa Sudah / Belum Memilih)
+// Rekapitulasi & Audit Pemilih
 export async function loadVotersAudit() {
   const tbody = document.getElementById('panitia-audit-table-body');
-  const dptEl = document.getElementById('audit-stat-dpt');
-  const votedEl = document.getElementById('audit-stat-voted');
-  const unvotedEl = document.getElementById('audit-stat-unvoted');
-
   if (!tbody || !currentElection) return;
 
   try {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 2rem; color: #71717a;">
-          <i class="fa-solid fa-spinner fa-spin"></i> Memuat daftar pemilih...
+        <td colspan="5" class="text-center" style="padding: 1.5rem; color: #71717a;">
+          Memuat daftar pemilih...
         </td>
       </tr>
     `;
@@ -1150,17 +923,12 @@ export async function loadVotersAudit() {
     const result = await res.json();
 
     if (result.status !== 'success' || !result.data) {
-      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#dc2626; padding:1.5rem;">${result.message || 'Gagal memuat pemilih.'}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center" style="color:#dc2626; padding:1.5rem;">${result.message || 'Gagal memuat pemilih.'}</td></tr>`;
       return;
     }
 
-    const { stats, voters } = result.data;
+    const { voters } = result.data;
     votersAuditData = voters || [];
-
-    if (dptEl) dptEl.textContent = stats.total_dpt;
-    if (votedEl) votedEl.textContent = stats.total_voted;
-    if (unvotedEl) unvotedEl.textContent = stats.total_unvoted;
-
     filterAndRenderVoters();
 
   } catch (err) {
@@ -1187,8 +955,8 @@ export function filterAndRenderVoters() {
   if (filtered.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 2rem; color: #71717a;">
-          Tidak ada data pemilih yang sesuai kriteria pencarian.
+        <td colspan="5" class="text-center" style="padding: 1.5rem; color: #71717a;">
+          Tidak ada data pemilih yang sesuai kriteria.
         </td>
       </tr>
     `;
@@ -1211,22 +979,17 @@ export function filterAndRenderVoters() {
       <tr>
         <td style="text-align: center; color: #71717a; width: 50px;">${i + 1}</td>
         <td>
-          <strong style="color: #18181b; font-size: 0.92rem; display: block;">${escapeHtml(v.nama_lengkap)}</strong>
-          <small style="color: #71717a; font-size: 0.78rem;">@${escapeHtml(v.username)}</small>
+          <strong style="color: #18181b; font-size: 0.9rem; display: block;">${escapeHtml(v.nama_lengkap)}</strong>
+          <small style="color: #71717a; font-size: 0.78rem;">${escapeHtml(v.username)}</small>
         </td>
         <td>
-          <span style="font-size: 0.78rem; text-transform: uppercase; font-weight: 600; color: #18181b;">${escapeHtml(v.role)}</span>
-          ${v.divisi ? `<small style="color: #71717a; display: block; font-size: 0.72rem;">${escapeHtml(v.divisi)}</small>` : ''}
+          <span style="font-size: 0.8rem; text-transform: uppercase; color: #18181b;">${escapeHtml(v.role)}</span>
+          ${v.divisi ? `<small style="color: #71717a; display: block; font-size: 0.75rem;">${escapeHtml(v.divisi)}</small>` : ''}
         </td>
         <td style="text-align: center;">
-          ${v.has_voted 
-            ? `<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; background: #18181b; color: #ffffff; padding: 3px 8px; border-radius: 4px; text-transform: uppercase;">
-                 <i class="fa-solid fa-check"></i> Sudah Memilih
-               </span>`
-            : `<span style="display: inline-flex; align-items: center; gap: 4px; font-size: 0.72rem; font-weight: 700; background: #f4f4f5; color: #71717a; border: 1px solid #e4e4e7; padding: 3px 8px; border-radius: 4px; text-transform: uppercase;">
-                 Belum Memilih
-               </span>`
-          }
+          <span style="font-size: 0.8rem; font-weight: 600; color: ${v.has_voted ? '#18181b' : '#71717a'};">
+            ${v.has_voted ? 'Sudah Memilih' : 'Belum Memilih'}
+          </span>
         </td>
         <td style="font-size: 0.85rem; color: #71717a; text-align: center;">
           ${formattedDate}
@@ -1236,14 +999,13 @@ export function filterAndRenderVoters() {
   }).join('');
 }
 
-// Ekspor Rekapitulasi Pemilih ke CSV
 export function exportVotersCsv() {
   if (!votersAuditData || votersAuditData.length === 0) {
     alert('Tidak ada data pemilih untuk diekspor.');
     return;
   }
 
-  let csv = 'No,Nama Lengkap,Username,Peran,Divisi,Status Memilih,Waktu Memilih (WIB)\r\n';
+  let csv = 'No,Nama Lengkap,Username,Peran,Divisi,Status Memilih,Waktu Memilih\r\n';
   votersAuditData.forEach((v, idx) => {
     const status = v.has_voted ? 'Sudah Memilih' : 'Belum Memilih';
     const time = v.voted_at ? new Date(v.voted_at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '-';
@@ -1261,13 +1023,11 @@ export function exportVotersCsv() {
   URL.revokeObjectURL(url);
 }
 
-// Reset Seluruh Perolehan Suara
 export async function confirmResetVotes() {
   if (!currentElection) return;
 
-  const code = prompt('PERINGATAN: Tindakan ini akan menghapus SELURUH suara pemilih yang telah masuk ke nol (0).\n\nKetik kata "RESET" (huruf kapital) untuk melanjutkan:');
+  const code = prompt('Tindakan ini akan mereset seluruh suara masuk kembali ke 0.\nKetik kata "RESET" untuk mengonfirmasi:');
   if (code !== 'RESET') {
-    alert('Reset dibatalkan.');
     return;
   }
 
@@ -1295,7 +1055,6 @@ export async function confirmResetVotes() {
   }
 }
 
-// Helper sanitasi HTML sederhana
 function escapeHtml(str) {
   if (!str) return '';
   return String(str)

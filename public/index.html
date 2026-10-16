@@ -1124,293 +1124,216 @@
       </div>
 
       <!-- ============================================== -->
-      <!-- PEMILU KETUA UMUM (1 AKUN 1 SUARA) -->
+      <!-- PEMILU KETUA UMUM -->
       <!-- ============================================== -->
       <div id="tab-pemilu" class="tab-content" style="display: none;">
-        <div class="dashboard-header" style="margin-bottom: 1.5rem;">
+        <div class="dashboard-header mb-4">
           <div>
-            <span class="section-label">Musyawarah Besar & Pemilu Raya</span>
-            <h1 class="section-title" id="election-title-display">Pemilihan Calon Ketua Umum UKM IPTEK</h1>
-            <div style="font-size: 0.95rem; color: #71717a; margin-top: 0.35rem;">
-              <span id="election-periode-display" style="font-weight: 700; color: #18181b;">Periode 2026/2027</span> &bull; 
-              <span id="election-desc-display">Sistem e-voting terpadu UKM IPTEK STIKES Semarang. 1 Akun 1 Suara berasaskan LUBER JURDIL.</span>
-            </div>
+            <h1 class="page-title" id="election-title-display">Pemilihan Calon Ketua Umum</h1>
+            <p class="page-subtitle" id="election-desc-display">Sistem pemilihan berbasis akun terdaftar UKM IPTEK STIKES Semarang.</p>
           </div>
         </div>
 
         <!-- Sub-Navigasi Pemilu -->
-        <div class="tabs-nav" style="border-bottom: 1px solid #e4e4e7; margin-bottom: 2rem; gap: 1.5rem;">
-          <button type="button" id="pemilu-tab-btn-bilik" class="tab-btn active" onclick="switchPemiluSubtab('bilik')" style="padding: 0.75rem 0.2rem; font-size: 0.95rem; font-weight: 700; color: #18181b; border-bottom: 2px solid #18181b;">
-            <i class="fa-solid fa-check-to-slot"></i> Bilik Suara
+        <div class="tabs-nav">
+          <button type="button" id="pemilu-tab-btn-bilik" class="tab-btn active" onclick="switchPemiluSubtab('bilik')">
+            Bilik Suara
           </button>
-          <button type="button" id="pemilu-tab-btn-monitoring" class="tab-btn" onclick="switchPemiluSubtab('monitoring')" style="padding: 0.75rem 0.2rem; font-size: 0.95rem; font-weight: 500; color: #71717a; border-bottom: 2px solid transparent;">
-            <i class="fa-solid fa-chart-column"></i> Hasil & Monitoring Suara
+          <button type="button" id="pemilu-tab-btn-monitoring" class="tab-btn" onclick="switchPemiluSubtab('monitoring')">
+            Monitoring Suara
           </button>
-          <button type="button" id="pemilu-tab-btn-panitia" class="tab-btn" onclick="switchPemiluSubtab('panitia')" style="padding: 0.75rem 0.2rem; font-size: 0.95rem; font-weight: 500; color: #71717a; border-bottom: 2px solid transparent; display: none;">
-            <i class="fa-solid fa-sliders"></i> Panel Panitia
+          <button type="button" id="pemilu-tab-btn-panitia" class="tab-btn" onclick="switchPemiluSubtab('panitia')" style="display: none;">
+            Panel Panitia
           </button>
         </div>
 
         <!-- SUBTAB 1: BILIK SUARA (PEMILIH) -->
         <div id="pemilu-subtab-bilik">
-          <!-- Banner Status Pemilih -->
           <div id="voter-status-banner"></div>
 
-          <!-- Section Calon Ketua Umum -->
-          <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
+          <div style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: #18181b; margin: 0;">
+              Daftar Calon Ketua Umum
+            </h3>
+          </div>
+
+          <div class="stats-grid" id="candidates-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+            <!-- Dimuat dinamis oleh election.js -->
+          </div>
+        </div>
+
+        <!-- SUBTAB 2: MONITORING SUARA -->
+        <div id="pemilu-subtab-monitoring" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
             <div>
-              <span style="font-family: 'Outfit', sans-serif; font-size: 0.85rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.08em; display: block; margin-bottom: 2px;">Kandidat Pemimpin</span>
-              <h2 style="font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 800; color: #18181b; margin: 0;">Daftar Calon Ketua Umum</h2>
+              <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.2rem; font-weight: 700; color: #18181b; margin: 0;">
+                Monitoring Perolehan Suara
+              </h3>
+              <small id="monitoring-last-updated" style="color: #71717a; font-size: 0.8rem;"></small>
             </div>
-            <button onclick="switchPemiluSubtab('monitoring')" class="btn btn-outline" style="border-color: #e4e4e7; font-size: 0.85rem; padding: 0.45rem 0.9rem;">
-              <i class="fa-solid fa-chart-column"></i> Pantau Quick Count
+            <button onclick="loadMonitoringData()" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.45rem 0.9rem;">
+              Segarkan Data
             </button>
           </div>
 
-          <!-- Grid Daftar Calon -->
-          <div class="stats-grid" id="candidates-grid" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.75rem;">
-            <!-- Dimuat dinamis oleh election.js -->
-          </div>
-        </div>
+          <!-- Pemenang / Calon Tertinggi -->
+          <div id="monitoring-leader-card"></div>
 
-        <!-- SUBTAB 2: HASIL & MONITORING SUARA TERBANYAK -->
-        <div id="pemilu-subtab-monitoring" style="display: none;">
-          <!-- Monitoring Header Toolbar -->
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; background: #ffffff; border: 1px solid #e4e4e7; border-radius: 8px; padding: 1rem 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-            <div>
-              <div style="display: flex; align-items: center; gap: 0.6rem;">
-                <span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #18181b;"></span>
-                <h3 style="margin: 0; font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b;">Rekapitulasi Hasil Suara Terbanyak (Live Count)</h3>
-              </div>
-              <small id="monitoring-last-updated" style="color: #71717a; font-size: 0.8rem; margin-top: 2px; display: block;">Memuat data real-time...</small>
+          <!-- 4 Stat Cards -->
+          <div class="stats-grid mb-4" id="monitoring-stats-grid"></div>
+
+          <!-- Grafik Suara Terbanyak -->
+          <div class="card mb-4">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3>Grafik Perolehan Suara</h3>
+              <span style="font-size: 0.8rem; color: #71717a;">Suara sah masuk</span>
             </div>
-            <div style="display: flex; gap: 0.75rem; align-items: center;">
-              <button onclick="loadMonitoringData()" class="btn btn-outline" style="border-color: #18181b; color: #18181b; font-size: 0.85rem; padding: 0.5rem 1rem;">
-                <i class="fa-solid fa-arrows-rotate"></i> Segarkan Suara
-              </button>
-            </div>
-          </div>
-
-          <!-- Pemenang / Calon Memimpin Sementara Card -->
-          <div id="monitoring-leader-card">
-            <!-- Dimuat dinamis oleh election.js -->
-          </div>
-
-          <!-- 4 Stat Cards (DPT, Suara Masuk, Belum Memilih, Partisipasi) -->
-          <div class="stats-grid" id="monitoring-stats-grid">
-            <!-- Dimuat dinamis oleh election.js -->
-          </div>
-
-          <!-- Charts Section: Horizontal Bar Chart & Donut Chart -->
-          <div class="grid-2col" style="gap: 1.5rem; margin-bottom: 2rem;">
-            <!-- Bar Chart (Grafik Suara Terbanyak) -->
-            <div class="card" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 1.5rem; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-              <div style="margin-bottom: 1.25rem;">
-                <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b; margin: 0 0 4px 0;">
-                  Grafik Perolehan Suara Terbanyak
-                </h3>
-                <p style="font-size: 0.82rem; color: #71717a; margin: 0;">Perbandingan jumlah suara sah yang diperoleh masing-masing calon ketua umum</p>
-              </div>
-              <div style="height: 300px; position: relative;">
+            <div class="card-body">
+              <div style="height: 280px; position: relative;">
                 <canvas id="chart-votes-bar"></canvas>
               </div>
             </div>
-
-            <!-- Donut Chart (Distribusi Persentase) -->
-            <div class="card" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 1.5rem; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-              <div style="margin-bottom: 1.25rem;">
-                <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b; margin: 0 0 4px 0;">
-                  Distribusi Persentase Suara
-                </h3>
-                <p style="font-size: 0.82rem; color: #71717a; margin: 0;">Pangsa persentase suara masuk dari pemilih sah terdaftar</p>
-              </div>
-              <div style="height: 300px; position: relative;">
-                <canvas id="chart-votes-donut"></canvas>
-              </div>
-            </div>
           </div>
 
-          <!-- Leaderboard Table Card -->
-          <div class="card" style="border: 1px solid #e4e4e7; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 2rem;">
-            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e4e4e7; display: flex; justify-content: space-between; align-items: center;">
-              <div>
-                <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b; margin: 0;">
-                  Klasemen Perolehan Suara Calon
-                </h3>
-                <small style="color: #71717a; font-size: 0.8rem;">Daftar peringkat calon berdasarkan akumulasi suara terbanyak</small>
-              </div>
+          <!-- Tabel Rekapitulasi Suara -->
+          <div class="card">
+            <div class="card-header">
+              <h3>Rekapitulasi Suara Calon</h3>
             </div>
-            <div class="table-responsive">
-              <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                <thead>
-                  <tr style="background: #f8f9fa; border-bottom: 1px solid #e4e4e7; font-size: 0.78rem; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">
-                    <th style="padding: 0.85rem 1rem; text-align: center;">Peringkat</th>
-                    <th style="padding: 0.85rem 1rem; text-align: center;">No. Urut</th>
-                    <th style="padding: 0.85rem 1rem;">Calon Ketua Umum</th>
-                    <th style="padding: 0.85rem 1rem; text-align: right;">Jumlah Suara Sah</th>
-                    <th style="padding: 0.85rem 1rem;">Persentase Suara</th>
-                    <th style="padding: 0.85rem 1rem; text-align: center;">Status</th>
-                  </tr>
-                </thead>
-                <tbody id="monitoring-leaderboard-body">
-                  <!-- Dimuat dinamis oleh election.js -->
-                </tbody>
-              </table>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th style="width: 80px; text-align: center;">No. Urut</th>
+                      <th>Nama Calon</th>
+                      <th>Program Studi</th>
+                      <th style="text-align: right; width: 140px;">Jumlah Suara</th>
+                      <th style="text-align: right; width: 120px;">Persentase</th>
+                    </tr>
+                  </thead>
+                  <tbody id="monitoring-leaderboard-body"></tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- SUBTAB 3: PANEL PANITIA PEMILIHAN -->
+        <!-- SUBTAB 3: PANEL PANITIA -->
         <div id="pemilu-subtab-panitia" style="display: none;">
-          <!-- 1. Pengaturan Status & Parameter Pemilihan -->
-          <div class="card" style="border: 1px solid #e4e4e7; border-radius: 8px; padding: 1.5rem; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); margin-bottom: 2rem;">
-            <div style="border-bottom: 1px solid #f4f4f5; padding-bottom: 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-              <div>
-                <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b; margin: 0 0 2px 0;">
-                  Pengaturan Sesi Pemilihan
-                </h3>
-                <small style="color: #71717a; font-size: 0.82rem;">Kelola status pembukaan bilik suara dan informasi pemilihan</small>
-              </div>
+          <!-- Pengaturan Sesi -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h3>Pengaturan Sesi Pemilihan</h3>
             </div>
-            <form onsubmit="submitElectionSettings(event)">
-              <div class="grid-2col" style="gap: 1rem; margin-bottom: 1rem;">
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label for="panitia-election-status" style="font-size: 0.85rem; font-weight: 700; color: #18181b; margin-bottom: 4px; display: block;">Status Bilik Suara</label>
-                  <select id="panitia-election-status" class="select-input">
-                    <option value="draft">Draft (Belum Dibuka / Masa Persiapan)</option>
-                    <option value="active">Dibuka (Pemungutan Suara Sedang Berlangsung)</option>
-                    <option value="closed">Ditutup (Pemilihan Selesai / Penetapan Pemenang)</option>
-                  </select>
+            <div class="card-body">
+              <form onsubmit="submitElectionSettings(event)">
+                <div class="grid-2col mb-3">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="panitia-election-status">Status Bilik Suara</label>
+                    <select id="panitia-election-status" class="select-input">
+                      <option value="draft">Draft (Belum Dibuka)</option>
+                      <option value="active">Dibuka (Pemungutan Suara Berlangsung)</option>
+                      <option value="closed">Ditutup (Pemilihan Selesai)</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label for="panitia-election-periode">Periode Kepengurusan</label>
+                    <input type="text" id="panitia-election-periode" class="text-input" placeholder="2026/2027" required>
+                  </div>
                 </div>
-                <div class="form-group" style="margin-bottom: 0;">
-                  <label for="panitia-election-periode" style="font-size: 0.85rem; font-weight: 700; color: #18181b; margin-bottom: 4px; display: block;">Periode Kepengurusan</label>
-                  <input type="text" id="panitia-election-periode" class="text-input" placeholder="Contoh: 2026/2027" required>
+                <div class="form-group mb-3">
+                  <label for="panitia-election-judul">Judul Pemilihan</label>
+                  <input type="text" id="panitia-election-judul" class="text-input" required>
                 </div>
-              </div>
-              <div class="form-group" style="margin-bottom: 1rem;">
-                <label for="panitia-election-judul" style="font-size: 0.85rem; font-weight: 700; color: #18181b; margin-bottom: 4px; display: block;">Judul Agenda Pemilihan</label>
-                <input type="text" id="panitia-election-judul" class="text-input" placeholder="Judul pemilihan..." required>
-              </div>
-              <div class="form-group" style="margin-bottom: 1.25rem;">
-                <label for="panitia-election-desc" style="font-size: 0.85rem; font-weight: 700; color: #18181b; margin-bottom: 4px; display: block;">Deskripsi & Maklumat Pemilihan</label>
-                <textarea id="panitia-election-desc" rows="2" style="width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #e4e4e7; border-radius: 6px; font-family: inherit; font-size: 0.9rem;" placeholder="Deskripsi tata tertib pemilihan..."></textarea>
-              </div>
-              <div style="display: flex; justify-content: flex-end;">
-                <button type="submit" class="btn btn-primary" style="background: #18181b; color: #ffffff; padding: 0.65rem 1.25rem; font-size: 0.88rem; font-weight: 700;">
-                  <i class="fa-solid fa-floppy-disk"></i> Simpan Pengaturan
-                </button>
-              </div>
-            </form>
+                <div class="form-group mb-3">
+                  <label for="panitia-election-desc">Deskripsi Pemilihan</label>
+                  <textarea id="panitia-election-desc" rows="2" class="text-input"></textarea>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                  <button type="submit" class="btn btn-primary" style="font-size: 0.85rem;">
+                    Simpan Pengaturan
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
 
-          <!-- 2. Manajemen Calon Ketua Umum -->
-          <div class="card" style="border: 1px solid #e4e4e7; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 2rem;">
-            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e4e4e7; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-              <div>
-                <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b; margin: 0 0 2px 0;">
-                  Manajemen Calon Ketua Umum
-                </h3>
-                <small style="color: #71717a; font-size: 0.82rem;">Daftarkan kandidat, perbarui visi-misi, serta foto resmi calon</small>
-              </div>
-              <button onclick="openAddCandidateModal()" class="btn btn-primary" style="background: #18181b; color: #ffffff; font-size: 0.85rem; padding: 0.55rem 1rem;">
-                <i class="fa-solid fa-plus"></i> Tambah Calon Baru
+          <!-- Daftar Calon -->
+          <div class="card mb-4">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3>Daftar Calon Ketua Umum</h3>
+              <button onclick="openAddCandidateModal()" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.45rem 0.9rem;">
+                Tambah Calon
               </button>
             </div>
-            <div class="table-responsive">
-              <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                <thead>
-                  <tr style="background: #f8f9fa; border-bottom: 1px solid #e4e4e7; font-size: 0.78rem; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">
-                    <th style="padding: 0.85rem 1rem; text-align: center; width: 80px;">No. Urut</th>
-                    <th style="padding: 0.85rem 1rem;">Calon Ketua Umum</th>
-                    <th style="padding: 0.85rem 1rem;">Visi</th>
-                    <th style="padding: 0.85rem 1rem;">Misi</th>
-                    <th style="padding: 0.85rem 1rem; text-align: right; width: 140px;">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody id="panitia-candidates-table-body">
-                  <!-- Dimuat dinamis oleh election.js -->
-                </tbody>
-              </table>
+            <div class="card-body" style="padding: 0;">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th style="width: 80px; text-align: center;">No. Urut</th>
+                      <th>Calon Ketua Umum</th>
+                      <th>Visi</th>
+                      <th>Misi</th>
+                      <th style="text-align: right; width: 140px;">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="panitia-candidates-table-body"></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
-          <!-- 3. Rekapitulasi & Audit Hak Suara Pemilih -->
-          <div class="card" style="border: 1px solid #e4e4e7; border-radius: 8px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 2rem;">
-            <div style="padding: 1.25rem 1.5rem; border-bottom: 1px solid #e4e4e7; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-              <div>
-                <h3 style="font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 800; color: #18181b; margin: 0 0 2px 0;">
-                  Rekapitulasi Partisipasi Hak Suara
-                </h3>
-                <small style="color: #71717a; font-size: 0.82rem;">Audit transparansi pemilih (Pilihan calon tetap dirahasiakan demi asas LUBER)</small>
-              </div>
-              <div style="display: flex; gap: 0.75rem; align-items: center;">
-                <button onclick="exportVotersCsv()" class="btn btn-outline" style="border-color: #18181b; color: #18181b; font-size: 0.85rem; padding: 0.5rem 1rem;">
-                  <i class="fa-solid fa-file-csv"></i> Ekspor Data Pemilih (CSV)
-                </button>
-              </div>
+          <!-- Rekapitulasi Pemilih -->
+          <div class="card mb-4">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+              <h3>Rekapitulasi Pemilih</h3>
+              <button onclick="exportVotersCsv()" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.45rem 0.9rem;">
+                Ekspor CSV
+              </button>
             </div>
-
-            <!-- Mini Counter Bar -->
-            <div style="display: flex; border-bottom: 1px solid #e4e4e7; background: #fafafa; padding: 1rem 1.5rem; gap: 2rem; flex-wrap: wrap;">
-              <div>
-                <span style="font-size: 0.75rem; color: #71717a; font-weight: 700; text-transform: uppercase;">Total DPT:</span>
-                <strong id="audit-stat-dpt" style="font-size: 1.1rem; color: #18181b; margin-left: 6px;">0</strong>
+            <div class="card-body">
+              <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                <div style="flex: 1; min-width: 220px;">
+                  <input type="text" id="audit-search-input" oninput="filterAndRenderVoters()" placeholder="Cari nama atau username..." class="text-input">
+                </div>
+                <div style="width: 180px;">
+                  <select id="audit-status-filter" onchange="filterAndRenderVoters()" class="select-input">
+                    <option value="all">Semua Status</option>
+                    <option value="voted">Sudah Memilih</option>
+                    <option value="unvoted">Belum Memilih</option>
+                  </select>
+                </div>
               </div>
-              <div style="border-left: 1px solid #e4e4e7; padding-left: 2rem;">
-                <span style="font-size: 0.75rem; color: #18181b; font-weight: 700; text-transform: uppercase;">Sudah Memilih:</span>
-                <strong id="audit-stat-voted" style="font-size: 1.1rem; color: #18181b; margin-left: 6px;">0</strong>
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th style="width: 50px; text-align: center;">No</th>
+                      <th>Akun Pemilih</th>
+                      <th>Peran / Divisi</th>
+                      <th style="text-align: center; width: 140px;">Status</th>
+                      <th style="text-align: center; width: 160px;">Waktu Memilih</th>
+                    </tr>
+                  </thead>
+                  <tbody id="panitia-audit-table-body"></tbody>
+                </table>
               </div>
-              <div style="border-left: 1px solid #e4e4e7; padding-left: 2rem;">
-                <span style="font-size: 0.75rem; color: #71717a; font-weight: 700; text-transform: uppercase;">Belum Memilih:</span>
-                <strong id="audit-stat-unvoted" style="font-size: 1.1rem; color: #71717a; margin-left: 6px;">0</strong>
-              </div>
-            </div>
-
-            <!-- Filter & Search Toolbar -->
-            <div style="padding: 1rem 1.5rem; background: #ffffff; border-bottom: 1px solid #e4e4e7; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
-              <div style="flex: 1; min-width: 220px; position: relative;">
-                <input type="text" id="audit-search-input" oninput="filterAndRenderVoters()" placeholder="Cari nama lengkap atau username pemilih..." class="text-input" style="padding: 0.55rem 0.8rem; font-size: 0.88rem; border-color: #e4e4e7;">
-              </div>
-              <div style="width: 200px;">
-                <select id="audit-status-filter" onchange="filterAndRenderVoters()" class="select-input" style="padding: 0.55rem 0.8rem; font-size: 0.88rem; border-color: #e4e4e7;">
-                  <option value="all">Semua Status</option>
-                  <option value="voted">Sudah Memilih</option>
-                  <option value="unvoted">Belum Memilih</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="table-responsive">
-              <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                <thead>
-                  <tr style="background: #f8f9fa; border-bottom: 1px solid #e4e4e7; font-size: 0.78rem; text-transform: uppercase; color: #71717a; letter-spacing: 0.05em;">
-                    <th style="padding: 0.85rem 1rem; text-align: center; width: 50px;">No</th>
-                    <th style="padding: 0.85rem 1rem;">Akun Pemilih</th>
-                    <th style="padding: 0.85rem 1rem;">Peran & Divisi</th>
-                    <th style="padding: 0.85rem 1rem; text-align: center; width: 160px;">Status Hak Suara</th>
-                    <th style="padding: 0.85rem 1rem; text-align: center; width: 180px;">Waktu Memilih</th>
-                  </tr>
-                </thead>
-                <tbody id="panitia-audit-table-body">
-                  <!-- Dimuat dinamis oleh election.js -->
-                </tbody>
-              </table>
             </div>
           </div>
 
-          <!-- 4. Zona Pengawasan & Reset Suara -->
-          <div class="card" style="border: 1px solid #fecaca; border-left: 4px solid #dc2626; border-radius: 8px; padding: 1.5rem; background: #fef2f2; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-              <div>
-                <h4 style="color: #991b1b; font-family: 'Outfit', sans-serif; font-size: 1.05rem; font-weight: 800; margin: 0 0 3px 0;">
-                  Zona Reset Pemilihan (Tindakan Kritis)
-                </h4>
-                <p style="color: #7f1d1d; font-size: 0.85rem; margin: 0;">
-                  Mereset seluruh suara pemilih yang telah masuk kembali ke 0. Hanya gunakan jika pemilihan resmi diulang atau uji coba selesai.
-                </p>
-              </div>
-              <button onclick="confirmResetVotes()" class="btn btn-outline" style="border-color: #dc2626; color: #dc2626; background: #ffffff; font-weight: 700; font-size: 0.85rem; padding: 0.6rem 1.1rem;">
-                <i class="fa-solid fa-rotate-left"></i> Reset Perolehan Suara
+          <!-- Reset Suara -->
+          <div class="card">
+            <div class="card-header">
+              <h3 style="color: #dc2626;">Reset Suara Pemilihan</h3>
+            </div>
+            <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+              <p style="margin: 0; color: #4b5563; font-size: 0.85rem;">
+                Mereset seluruh suara pemilih yang telah masuk kembali ke 0.
+              </p>
+              <button onclick="confirmResetVotes()" class="btn btn-outline" style="color: #dc2626; border: 1px solid #fecaca; font-size: 0.85rem;">
+                Reset Suara
               </button>
             </div>
           </div>
