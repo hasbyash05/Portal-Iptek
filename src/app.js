@@ -8,7 +8,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-const { sequelize, User } = require('./models');
+const { sequelize, User, Election, Candidate, Vote } = require('./models');
 const apiRoutes = require('./routes');
 
 const app = express();
@@ -174,6 +174,16 @@ sequelize.authenticate()
         }
       } catch (cleanSessErr) {
         console.warn('[DB] Pembersihan sesi presensi:', cleanSessErr.message);
+      }
+
+      // Inisialisasi aman tabel Pemilu jika belum ada di database
+      try {
+        await Election.sync();
+        await Candidate.sync();
+        await Vote.sync();
+        console.log('[DB] Tabel sistem Pemilu terverifikasi/tersinkronisasi.');
+      } catch (evErr) {
+        console.warn('[DB] Inisialisasi tabel Pemilu:', evErr.message);
       }
     }
   })

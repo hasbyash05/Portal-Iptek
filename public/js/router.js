@@ -3,6 +3,7 @@ import { loadPengurusOverview, loadAnggotaOverview, loadPengurusLaporan, loadAng
 import { loadAnggotaMateri, loadPengurusMateri } from './academic.js';
 import { loadAnggotaAttendance, loadSessionStatus, loadPengurusAbsensi } from './attendance.js';
 import { loadAnggotaKas, loadKasReport, loadExpenses, loadQrisConfig } from './finance.js';
+import { loadElectionData } from './election.js';
 
 export const API_BASE = '/api';
 
@@ -126,6 +127,7 @@ export function switchTab(tabName, user) {
     }
   }
   if (tabName === 'anggota' && isPengurusOrAdmin) loadAnggotaList();
+  if (tabName === 'pemilu') loadElectionData();
 }
 
 export function switchAnggotaTab(tabName) {

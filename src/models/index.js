@@ -66,6 +66,24 @@ Certificate.belongsTo(User, { foreignKey: 'user_id', as: 'owner' });
 User.hasMany(Certificate, { foreignKey: 'uploaded_by', as: 'uploadedCertificates' });
 Certificate.belongsTo(User, { foreignKey: 'uploaded_by', as: 'uploader' });
 
+// Election, Candidate, and Vote associations
+const { Election } = require('./Election');
+const { Candidate } = require('./Candidate');
+const { Vote } = require('./Vote');
+
+Election.belongsTo(User, { foreignKey: 'created_by', as: 'creator' });
+Election.hasMany(Candidate, { foreignKey: 'election_id', as: 'candidates', onDelete: 'CASCADE' });
+Candidate.belongsTo(Election, { foreignKey: 'election_id', as: 'election' });
+
+Election.hasMany(Vote, { foreignKey: 'election_id', as: 'votes', onDelete: 'CASCADE' });
+Vote.belongsTo(Election, { foreignKey: 'election_id', as: 'election' });
+
+Candidate.hasMany(Vote, { foreignKey: 'candidate_id', as: 'votes', onDelete: 'CASCADE' });
+Vote.belongsTo(Candidate, { foreignKey: 'candidate_id', as: 'candidate' });
+
+User.hasMany(Vote, { foreignKey: 'user_id', as: 'votes' });
+Vote.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
 module.exports = {
   sequelize,
   User,
@@ -79,5 +97,9 @@ module.exports = {
   ScheduleMaterial,
   DocumentTemplate,
   KasExpense,
-  Certificate
+  Certificate,
+  Election,
+  Candidate,
+  Vote
 };
+

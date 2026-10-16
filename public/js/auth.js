@@ -136,8 +136,8 @@ export function checkAuth() {
 
   // Cek adakah hash di URL saat refresh atau awal load
   const hashTab = window.location.hash.replace('#', '');
-  const validTabsPengurus = ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota'];
-  const validTabsAnggota = ['overview', 'materi', 'absensi', 'kas'];
+  const validTabsPengurus = ['overview', 'laporan', 'materi', 'absensi', 'kas', 'anggota', 'pemilu'];
+  const validTabsAnggota = ['overview', 'materi', 'absensi', 'kas', 'pemilu'];
   const validTabs = (user.role === 'pengurus' || user.role === 'admin') ? validTabsPengurus : validTabsAnggota;
 
   if (hashTab === 'profil') {

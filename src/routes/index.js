@@ -12,6 +12,7 @@ const templateRoutes = require('./templateRoutes');
 const userRoutes = require('./userRoutes');
 const expenseRoutes = require('./expenseRoutes');
 const certificateRoutes = require('./certificateRoutes');
+const electionRoutes = require('./electionRoutes');
 const { getProfile } = require('../controllers/certificateController');
 const { authenticate } = require('../middlewares/auth');
 
@@ -26,6 +27,7 @@ router.use('/templates', templateRoutes);
 router.use('/users', userRoutes);
 router.use('/expenses', expenseRoutes);
 router.use('/certificates', certificateRoutes);
+router.use('/elections', electionRoutes);
 router.get('/profile/:id', authenticate, getProfile);
 
 // Helper route for direct export if frontend calls /api/export/ppt

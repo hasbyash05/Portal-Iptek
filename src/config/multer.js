@@ -22,6 +22,8 @@ const storage = multer.diskStorage({
       folder = 'public/uploads/reports';
     } else if (file.fieldname === 'proof_file' || req.baseUrl.includes('payments')) {
       folder = 'public/uploads/proofs';
+    } else if (file.fieldname === 'candidate_photo' || req.baseUrl.includes('elections')) {
+      folder = 'public/uploads/candidates';
     }
     createDir(folder);
     cb(null, folder);
@@ -46,12 +48,13 @@ const fileFilter = (req, file, cb) => {
     'video/mp4',
     'image/jpeg',
     'image/png',
-    'image/jpg'
+    'image/jpg',
+    'image/webp'
   ];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Tipe file tidak diizinkan. Hanya PDF, PPT, MP4, JPEG, dan PNG.'), false);
+    cb(new Error('Tipe file tidak diizinkan. Hanya PDF, PPT, MP4, JPEG, PNG, dan WebP.'), false);
   }
 };
 
