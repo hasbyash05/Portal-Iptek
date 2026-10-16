@@ -445,7 +445,14 @@ const deleteCandidate = async (req, res) => {
 const updateElectionStatus = async (req, res) => {
   try {
     const electionId = req.params.id;
-    const { status, judul, periode, deskripsi } = req.body;
+    const { status, judul, periode, deskripsi } = req.body || {};
+
+    if (!req.body || typeof req.body !== 'object' || Object.keys(req.body).length === 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Data pembaruan tidak valid atau kosong.'
+      });
+    }
 
     const election = await Election.findByPk(electionId);
     if (!election) {
@@ -455,12 +462,19 @@ const updateElectionStatus = async (req, res) => {
       });
     }
 
-    if (status && ['draft', 'active', 'closed'].includes(status)) {
-      election.status = status;
+    const cleanStatus = status ? String(status).trim().toLowerCase() : null;
+    if (cleanStatus && ['draft', 'active', 'closed'].includes(cleanStatus)) {
+      election.status = cleanStatus;
     }
-    if (judul) election.judul = judul.trim();
-    if (periode) election.periode = periode.trim();
-    if (deskripsi !== undefined) election.deskripsi = deskripsi ? deskripsi.trim() : null;
+    if (judul && typeof judul === 'string' && judul.trim()) {
+      election.judul = judul.trim();
+    }
+    if (periode && typeof periode === 'string' && periode.trim()) {
+      election.periode = periode.trim();
+    }
+    if (deskripsi !== undefined) {
+      election.deskripsi = deskripsi ? String(deskripsi).trim() : null;
+    }
 
     await election.save();
 

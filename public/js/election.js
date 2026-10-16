@@ -401,6 +401,7 @@ export async function submitCastVote() {
   try {
     const res = await fetchAuth(`${API_BASE}/elections/${currentElection.id}/vote`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         candidate_id: selectedCandidateForVote.id
       })
@@ -724,14 +725,16 @@ export async function submitElectionSettings(e) {
   try {
     const res = await fetchAuth(`${API_BASE}/elections/${currentElection.id}/status`, {
       method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status, judul, periode, deskripsi })
     });
 
     const result = await res.json();
     if (result.status === 'success') {
-      alert(result.message || 'Pengaturan berhasil diperbarui.');
       currentElection = result.data;
-      loadElectionData();
+      renderPanitiaElectionSettings();
+      await loadElectionData();
+      alert(result.message || 'Pengaturan berhasil diperbarui.');
     } else {
       alert(result.message || 'Gagal memperbarui pengaturan.');
     }

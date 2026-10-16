@@ -243,7 +243,24 @@ export function clearApiCache(pattern = null) {
 export async function fetchAuth(url, options = {}) {
   const token = localStorage.getItem('iptek_token');
   if (!options.headers) options.headers = {};
-  if (token) options.headers['Authorization'] = `Bearer ${token}`;
+  if (token) {
+    if (options.headers instanceof Headers) {
+      if (!options.headers.has('Authorization')) options.headers.set('Authorization', `Bearer ${token}`);
+    } else {
+      if (!options.headers['Authorization']) options.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
+  // Otomatis set Content-Type application/json jika body berupa string (JSON) dan belum diset
+  if (options.body && typeof options.body === 'string') {
+    if (options.headers instanceof Headers) {
+      if (!options.headers.has('Content-Type')) options.headers.set('Content-Type', 'application/json');
+    } else {
+      if (!options.headers['Content-Type'] && !options.headers['content-type']) {
+        options.headers['Content-Type'] = 'application/json';
+      }
+    }
+  }
 
   const method = (options.method || 'GET').toUpperCase();
 
