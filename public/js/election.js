@@ -206,7 +206,7 @@ function renderCandidates(container, candidates, election, userVoted) {
 
   const html = candidates.map(c => {
     const numDisplay = String(c.nomor_urut).padStart(2, '0');
-    const photoHtml = c.foto_url 
+    const photoHtml = c.foto_url
       ? `<img src="${c.foto_url}" alt="Foto Calon" style="width: 100%; height: 100%; object-fit: cover;">`
       : `<div style="text-align: center; color: #9ca3af;"><i class="fa-solid fa-user" style="font-size: 3rem;"></i></div>`;
 
@@ -271,7 +271,7 @@ export function openCandidateDetailModal(candidateId) {
 
   const numDisplay = String(candidate.nomor_urut).padStart(2, '0');
 
-  const misiLines = candidate.misi 
+  const misiLines = candidate.misi
     ? candidate.misi.split('\n').filter(line => line.trim().length > 0)
     : [];
 
@@ -284,10 +284,10 @@ export function openCandidateDetailModal(candidateId) {
   body.innerHTML = `
     <div style="display: flex; gap: 1.25rem; align-items: flex-start; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.25rem; flex-wrap: wrap;">
       <div style="width: 90px; height: 110px; background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-        ${candidate.foto_url 
-          ? `<img src="${candidate.foto_url}" alt="Foto Calon" style="width: 100%; height: 100%; object-fit: cover;">`
-          : `<i class="fa-solid fa-user" style="font-size: 2.2rem; color: #9ca3af;"></i>`
-        }
+        ${candidate.foto_url
+      ? `<img src="${candidate.foto_url}" alt="Foto Calon" style="width: 100%; height: 100%; object-fit: cover;">`
+      : `<i class="fa-solid fa-user" style="font-size: 2.2rem; color: #9ca3af;"></i>`
+    }
       </div>
       <div style="flex: 1; min-width: 200px;">
         <span style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase;">Calon Nomor ${numDisplay}</span>
@@ -555,10 +555,10 @@ function renderWinnerCard(container, leader, election, stats) {
       <div class="card-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
         <div style="display: flex; align-items: center; gap: 1.25rem;">
           <div style="width: 64px; height: 64px; border-radius: 4px; background: #f8f9fa; border: 1px solid var(--border-color); overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-            ${leader.foto_url 
-              ? `<img src="${leader.foto_url}" alt="Foto Calon" style="width: 100%; height: 100%; object-fit: cover;">`
-              : `<i class="fa-solid fa-user" style="font-size: 1.8rem; color: #71717a;"></i>`
-            }
+            ${leader.foto_url
+      ? `<img src="${leader.foto_url}" alt="Foto Calon" style="width: 100%; height: 100%; object-fit: cover;">`
+      : `<i class="fa-solid fa-user" style="font-size: 1.8rem; color: #71717a;"></i>`
+    }
           </div>
           <div>
             <div style="font-size: 0.75rem; font-weight: 700; color: #71717a; text-transform: uppercase;">Calon Nomor ${numDisplay}</div>
@@ -653,7 +653,7 @@ function renderElectionCharts(chartData, stats) {
             padding: 8,
             cornerRadius: 4,
             callbacks: {
-              label: function(context) {
+              label: function (context) {
                 const val = context.raw || 0;
                 const total = stats.total_voted || 1;
                 const pct = ((val / total) * 100).toFixed(1);
@@ -797,8 +797,8 @@ export function openAddCandidateModal() {
   document.getElementById('candidate-form-id').value = '';
   if (title) title.textContent = 'Pendaftaran Calon Ketua Umum';
 
-  const nextNum = currentCandidates.length > 0 
-    ? Math.max(...currentCandidates.map(c => c.nomor_urut)) + 1 
+  const nextNum = currentCandidates.length > 0
+    ? Math.max(...currentCandidates.map(c => c.nomor_urut)) + 1
     : 1;
   document.getElementById('candidate-form-nomor').value = nextNum;
 
@@ -853,7 +853,7 @@ export async function submitCandidateForm(e) {
     formData.append('candidate_photo', fotoInput.files[0]);
   }
 
-  const url = isEdit 
+  const url = isEdit
     ? `${API_BASE}/elections/candidates/${candidateId}`
     : `${API_BASE}/elections/${currentElection.id}/candidates`;
 
@@ -967,15 +967,15 @@ export function filterAndRenderVoters() {
   }
 
   tbody.innerHTML = filtered.map((v, i) => {
-    const formattedDate = v.voted_at 
+    const formattedDate = v.voted_at
       ? new Date(v.voted_at).toLocaleString('id-ID', {
-          timeZone: 'Asia/Jakarta',
-          day: 'numeric',
-          month: 'short',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
+        timeZone: 'Asia/Jakarta',
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
       : '-';
 
     return `
