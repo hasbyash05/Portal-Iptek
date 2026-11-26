@@ -1,0 +1,26 @@
+Options -Indexes
+
+# Lindungi file konfigurasi, source code Rust, dan kredensial agar tidak dapat diakses via HTTP
+<FilesMatch "^(\.env|\.env\.example|\.cpanel\.yml|\.cpignore|\.gitignore|Cargo\.toml|Cargo\.lock|login_credentials\.json|stderr\.log|server\.log)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Blokir akses langsung ke direktori internal Rust & Git
+  RewriteRule ^(\.git|src|target)(/.*)?$ - [F,L]
+
+  # Paksa HTTPS (komentari 2 baris berikut jika SSL domain belum aktif)
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+  # Teruskan seluruh permintaan ke server backend Rust di localhost port 4000
+  RewriteRule ^(.*)$ http://127.0.0.1:4000/$1 [P,L]
+</IfModule>

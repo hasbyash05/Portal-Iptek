@@ -1,5 +1,5 @@
-# Dependencies
-node_modules/
+# Rust build output
+target/
 
 # Environment variables
 .env
@@ -24,7 +24,6 @@ Thumbs.db
 
 # Logs
 *.log
-npm-debug.log*
 
 # Build
 dist/
@@ -35,4 +34,3 @@ Postman_Collection.json
 
 # Archives
 *.zip
-
