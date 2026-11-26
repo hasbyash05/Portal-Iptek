@@ -7,6 +7,10 @@ use crate::config::Config;
 use crate::utils::date_helper::naive_dt_to_jakarta_date_string;
 
 pub async fn create_pool(config: &Config) -> Result<MySqlPool, sqlx::Error> {
+    create_pool_with_max(config, 5).await
+}
+
+pub async fn create_pool_with_max(config: &Config, max_conn: u32) -> Result<MySqlPool, sqlx::Error> {
     let opts = MySqlConnectOptions::new()
         .host(&config.db_host)
         .port(config.db_port)
@@ -17,7 +21,7 @@ pub async fn create_pool(config: &Config) -> Result<MySqlPool, sqlx::Error> {
         .collation("utf8mb4_unicode_ci");
 
     MySqlPoolOptions::new()
-        .max_connections(5)
+        .max_connections(max_conn)
         .min_connections(0)
         .acquire_timeout(Duration::from_secs(10))
         .idle_timeout(Duration::from_secs(60))
@@ -232,7 +236,7 @@ pub async fn run_startup_maintenance(pool: &MySqlPool, config: &Config) {
     if let Err(e) = ensure_tables(pool).await {
         eprintln!("[DB WARN] Gagal memastikan tabel database: {}", e);
     } else {
-        println!("[DB] Tabel database tersinkronisasi.");
+        eprintln!("[DB] Tabel database tersinkronisasi.");
     }
 
     // Safe migration: add attendance_mode column if missing
@@ -249,7 +253,7 @@ pub async fn run_startup_maintenance(pool: &MySqlPool, config: &Config) {
             {
                 eprintln!("[DB] Migrasi attendance_mode: {}", e);
             } else {
-                println!("[DB] Kolom 'attendance_mode' berhasil ditambahkan ke tabel attendance_sessions.");
+                eprintln!("[DB] Kolom 'attendance_mode' berhasil ditambahkan ke tabel attendance_sessions.");
             }
         }
         Err(e) => eprintln!("[DB] Migrasi attendance_mode: {}", e),
@@ -265,7 +269,7 @@ pub async fn run_startup_maintenance(pool: &MySqlPool, config: &Config) {
             let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `ai_status` VARCHAR(50) NULL DEFAULT NULL").execute(pool).await;
             let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `ai_notes` TEXT NULL DEFAULT NULL").execute(pool).await;
             let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `sender_name_detected` VARCHAR(255) NULL DEFAULT NULL").execute(pool).await;
-            println!("[DB] Kolom AI verification berhasil ditambahkan ke tabel payments.");
+            eprintln!("[DB] Kolom AI verification berhasil ditambahkan ke tabel payments.");
         }
         Err(e) => eprintln!("[DB] Migrasi AI verification payments: {}", e),
         _ => {}
@@ -284,7 +288,7 @@ pub async fn run_startup_maintenance(pool: &MySqlPool, config: &Config) {
             let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `expires_at` DATETIME NULL DEFAULT NULL").execute(pool).await;
             let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `payment_channel` VARCHAR(50) NULL DEFAULT 'qris_dynamic'").execute(pool).await;
             let _ = sqlx::query("ALTER TABLE `payments` ADD UNIQUE INDEX `payments_order_id_uq` (`order_id`)").execute(pool).await;
-            println!("[DB] Kolom Payment Gateway QRIS Dinamis berhasil ditambahkan ke tabel payments.");
+            eprintln!("[DB] Kolom Payment Gateway QRIS Dinamis berhasil ditambahkan ke tabel payments.");
         }
         Err(e) => eprintln!("[DB] Migrasi Payment Gateway payments: {}", e),
         _ => {}
@@ -297,7 +301,7 @@ pub async fn run_startup_maintenance(pool: &MySqlPool, config: &Config) {
             .await
         {
             if user_count == 0 {
-                println!("[DB] Database kosong. Mengisi data awal (seeding)...");
+                eprintln!("[DB] Database kosong. Mengisi data awal (seeding)...");
                 if let Err(e) = crate::seed::seed_database(pool, false).await {
                     eprintln!("[DB ERROR] Gagal seeding awal: {}", e);
                 }
@@ -358,7 +362,7 @@ pub async fn cleanup_garbage_sessions_internal(pool: &MySqlPool) -> Result<usize
         );
         let res = sqlx::query(&sql).execute(pool).await?;
         let deleted = res.rows_affected() as usize;
-        println!(
+        eprintln!(
             "[DB] Pembersihan sesi presensi selesai. Menyisakan {} sesi pertemuan resmi.",
             kept_ids.len()
         );

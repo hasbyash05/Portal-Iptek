@@ -7,7 +7,7 @@ description = "Sistem Informasi Manajemen (SIM) Internal UKM IPTEK STIKES Semara
 [dependencies]
 axum = { version = "0.8", features = ["multipart"] }
 tokio = { version = "1", features = ["full"] }
-tower = "0.5"
+tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors", "fs", "set-header", "trace"] }
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls-ring-webpki", "mysql", "chrono", "bigdecimal", "derive"] }
 serde = { version = "1", features = ["derive"] }

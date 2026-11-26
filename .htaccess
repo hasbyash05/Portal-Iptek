@@ -1,7 +1,8 @@
-Options -Indexes
+Options -Indexes +ExecCGI
+AddHandler cgi-script .cgi
 
-# Lindungi file backend, binary Rust, konfigurasi, dan log agar tidak dapat diakses via HTTP
-<FilesMatch "^(\.env|\.env\.example|\.cpanel\.yml|\.cpignore|\.gitignore|Cargo\.toml|Cargo\.lock|login_credentials\.json|stderr\.log|server\.log|iptek-backend)$">
+# Lindungi file backend, konfigurasi, dan log agar tidak dapat diakses via HTTP
+<FilesMatch "^(\.env|\.env\.example|\.cpanel\.yml|\.cpignore|\.gitignore|Cargo\.toml|Cargo\.lock|login_credentials\.json|stderr\.log|server\.log|iptek-backend|\.db_schema_v2)$">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
@@ -14,6 +15,10 @@ Options -Indexes
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # Teruskan header Authorization & X-Webhook-Secret ke CGI Rust
+  RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+  RewriteRule .* - [E=HTTP_X_WEBHOOK_SECRET:%{HTTP:X-Webhook-Secret}]
+
   # Blokir akses langsung ke direktori internal Rust & Git
   RewriteRule ^(\.git|src|target)(/.*)?$ - [F,L]
 
@@ -21,8 +26,8 @@ Options -Indexes
   RewriteCond %{HTTPS} !=on
   RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
 
-  # 1. Semua endpoint API diteruskan ke backend Rust di localhost port 4000
-  RewriteRule ^api/(.*)$ http://127.0.0.1:4000/api/$1 [P,L]
+  # 1. Semua endpoint API dijalankan langsung oleh LiteSpeed via binary Rust CGI (tidak pernah down)
+  RewriteRule ^api/(.*)$ api.cgi/api/$1 [L,QSA]
 
   # 2. Direktori asset/ dilayani langsung oleh LiteSpeed
   RewriteCond %{REQUEST_URI} ^/asset/
@@ -36,6 +41,8 @@ Options -Indexes
   RewriteCond %{DOCUMENT_ROOT}/public/$1 -f
   RewriteRule ^(.*)$ public/$1 [L]
 
-  # 5. Fallback ke backend Rust jika bukan file statis
-  RewriteRule ^(.*)$ http://127.0.0.1:4000/$1 [P,L]
+  # 5. Fallback ke halaman utama
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.*)$ public/index.html [L]
 </IfModule>

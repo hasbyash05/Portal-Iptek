@@ -1,3 +1,4 @@
+mod cgi;
 mod config;
 mod db;
 mod error;
@@ -327,8 +328,47 @@ fn build_cors(origin: &str) -> CorsLayer {
     }
 }
 
+fn build_app(state: AppState, client_origin: &str) -> Router {
+    let cors = build_cors(client_origin);
+    Router::new()
+        .nest("/api", build_api_router())
+        .nest_service("/uploads", ServeDir::new("public/uploads"))
+        .nest_service("/asset", ServeDir::new("asset"))
+        .fallback_service(ServeDir::new("public"))
+        .layer(DefaultBodyLimit::max(55 * 1024 * 1024))
+        .layer(cors)
+        .layer(axum_mw::from_fn(security_and_cache_headers))
+        .with_state(state)
+}
+
+fn ensure_working_dir() {
+    if !std::path::Path::new(".env").exists() {
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(parent) = exe.parent() {
+                if parent.join(".env").exists() {
+                    let _ = std::env::set_current_dir(parent);
+                }
+            }
+        }
+    }
+}
+
 fn main() {
-    // Batasi jumlah thread & stack size agar hemat RAM dan tidak melebihi batas NPROC CloudLinux/cPanel
+    ensure_working_dir();
+
+    // Deteksi otomatis mode CGI (dijalankan langsung oleh LiteSpeed / Apache cPanel)
+    // Mode ini tidak berjalan sebagai background daemon sehingga mustahil dimatikan oleh CSF/LFD CloudLinux.
+    if std::env::var("GATEWAY_INTERFACE").is_ok() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .max_blocking_threads(1)
+            .enable_all()
+            .build()
+            .expect("Gagal membuat Tokio CGI runtime");
+        runtime.block_on(cgi_main());
+        return;
+    }
+
+    // Mode Server HTTP mandiri (lokal / VPS) dengan batas thread hemat RAM
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(2)
         .max_blocking_threads(2)
@@ -340,12 +380,41 @@ fn main() {
     runtime.block_on(async_main());
 }
 
+async fn cgi_main() {
+    let _ = dotenvy::dotenv();
+    let config = Config::from_env();
+
+    let pool = match db::create_pool_with_max(&config, 2).await {
+        Ok(p) => p,
+        Err(e) => {
+            cgi::write_cgi_error(
+                500,
+                "Internal Server Error",
+                &format!("Gagal terhubung ke database MySQL: {}", e),
+            );
+            return;
+        }
+    };
+
+    // Jalankan migrasi skema sekali saja (penanda file .db_schema_v2 agar request CGI selanjutnya instan)
+    if !std::path::Path::new(".db_schema_v2").exists() {
+        db::run_startup_maintenance(&pool, &config).await;
+        let _ = std::fs::write(".db_schema_v2", "ok");
+    }
+
+    let origin = config.client_origin.clone();
+    let state = AppState::new(pool, config);
+    let app = build_app(state, &origin);
+    cgi::handle_cgi_request(app).await;
+}
+
 async fn async_main() {
     let _ = dotenvy::dotenv();
     let config = Config::from_env();
 
     let args: Vec<String> = std::env::args().collect();
     let run_seed = args.iter().any(|a| a == "--seed");
+    let run_migrate = args.iter().any(|a| a == "--migrate");
 
     let pool = match db::create_pool(&config).await {
         Ok(p) => {
@@ -367,20 +436,17 @@ async fn async_main() {
     }
 
     db::run_startup_maintenance(&pool, &config).await;
+    let _ = std::fs::write(".db_schema_v2", "ok");
 
-    let cors = build_cors(&config.client_origin);
+    if run_migrate {
+        println!("[DB] Migrasi skema selesai.");
+        return;
+    }
+
+    let origin = config.client_origin.clone();
     let port = config.port;
     let state = AppState::new(pool, config);
-
-    let app = Router::new()
-        .nest("/api", build_api_router())
-        .nest_service("/uploads", ServeDir::new("public/uploads"))
-        .nest_service("/asset", ServeDir::new("asset"))
-        .fallback_service(ServeDir::new("public"))
-        .layer(DefaultBodyLimit::max(55 * 1024 * 1024))
-        .layer(cors)
-        .layer(axum_mw::from_fn(security_and_cache_headers))
-        .with_state(state);
+    let app = build_app(state, &origin);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let listener = match tokio::net::TcpListener::bind(addr).await {
