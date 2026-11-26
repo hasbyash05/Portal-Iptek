@@ -17,8 +17,12 @@ pub async fn create_pool(config: &Config) -> Result<MySqlPool, sqlx::Error> {
         .collation("utf8mb4_unicode_ci");
 
     MySqlPoolOptions::new()
-        .max_connections(20)
+        .max_connections(5)
+        .min_connections(0)
         .acquire_timeout(Duration::from_secs(10))
+        .idle_timeout(Duration::from_secs(60))
+        .max_lifetime(Duration::from_secs(300))
+        .test_before_acquire(true)
         .after_connect(|conn, _meta| {
             Box::pin(async move {
                 conn.execute("SET time_zone = '+07:00'").await?;

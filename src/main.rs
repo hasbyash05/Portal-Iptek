@@ -327,8 +327,20 @@ fn build_cors(origin: &str) -> CorsLayer {
     }
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
+    // Batasi jumlah thread & stack size agar hemat RAM dan tidak melebihi batas NPROC CloudLinux/cPanel
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(2)
+        .max_blocking_threads(2)
+        .thread_stack_size(1024 * 1024)
+        .enable_all()
+        .build()
+        .expect("Gagal membuat Tokio runtime");
+
+    runtime.block_on(async_main());
+}
+
+async fn async_main() {
     let _ = dotenvy::dotenv();
     let config = Config::from_env();
 
