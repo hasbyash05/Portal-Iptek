@@ -1,0 +1,52 @@
+name: Build Linux Release Binary
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux-musl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install musl-tools
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Setup Rust toolchain (x86_64-unknown-linux-musl)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-musl
+
+      - name: Cache Cargo registry and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build static Linux binary
+        env:
+          CC_x86_64_unknown_linux_musl: musl-gcc
+        run: cargo build --release --target x86_64-unknown-linux-musl
+
+      - name: Verify binary
+        run: |
+          ls -lh target/x86_64-unknown-linux-musl/release/iptek-backend
+          file target/x86_64-unknown-linux-musl/release/iptek-backend
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iptek-backend-linux-x86_64
+          path: target/x86_64-unknown-linux-musl/release/iptek-backend
+
+      - name: Publish binary to GitHub Release (latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Linux Binary (Rust)
+          body: Binary Linux statis (x86_64-unknown-linux-musl) hasil build otomatis dari branch master.
+          files: target/x86_64-unknown-linux-musl/release/iptek-backend
+          make_latest: true
