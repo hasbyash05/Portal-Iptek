@@ -941,45 +941,76 @@
           <div class="grid-2col">
             <div class="card">
               <div class="card-header">
-                <h3>Bayar Iuran Kas Bulanan via QRIS</h3>
+                <h3>Payment Gateway Kas Otomatis (QRIS Tanpa Potongan)</h3>
               </div>
               <div class="card-body text-center">
                 <div class="amount-badge mb-3">
                   <span>Nominal Wajib:</span>
                   <h2>Rp 10.000 / bulan</h2>
+                  <small style="color: #4b5563; display: block; margin-top: 4px; font-weight: 600;">
+                    <i class="fa-solid fa-bolt"></i> Verifikasi Otomatis | Biaya Admin Rp 0 (0% MDR)
+                  </small>
                 </div>
-                <div class="qris-box mb-3"
-                  style="background: #f8f9fa; border: none; padding: 1.5rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                  <h4 style="color: #18181b; font-weight: 800; margin-bottom: 8px;">QRIS UKM IPTEK STIKES SEMARANG</h4>
-                  <div id="qris-image-kas"
-                    style="margin: 10px 0; min-height: 180px; display: flex; align-items: center; justify-content: center;">
-                    <p style="color: #71717a; font-size: 0.9rem;">Memuat QRIS...</p>
-                  </div>
-                  <small id="qris-nmid-kas" class="text-muted">Memuat info merchant...</small>
+
+                <div class="mb-3"
+                  style="text-align: left; padding: 0.85rem 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #e4e4e7;">
+                  <span style="font-size: 0.8rem; color: #71717a; display: block; margin-bottom: 2px;">Periode
+                    Pembayaran Kas:</span>
+                  <strong id="kas-current-period-display" style="font-size: 1.05rem; color: #18181b;">Bulan
+                    Berjalan</strong>
                 </div>
-                <form id="form-kas-anggota" onsubmit="submitKasQris(event)">
-                  <div class="mb-3"
-                    style="text-align: left; padding: 0.85rem 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #e4e4e7;">
-                    <span style="font-size: 0.8rem; color: #71717a; display: block; margin-bottom: 2px;">Periode
-                      Pembayaran Kas:</span>
-                    <strong id="kas-current-period-display" style="font-size: 1.05rem; color: #18181b;">Bulan
-                      Berjalan</strong>
+
+                <div id="kas-gateway-paid-box" style="display: none; padding: 1.5rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #18181b; margin-bottom: 1rem;">
+                  <i class="fa-solid fa-circle-check" style="font-size: 2.2rem; color: #18181b; margin-bottom: 0.5rem;"></i>
+                  <h4 style="color: #18181b; margin: 0 0 6px 0;">Kas Bulan Ini Sudah LUNAS</h4>
+                  <p style="color: #4b5563; font-size: 0.85rem; margin: 0;">Terima kasih. Gerbang presensi pertemuan Anda sudah terbuka secara otomatis.</p>
+                </div>
+
+                <div id="kas-gateway-invoice-box" style="display: none;">
+                  <div class="qris-box mb-3"
+                    style="background: #f8f9fa; border: none; padding: 1.25rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); width: 100%; max-width: 340px;">
+                    <h4 style="color: #18181b; font-weight: 800; margin-bottom: 6px; font-size: 0.9rem;">QRIS DINAMIS OTOMATIS</h4>
+                    <div id="qris-image-kas"
+                      style="margin: 10px 0; min-height: 220px; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 6px; padding: 10px;">
+                      <p style="color: #71717a; font-size: 0.9rem;">Memuat QRIS...</p>
+                    </div>
+                    <div style="margin-top: 8px; padding: 10px; background: #ffffff; border-radius: 6px; border: 1px solid #e4e4e7;">
+                      <span style="font-size: 0.75rem; color: #71717a; display: block;">Total Bayar Tepat (Nominal Terkunci):</span>
+                      <strong id="kas-invoice-amount" style="font-size: 1.45rem; color: #18181b; letter-spacing: 0.02em;">Rp 10.000</strong>
+                      <div id="kas-invoice-breakdown" style="font-size: 0.75rem; color: #4b5563; margin-top: 4px;">
+                        Kas Rp 10.000 + Kode Unik Rp 0 | Admin Rp 0
+                      </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 0.8rem; color: #4b5563;">
+                      <span>Order: <strong id="kas-invoice-order">-</strong></span>
+                      <span>Sisa Waktu: <strong id="kas-invoice-countdown" style="color: #18181b;">15:00</strong></span>
+                    </div>
+                    <small id="qris-nmid-kas" class="text-muted" style="display: block; margin-top: 6px;">Memuat info merchant...</small>
                   </div>
-                  <div class="form-group mb-3" style="text-align: left;">
-                    <label for="kas-proof">Unggah Bukti Pembayaran QRIS (Wajib Screenshot Transfer) <span
-                        style="color: #ef4444;">*</span></label>
-                    <input type="file" id="kas-proof" accept="image/*,.pdf" class="file-input" required
-                      style="padding: 0.5rem; background: white; border: 1px solid #d4d4d8; border-radius: 6px; width: 100%;">
-                    <small style="color: #71717a; display: block; margin-top: 4px;">Wajib melampirkan screenshot
-                      transfer. AI akan langsung memverifikasi otomatis.</small>
+
+                  <div id="kas-invoice-status-banner" style="padding: 0.75rem 1rem; background: #f8f9fa; border: 1px solid #e4e4e7; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.85rem; color: #18181b;">
+                    <i class="fa-solid fa-rotate fa-spin" style="margin-right: 6px;"></i> Menunggu pembayaran masuk (deteksi otomatis aktif)...
                   </div>
-                  <button type="submit" class="btn btn-primary btn-block" id="btn-pay-qris"
-                    style="background: #18181b; font-size: 1rem; padding: 0.8rem;">
-                    Scan & Bayar QRIS Rp 10.000 Sekarang
+
+                  <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                    <button type="button" class="btn btn-outline btn-sm" onclick="downloadActiveQrisSvg('kas')">
+                      <i class="fa-solid fa-download"></i> Simpan QRIS
+                    </button>
+                    <button type="button" class="btn btn-outline btn-sm" onclick="generateKasInvoice(true)">
+                      <i class="fa-solid fa-arrows-rotate"></i> Buat Kode Baru
+                    </button>
+                  </div>
+                </div>
+
+                <div id="kas-gateway-start-box">
+                  <button type="button" onclick="generateKasInvoice(false)" class="btn btn-primary btn-block" id="btn-pay-qris"
+                    style="background: #18181b; font-size: 1rem; padding: 0.85rem;">
+                    <i class="fa-solid fa-qrcode" style="margin-right: 6px;"></i> Bayar Kas via QRIS Otomatis
                   </button>
-                  <p class="text-muted mt-2" style="font-size: 0.8rem;">Pembayaran Anda akan diverifikasi secara manual
-                    oleh Pengurus bagian Bendahara.</p>
-                </form>
+                  <p class="text-muted mt-2" style="font-size: 0.8rem;">
+                    Nominal QRIS terkunci otomatis tanpa perlu unggah bukti transfer. Status langsung LUNAS begitu pembayaran diterima.
+                  </p>
+                </div>
               </div>
             </div>
             <div class="card">
@@ -1007,36 +1038,84 @@
             </div>
           </div>
         </div>
-        <div id="view-kas-pengurus" style="display: none;"><!-- Card Upload QRIS Bendahara -->
+        <div id="view-kas-pengurus" style="display: none;"><!-- Card Konfigurasi Payment Gateway QRIS Dinamis -->
           <div class="card mb-4">
             <div class="card-header">
-              <h3>Pengaturan QRIS Bendahara</h3>
+              <h3>Pengaturan Payment Gateway QRIS Otomatis (Tanpa Potongan)</h3>
             </div>
             <div class="card-body">
               <div class="grid-2col" style="gap: 2rem; align-items: start;">
                 <div>
-                  <p style="color: #4b5563; font-size: 0.95rem; line-height: 1.7; margin-bottom: 1rem;">Unggah gambar
-                    QRIS
-                    statis dari rekening pribadi Bendahara. Gambar ini akan ditampilkan kepada seluruh anggota saat
-                    melakukan pembayaran kas.</p>
-                  <form id="form-upload-qris" onsubmit="uploadQrisImage(event)">
+                  <p style="color: #4b5563; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem;">
+                    Sistem mengubah QRIS statis UMI Bendahara (0% MDR / tanpa potongan) menjadi <strong>QRIS Dinamis</strong> dengan kode unik otomatis, lalu melunasi tagihan secara otomatis saat notifikasi mutasi masuk diterima webhook.
+                  </p>
+                  <form id="form-qris-payload" onsubmit="saveQrisPayload(event)">
                     <div class="form-group">
-                      <label>File Gambar QRIS (JPEG/PNG/WebP, maks 5MB)</label>
-                      <input type="file" id="qris-file-input" accept="image/jpeg,image/png,image/webp" required
-                        style="padding: 0.6rem;">
+                      <label for="qris-payload-input">String Payload QRIS Statis (EMVCo 000201...)</label>
+                      <textarea id="qris-payload-input" rows="3" placeholder="Tempel string QRIS hasil scan QRIS DANA Bisnis / QRIS UMI di sini..." required
+                        style="width: 100%; padding: 0.65rem; border: 1px solid #d4d4d8; border-radius: 6px; font-family: monospace; font-size: 0.8rem;"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary" id="btn-upload-qris">Unggah dan Aktifkan QRIS</button>
+                    <button type="submit" class="btn btn-primary" id="btn-save-qris-payload">
+                      <i class="fa-solid fa-check"></i> Simpan & Aktifkan QRIS Dinamis
+                    </button>
                   </form>
+
+                  <div style="margin-top: 1.25rem; padding: 1rem; background: #f8f9fa; border-radius: 6px; border: 1px solid #e4e4e7;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; color: #18181b;">
+                      <i class="fa-solid fa-webhook"></i> Endpoint Webhook Mutasi Otomatis
+                    </h4>
+                    <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.6;">
+                      <p style="margin: 0 0 6px 0;"><strong>URL POST:</strong> <code id="gw-webhook-url" style="background: #ffffff; padding: 2px 6px; border-radius: 4px; border: 1px solid #e4e4e7;">Memuat...</code></p>
+                      <p style="margin: 0 0 6px 0;"><strong>Header Wajib:</strong> <code>X-Webhook-Secret: &lt;PAYMENT_WEBHOOK_SECRET&gt;</code></p>
+                      <p style="margin: 0 0 8px 0;"><strong>Status Secret:</strong> <span id="gw-webhook-secret-status" style="font-weight: 700;">Memuat...</span></p>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;">
+                      <button type="button" class="btn btn-outline btn-sm" onclick="copyWebhookUrl()">
+                        <i class="fa-solid fa-copy"></i> Salin URL Webhook
+                      </button>
+                      <button type="button" class="btn btn-outline btn-sm" onclick="testGatewayWebhook()">
+                        <i class="fa-solid fa-flask"></i> Simulasi Mutasi Masuk
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div style="text-align: center;">
                   <p
                     style="font-size: 0.8rem; font-weight: 700; color: #71717a; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">
                     QRIS Aktif Saat Ini</p>
                   <div id="qris-preview-admin"
-                    style="background: #f8f9fa; padding: 1rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 200px;">
+                    style="background: #f8f9fa; padding: 1rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 220px;">
                     <p style="color: #71717a; font-size: 0.9rem;">Memuat...</p>
                   </div>
+                  <div id="gw-merchant-meta" style="margin-top: 0.75rem; font-size: 0.82rem; color: #4b5563;"></div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-4">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+              <h3 style="margin: 0;">Log Mutasi Webhook Otomatis (Terbaru)</h3>
+              <button type="button" class="btn btn-outline btn-sm" onclick="loadWebhookLogs()">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh Log
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Waktu</th>
+                      <th>Sumber</th>
+                      <th>Nominal Terdeteksi</th>
+                      <th>Order Cocok</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-webhook-logs">
+                    <tr><td colspan="5" class="text-center">Memuat log webhook...</td></tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
@@ -1065,8 +1144,8 @@
                 <div style="margin-left: auto;">
                   <button class="btn btn-outline" onclick="cleanupOldProofs()"
                     style="border-color: #e4e4e7; color: #18181b;"
-                    title="Bersihkan file screenshot bukti transfer bulan-bulan lalu untuk menghemat kapasitas hosting">
-                    <i class="fa-solid fa-broom"></i> Bersihkan Bukti Bulan Lalu
+                    title="Bersihkan file bukti lama dari server untuk menghemat kapasitas hosting">
+                    <i class="fa-solid fa-broom"></i> Bersihkan Bukti Lama
                   </button>
                 </div>
               </div>
@@ -1079,7 +1158,7 @@
             <div class="card-body">
               <div class="filter-buttons" style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button class="btn btn-outline active" onclick="loadKasReport('')">Semua Status</button>
-                <button class="btn btn-outline" onclick="loadKasReport('pending')">Pending (Need Confirm)</button>
+                <button class="btn btn-outline" onclick="loadKasReport('pending')">Pending (Menunggu Bayar)</button>
                 <button class="btn btn-outline" onclick="loadKasReport('lunas')">Lunas</button>
                 <button class="btn btn-outline" onclick="loadKasReport('ditolak')">Ditolak</button>
               </div>
@@ -1096,10 +1175,10 @@
                     <tr>
                       <th>Periode</th>
                       <th>Nama Anggota</th>
-                      <th>Nominal</th>
-                      <th>Bukti Transfer</th>
+                      <th>Nominal Kas</th>
+                      <th>Detail Tagihan Gateway</th>
                       <th>Status</th>
-                      <th>Aksi Verifikasi</th>
+                      <th>Keterangan / Aksi</th>
                     </tr>
                   </thead>
                   <tbody id="table-rekap-kas">
@@ -1998,53 +2077,47 @@
         </p>
 
         <div class="qris-box mb-3"
-          style="background: #f8f9fa; border: none; padding: 1rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-          <h4 style="color: #18181b; font-weight: 800; font-size: 0.9rem;">QRIS INSTANT PAYMENT</h4>
+          style="background: #f8f9fa; border: none; padding: 1.15rem; border-radius: 8px; display: inline-block; box-shadow: 0 1px 3px rgba(0,0,0,0.05); width: 100%; max-width: 340px;">
+          <h4 style="color: #18181b; font-weight: 800; font-size: 0.9rem; margin-bottom: 6px;">QRIS DINAMIS OTOMATIS (TANPA POTONGAN)</h4>
           <div id="qris-image-modal"
-            style="margin: 8px 0; min-height: 150px; display: flex; align-items: center; justify-content: center;">
-            <p style="color: #71717a; font-size: 0.9rem;">Memuat QRIS...</p>
+            style="margin: 8px 0; min-height: 200px; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 6px; padding: 8px;">
+            <p style="color: #71717a; font-size: 0.9rem;">Membuat kode QRIS otomatis...</p>
           </div>
-          <strong style="color: #18181b; font-size: 1.2rem;">Rp 10.000</strong>
+          <strong id="qris-modal-amount" style="color: #18181b; font-size: 1.35rem; display: block;">Rp 10.000</strong>
+          <small id="qris-modal-breakdown" style="color: #4b5563; display: block; margin-top: 2px; font-size: 0.78rem;">Kas Rp 10.000 + Kode Unik | Biaya Admin Rp 0</small>
+          <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.78rem; color: #4b5563;">
+            <span>Order: <strong id="qris-modal-order">-</strong></span>
+            <span>Sisa: <strong id="qris-modal-countdown" style="color: #18181b;">15:00</strong></span>
+          </div>
         </div>
 
         <div
-          style="text-align: left; background: #f8f9fa; padding: 1rem 1.2rem; border-radius: 8px; margin-bottom: 1rem;">
-          <p style="font-size: 0.85rem; font-weight: 700; color: #18181b; margin-bottom: 0.5rem;">Langkah Pembayaran:
+          style="text-align: left; background: #f8f9fa; padding: 0.9rem 1.1rem; border-radius: 8px; margin-bottom: 1rem;">
+          <p style="font-size: 0.85rem; font-weight: 700; color: #18181b; margin-bottom: 0.4rem;">Langkah Pembayaran Otomatis:
           </p>
-          <ol style="font-size: 0.8rem; color: #4b5563; margin: 0; padding-left: 1.2rem; line-height: 1.8;">
-            <li>Buka aplikasi bank/e-wallet di HP Anda</li>
-            <li>Pilih menu <strong>Scan QR / QRIS</strong></li>
-            <li>Arahkan kamera ke QR Code di atas</li>
-            <li>Bayar sebesar <strong>Rp 10.000</strong></li>
-            <li>Setelah uang terkirim, tekan tombol di bawah ini</li>
+          <ol style="font-size: 0.8rem; color: #4b5563; margin: 0; padding-left: 1.2rem; line-height: 1.75;">
+            <li>Buka aplikasi bank/e-wallet (DANA, GoPay, OVO, ShopeePay, m-Banking)</li>
+            <li>Pilih <strong>Scan QR / QRIS</strong> dan arahkan ke kode di atas</li>
+            <li>Nominal sudah <strong>terisi dan terkunci otomatis</strong> (tanpa biaya admin)</li>
+            <li>Selesaikan pembayaran — gerbang presensi akan <strong>terbuka otomatis</strong> dalam beberapa detik tanpa perlu unggah bukti</li>
           </ol>
-        </div>
-
-        <div style="text-align: left; margin-bottom: 1rem;">
-          <label for="modal-kas-proof"
-            style="font-size: 0.85rem; font-weight: 700; color: #18181b; display: block; margin-bottom: 4px;">Unggah
-            Bukti Pembayaran QRIS (Wajib Screenshot Transfer) <span style="color: #ef4444;">*</span>:</label>
-          <input type="file" id="modal-kas-proof" accept="image/*,.pdf" class="file-input" required
-            style="padding: 0.4rem; background: white; border: 1px solid #d4d4d8; border-radius: 6px; width: 100%; font-size: 0.8rem;">
-          <small style="color: #71717a; display: block; margin-top: 4px; font-size: 0.75rem;">Wajib melampirkan
-            screenshot transfer. AI akan langsung memverifikasi otomatis.</small>
         </div>
 
         <div id="qris-modal-status-box"></div>
 
         <button onclick="payQrisFromModal()" id="btn-modal-qris" class="btn btn-primary btn-block"
-          style="background: #18181b; color: #ffffff; font-size: 1rem; padding: 0.9rem; margin-top: 1rem;">
-          Bayar QRIS Rp 10.000 Sekarang
+          style="background: #18181b; color: #ffffff; font-size: 0.95rem; padding: 0.85rem; margin-top: 0.75rem;">
+          <i class="fa-solid fa-arrows-rotate"></i> Buat Ulang Kode QRIS
         </button>
 
         <button onclick="closeLockModalAndGoHome()" class="btn btn-outline btn-block"
-          style="margin-top: 0.8rem; border-color: #d4d4d8; color: #4b5563;">
+          style="margin-top: 0.7rem; border-color: #d4d4d8; color: #4b5563;">
           Kembali ke Beranda
         </button>
 
-        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-          <p style="font-size: 0.75rem; color: #4b5563; font-weight: 600;">
-            Gerbang Presensi terbuka otomatis setelah pembayaran kas diverifikasi Lunas oleh Bendahara.
+        <div style="margin-top: 1.25rem; padding-top: 0.9rem; border-top: 1px solid var(--border-color);">
+          <p style="font-size: 0.75rem; color: #4b5563; font-weight: 600; margin: 0;">
+            Sistem mendeteksi pembayaran secara otomatis setiap 3 detik.
           </p>
         </div>
       </div>

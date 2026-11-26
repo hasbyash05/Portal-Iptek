@@ -1,1 +1,1 @@
-pub mod ai_verification;
+pub mod qris_dynamic;

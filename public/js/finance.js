@@ -1,27 +1,382 @@
-import { fetchAuth } from './auth.js';
-import { checkKasAndUnlockAttendance, switchNavTab, switchAnggotaTab } from './router.js';
+import { fetchAuth, clearApiCache } from './auth.js';
+import { checkKasAndUnlockAttendance, switchNavTab } from './router.js';
 export const API_BASE = '/api';
 
+let kasPollTimer = null;
+let kasCountdownTimer = null;
+let kasRemainingSeconds = 0;
+let activeKasSvgUrl = null;
+let activeKasOrderId = null;
+
+let modalPollTimer = null;
+let modalCountdownTimer = null;
+let modalRemainingSeconds = 0;
+let activeModalSvgUrl = null;
+
+function formatTimer(secs) {
+  const s = Math.max(0, Math.floor(secs));
+  const m = String(Math.floor(s / 60)).padStart(2, '0');
+  const r = String(s % 60).padStart(2, '0');
+  return `${m}:${r}`;
+}
+
+export function stopKasPolling() {
+  if (kasPollTimer) { clearInterval(kasPollTimer); kasPollTimer = null; }
+  if (kasCountdownTimer) { clearInterval(kasCountdownTimer); kasCountdownTimer = null; }
+}
+
+export function stopModalPolling() {
+  if (modalPollTimer) { clearInterval(modalPollTimer); modalPollTimer = null; }
+  if (modalCountdownTimer) { clearInterval(modalCountdownTimer); modalCountdownTimer = null; }
+}
+
+function renderKasInvoiceUI(inv) {
+  const startBox = document.getElementById('kas-gateway-start-box');
+  const paidBox = document.getElementById('kas-gateway-paid-box');
+  const invBox = document.getElementById('kas-gateway-invoice-box');
+  const imgBox = document.getElementById('qris-image-kas');
+  const amtEl = document.getElementById('kas-invoice-amount');
+  const breakEl = document.getElementById('kas-invoice-breakdown');
+  const orderEl = document.getElementById('kas-invoice-order');
+  const countEl = document.getElementById('kas-invoice-countdown');
+  const nmidEl = document.getElementById('qris-nmid-kas');
+  const bannerEl = document.getElementById('kas-invoice-status-banner');
+
+  if (inv.status === 'lunas') {
+    stopKasPolling();
+    if (startBox) startBox.style.display = 'none';
+    if (invBox) invBox.style.display = 'none';
+    if (paidBox) paidBox.style.display = 'block';
+    return;
+  }
+
+  if (startBox) startBox.style.display = 'none';
+  if (paidBox) paidBox.style.display = 'none';
+  if (invBox) invBox.style.display = 'block';
+
+  activeKasSvgUrl = inv.qris_svg_data_url || null;
+  activeKasOrderId = inv.order_id || null;
+
+  if (imgBox) {
+    if (inv.qris_svg_data_url) {
+      imgBox.innerHTML = `<img src="${inv.qris_svg_data_url}" alt="QRIS Dinamis ${inv.order_id}" style="width: 240px; max-width: 100%; height: auto; display: block;">`;
+    } else {
+      imgBox.innerHTML = `<p style="color: #71717a; font-size: 0.9rem;">QRIS belum tersedia.</p>`;
+    }
+  }
+  if (amtEl) amtEl.textContent = `Rp ${Number(inv.payable_amount || 10000).toLocaleString('id-ID')}`;
+  if (breakEl) {
+    breakEl.textContent = `Kas Rp ${Number(inv.base_amount || 10000).toLocaleString('id-ID')} + Kode Unik Rp ${inv.unique_code || 0} | Admin Rp 0`;
+  }
+  if (orderEl) orderEl.textContent = inv.order_id || '-';
+  if (nmidEl) nmidEl.textContent = `${inv.merchant_name || 'Bendahara UKM IPTEK'} | NMID: ${inv.nmid || '-'}`;
+
+  kasRemainingSeconds = inv.remaining_seconds || 0;
+  if (countEl) countEl.textContent = formatTimer(kasRemainingSeconds);
+
+  stopKasPolling();
+
+  if (inv.status === 'expired' || kasRemainingSeconds <= 0) {
+    if (bannerEl) {
+      bannerEl.innerHTML = `<i class="fa-solid fa-clock" style="margin-right: 6px;"></i> Kode QRIS telah kedaluwarsa. Klik <strong>Buat Kode Baru</strong> untuk melanjutkan.`;
+    }
+    return;
+  }
+
+  if (bannerEl) {
+    bannerEl.innerHTML = `<i class="fa-solid fa-rotate fa-spin" style="margin-right: 6px;"></i> Menunggu pembayaran sebesar <strong>Rp ${Number(inv.payable_amount).toLocaleString('id-ID')}</strong> (deteksi otomatis aktif)...`;
+  }
+
+  kasCountdownTimer = setInterval(() => {
+    kasRemainingSeconds = Math.max(0, kasRemainingSeconds - 1);
+    if (countEl) countEl.textContent = formatTimer(kasRemainingSeconds);
+    if (kasRemainingSeconds <= 0) {
+      stopKasPolling();
+      if (bannerEl) {
+        bannerEl.innerHTML = `<i class="fa-solid fa-clock" style="margin-right: 6px;"></i> Kode QRIS kedaluwarsa. Klik <strong>Buat Kode Baru</strong> untuk membuat tagihan baru.`;
+      }
+    }
+  }, 1000);
+
+  kasPollTimer = setInterval(async () => {
+    if (!activeKasOrderId) return;
+    try {
+      const res = await fetchAuth(`${API_BASE}/payments/invoice/${encodeURIComponent(activeKasOrderId)}/status`, { noCache: true });
+      const data = await res.json();
+      if (data.status === 'success' && data.data) {
+        if (data.data.is_paid || data.data.status === 'lunas') {
+          stopKasPolling();
+          clearApiCache('payments');
+          renderKasInvoiceUI({ ...inv, status: 'lunas' });
+          loadAnggotaKasHistory();
+          if (typeof checkKasAndUnlockAttendance === 'function') {
+            checkKasAndUnlockAttendance();
+          }
+        } else if (data.data.status === 'expired') {
+          stopKasPolling();
+          if (bannerEl) {
+            bannerEl.innerHTML = `<i class="fa-solid fa-clock" style="margin-right: 6px;"></i> Kode QRIS kedaluwarsa. Klik <strong>Buat Kode Baru</strong>.`;
+          }
+        }
+      }
+    } catch (e) {
+      // ignore transient network hiccups during polling
+    }
+  }, 3000);
+}
+
+export async function generateKasInvoice(forceNew = false) {
+  const btn = document.getElementById('btn-pay-qris');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Membuat Kode QRIS Otomatis...`;
+  }
+
+  const now = new Date();
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/create-invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        force_new: !!forceNew
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal membuat tagihan QRIS');
+
+    clearApiCache('payments');
+    renderKasInvoiceUI(data.data);
+    loadAnggotaKasHistory();
+  } catch (err) {
+    alert(`Gagal membuat kode QRIS: ${err.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = orig;
+    }
+  }
+}
+
+export function downloadActiveQrisSvg(target = 'kas') {
+  const url = target === 'modal' ? activeModalSvgUrl : activeKasSvgUrl;
+  if (!url) {
+    alert('Belum ada kode QRIS aktif untuk disimpan.');
+    return;
+  }
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `QRIS-Kas-IPTEK-${activeKasOrderId || 'tagihan'}.svg`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+export async function openLockModalWithInvoice(forceNew = false) {
+  const imgBox = document.getElementById('qris-image-modal');
+  const amtEl = document.getElementById('qris-modal-amount');
+  const breakEl = document.getElementById('qris-modal-breakdown');
+  const orderEl = document.getElementById('qris-modal-order');
+  const countEl = document.getElementById('qris-modal-countdown');
+  const statusBox = document.getElementById('qris-modal-status-box');
+
+  if (imgBox) imgBox.innerHTML = `<p style="color: #71717a; font-size: 0.85rem;"><i class="fa-solid fa-spinner fa-spin"></i> Membuat QRIS Dinamis...</p>`;
+  stopModalPolling();
+
+  const now = new Date();
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/create-invoice`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: now.getMonth() + 1,
+        year: now.getFullYear(),
+        force_new: !!forceNew
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Gagal membuat tagihan QRIS');
+
+    const inv = data.data;
+    if (inv.status === 'lunas' || data.already_paid) {
+      const modal = document.getElementById('qris-lock-modal');
+      if (modal) modal.style.display = 'none';
+      clearApiCache('payments');
+      checkKasAndUnlockAttendance();
+      return;
+    }
+
+    activeModalSvgUrl = inv.qris_svg_data_url || null;
+    if (imgBox && inv.qris_svg_data_url) {
+      imgBox.innerHTML = `<img src="${inv.qris_svg_data_url}" alt="QRIS Dinamis" style="width: 220px; max-width: 100%; height: auto; display: block;">`;
+    }
+    if (amtEl) amtEl.textContent = `Rp ${Number(inv.payable_amount || 10000).toLocaleString('id-ID')}`;
+    if (breakEl) {
+      breakEl.textContent = `Kas Rp ${Number(inv.base_amount || 10000).toLocaleString('id-ID')} + Kode Unik Rp ${inv.unique_code || 0} | Admin Rp 0`;
+    }
+    if (orderEl) orderEl.textContent = inv.order_id || '-';
+
+    modalRemainingSeconds = inv.remaining_seconds || 0;
+    if (countEl) countEl.textContent = formatTimer(modalRemainingSeconds);
+
+    if (statusBox) {
+      statusBox.innerHTML = `<div style="padding: 0.65rem 0.9rem; background: #f8f9fa; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.82rem; color: #18181b;"><i class="fa-solid fa-rotate fa-spin" style="margin-right: 6px;"></i> Menunggu pembayaran otomatis sebesar <strong>Rp ${Number(inv.payable_amount).toLocaleString('id-ID')}</strong>...</div>`;
+    }
+
+    modalCountdownTimer = setInterval(() => {
+      modalRemainingSeconds = Math.max(0, modalRemainingSeconds - 1);
+      if (countEl) countEl.textContent = formatTimer(modalRemainingSeconds);
+      if (modalRemainingSeconds <= 0) {
+        stopModalPolling();
+        if (statusBox) {
+          statusBox.innerHTML = `<div style="padding: 0.65rem 0.9rem; background: #f8f9fa; border: 1px solid #d4d4d8; border-radius: 6px; font-size: 0.82rem; color: #18181b;">Kode QRIS kedaluwarsa. Klik <strong>Buat Ulang Kode QRIS</strong> di bawah.</div>`;
+        }
+      }
+    }, 1000);
+
+    const orderId = inv.order_id;
+    modalPollTimer = setInterval(async () => {
+      const modal = document.getElementById('qris-lock-modal');
+      if (!modal || modal.style.display === 'none') {
+        stopModalPolling();
+        return;
+      }
+      try {
+        const stRes = await fetchAuth(`${API_BASE}/payments/invoice/${encodeURIComponent(orderId)}/status`, { noCache: true });
+        const stData = await stRes.json();
+        if (stData.status === 'success' && stData.data && (stData.data.is_paid || stData.data.status === 'lunas')) {
+          stopModalPolling();
+          clearApiCache('payments');
+          if (modal) modal.style.display = 'none';
+          alert('Pembayaran kas berhasil terverifikasi otomatis (LUNAS). Gerbang presensi kini terbuka.');
+          checkKasAndUnlockAttendance();
+        }
+      } catch (e) {
+        // ignore transient polling error
+      }
+    }, 3000);
+  } catch (err) {
+    if (imgBox) imgBox.innerHTML = `<p style="color: #ef4444; font-size: 0.85rem;">${err.message}</p>`;
+  }
+}
+
+export async function payQrisFromModal() {
+  await openLockModalWithInvoice(true);
+}
+
+export function closeLockModalAndGoHome() {
+  stopModalPolling();
+  const modal = document.getElementById('qris-lock-modal');
+  if (modal) modal.style.display = 'none';
+  if (typeof switchNavTab === 'function') {
+    switchNavTab('overview');
+  } else if (typeof window.switchNavTab === 'function') {
+    window.switchNavTab('overview');
+  }
+}
+
+export async function submitKasQris(e) {
+  if (e && e.preventDefault) e.preventDefault();
+  await generateKasInvoice(false);
+}
+
+async function loadAnggotaKasHistory() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/history?limit=10`, { noCache: true });
+    const data = await res.json();
+    const tbody = document.getElementById('table-my-kas');
+    const items = data.data ? data.data.items : [];
+
+    if (!tbody) return;
+    if (items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" class="text-center">Belum ada riwayat pembayaran kas.</td></tr>`;
+    } else {
+      tbody.innerHTML = items.map(p => `
+        <tr>
+          <td>
+            <strong>Bulan ${p.month} / ${p.year}</strong>
+            ${p.order_id ? `<br><small class="text-muted">${p.order_id}</small>` : ''}
+          </td>
+          <td>
+            <strong>Rp ${Number(p.payable_amount || p.amount).toLocaleString('id-ID')}</strong>
+            ${p.unique_code ? `<br><small class="text-muted">Kas Rp 10.000 + Unik ${p.unique_code}</small>` : ''}
+          </td>
+          <td>
+            <span style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; background: #f4f4f5; color: #18181b;">
+              ${p.status.toUpperCase()}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+  } catch (err) {
+    console.error('Gagal memuat riwayat kas anggota:', err);
+  }
+}
+
+export async function loadAnggotaKas() {
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+  const now = new Date();
+  const periodEl = document.getElementById('kas-current-period-display');
+  if (periodEl) {
+    periodEl.textContent = `Bulan ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  }
+
+  await loadAnggotaKasHistory();
+
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/check`, { noCache: true });
+    const data = await res.json();
+    const startBox = document.getElementById('kas-gateway-start-box');
+    const paidBox = document.getElementById('kas-gateway-paid-box');
+    const invBox = document.getElementById('kas-gateway-invoice-box');
+
+    if (data.status === 'success' && data.data) {
+      if (data.data.hasPaid) {
+        stopKasPolling();
+        if (startBox) startBox.style.display = 'none';
+        if (invBox) invBox.style.display = 'none';
+        if (paidBox) paidBox.style.display = 'block';
+      } else if (data.data.payment && data.data.payment.status === 'pending' && data.data.payment.order_id) {
+        // Automatically resume active pending invoice
+        await generateKasInvoice(false);
+      } else {
+        stopKasPolling();
+        if (paidBox) paidBox.style.display = 'none';
+        if (invBox) invBox.style.display = 'none';
+        if (startBox) startBox.style.display = 'block';
+      }
+    }
+  } catch (err) {
+    console.error('Gagal mengecek status kas anggota:', err);
+  }
+}
+
 export async function loadKasReport(statusFilter = '') {
-  // Update button active states
-  document.querySelectorAll('.filter-buttons .btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  if (!statusFilter) document.querySelectorAll('.filter-buttons .btn')[0].classList.add('active');
-  if (statusFilter === 'pending') document.querySelectorAll('.filter-buttons .btn')[1].classList.add('active');
-  if (statusFilter === 'lunas') document.querySelectorAll('.filter-buttons .btn')[2].classList.add('active');
-  if (statusFilter === 'ditolak') document.querySelectorAll('.filter-buttons .btn')[3].classList.add('active');
+  document.querySelectorAll('.filter-buttons .btn').forEach(btn => btn.classList.remove('active'));
+  const filterBtns = document.querySelectorAll('.filter-buttons .btn');
+  if (filterBtns.length >= 4) {
+    if (!statusFilter) filterBtns[0].classList.add('active');
+    if (statusFilter === 'pending') filterBtns[1].classList.add('active');
+    if (statusFilter === 'lunas') filterBtns[2].classList.add('active');
+    if (statusFilter === 'ditolak') filterBtns[3].classList.add('active');
+  }
 
   try {
     const query = statusFilter ? `?status=${statusFilter}` : '';
-    const res = await fetchAuth(`${API_BASE}/payments/report${query}`);
+    const res = await fetchAuth(`${API_BASE}/payments/report${query}`, { noCache: true });
     const data = await res.json();
     const tbody = document.getElementById('table-rekap-kas');
     const items = data.data ? data.data.items : [];
 
     const userStr = localStorage.getItem('iptek_user');
     const currentUser = userStr ? JSON.parse(userStr) : null;
-    const isBendahara = currentUser && (currentUser.role === 'Pengurus' || (currentUser.divisi && currentUser.divisi.toLowerCase().includes('bendahara')));
+    const isBendahara = currentUser && (currentUser.role === 'admin' || (currentUser.divisi && currentUser.divisi.toLowerCase().includes('bendahara')));
 
     if (items.length === 0) {
       tbody.innerHTML = `<tr><td colspan="6" class="text-center">Belum ada data pembayaran kas.</td></tr>`;
@@ -32,16 +387,18 @@ export async function loadKasReport(statusFilter = '') {
           <td>${p.user ? p.user.nama_lengkap : '-'} <br><small class="text-muted">${p.user && p.user.divisi ? p.user.divisi : ''}</small></td>
           <td><strong style="color: #18181b;">Rp ${Number(p.amount).toLocaleString('id-ID')}</strong></td>
           <td>
-            <button onclick="openAdminBuktiModal('${encodeURIComponent(JSON.stringify(p))}')" class="btn btn-outline btn-sm" style="border-color: #18181b; color: #18181b; font-weight: 600;">
-              <i class="fa-solid fa-file-image"></i> Lihat Bukti
+            <div style="font-size: 0.82rem; color: #18181b; margin-bottom: 4px;">
+              <strong>${p.order_id || 'Transaksi Lama'}</strong>
+              ${p.payable_amount ? `<br><span class="text-muted">Bayar: Rp ${Number(p.payable_amount).toLocaleString('id-ID')}</span>` : ''}
+            </div>
+            <button onclick="openAdminBuktiModal('${encodeURIComponent(JSON.stringify(p))}')" class="btn btn-outline btn-sm" style="border-color: #d4d4d8; color: #18181b; font-weight: 600;">
+              <i class="fa-solid fa-receipt"></i> Detail
             </button>
           </td>
-
           <td>
             <span style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; background: #f4f4f5; color: #18181b;">
               ${p.status.toUpperCase()}
             </span>
-            
           </td>
           <td>
             ${p.status === 'pending' ? (isBendahara ? `
@@ -49,9 +406,9 @@ export async function loadKasReport(statusFilter = '') {
                 <button onclick="confirmKas(${p.id}, 'lunas')" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Lunas</button>
                 <button onclick="confirmKas(${p.id}, 'ditolak')" class="btn btn-logout btn-sm"><i class="fa-solid fa-xmark"></i> Tolak</button>
               </div>
-            ` : `<small class="text-muted" style="font-weight: 600;"><i class="fa-solid fa-clock"></i> Menunggu Verifikasi Bendahara</small>`) : `
+            ` : `<small class="text-muted">Menunggu Pembayaran</small>`) : `
               <small class="text-muted">
-                ${p.confirmed_by ? `Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}` : (p.ai_status === 'lunas' ? 'Terverifikasi Otomatis' : `Terverifikasi oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}`)}
+                ${p.confirmed_by ? `Manual oleh ${p.verifier ? p.verifier.nama_lengkap : 'Bendahara'}` : (p.ai_status === 'gateway_auto' ? 'Lunas Otomatis (Gateway)' : 'Terverifikasi Otomatis')}
               </small>
             `}
           </td>
@@ -73,6 +430,7 @@ export async function confirmKas(id, status) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Gagal memverifikasi');
+    clearApiCache('payments');
     alert(`Pembayaran kas berhasil diubah menjadi ${status}`);
     const activeBtn = document.querySelector('.filter-buttons .btn.active');
     let filterVal = '';
@@ -97,218 +455,162 @@ export function openAdminBuktiModal(pEncoded) {
 
     const userStr = localStorage.getItem('iptek_user');
     const currentUser = userStr ? JSON.parse(userStr) : null;
-    const isBendahara = currentUser && (currentUser.role === 'Pengurus' || (currentUser.divisi && currentUser.divisi.toLowerCase().includes('bendahara')));
+    const isBendahara = currentUser && (currentUser.role === 'admin' || (currentUser.divisi && currentUser.divisi.toLowerCase().includes('bendahara')));
 
-    const hasUploadedFile = p.proof_path && (p.proof_path.startsWith('/uploads') || p.proof_path.startsWith('http'));
-    const isImage = hasUploadedFile && /\.(jpg|jpeg|png|webp|gif)$/i.test(p.proof_path);
+    const hasLegacyFile = p.proof_path && (p.proof_path.startsWith('/uploads') || p.proof_path.startsWith('http'));
+    const legacyHtml = hasLegacyFile
+      ? `<div style="text-align: center; margin-bottom: 1rem;"><a href="${p.proof_path}" target="_blank"><img src="${p.proof_path}" style="max-width: 100%; max-height: 40vh; object-fit: contain; border-radius: 6px; border: 1px solid #e4e4e7;" alt="Bukti Lama"></a></div>`
+      : '';
 
-    let contentHtml = '';
-
-    if (hasUploadedFile) {
-      if (isImage) {
-        contentHtml = `
-          <div style="text-align: center; padding: 0.5rem;">
-            <a href="${p.proof_path}" target="_blank" title="Klik untuk ukuran penuh">
-              <img src="${p.proof_path}" style="max-width: 100%; max-height: 50vh; object-fit: contain; border-radius: 6px; border: 1px solid #e4e4e7; box-shadow: 0 4px 12px rgba(0,0,0,0.08);" alt="Bukti Pembayaran">
-            </a>
-            <p style="font-size: 0.75rem; color: #71717a; margin-top: 8px; margin-bottom: 0;">Klik gambar untuk membuka ukuran penuh di tab baru</p>
-          </div>
-        `;
-      } else {
-        contentHtml = `
-          <div style="text-align: center; padding: 2rem 1rem; background: #f8f9fa; border-radius: 8px;">
-            <p style="font-size: 0.9rem; font-weight: 700; color: #18181b; margin-bottom: 1rem;">Dokumen Bukti Transfer (PDF / File)</p>
-            <a href="${p.proof_path}" target="_blank" class="btn btn-primary" style="background: #18181b; padding: 0.8rem 1.5rem;">
-              <i class="fa-solid fa-file-arrow-down"></i> Buka File Bukti Pembayaran
-            </a>
-          </div>
-        `;
-      }
-    } else {
-      contentHtml = `
-        <div style="text-align: center; padding: 2rem 1rem; background: #f8f9fa; border-radius: 8px;">
-          <p style="font-size: 0.9rem; font-weight: 600; color: #4b5563; margin: 0;">
-            Anggota tidak melampirkan gambar bukti pembayaran.
-          </p>
-        </div>
-      `;
-    }
-
-    // AI Analysis Panel
-    const aiPanelHtml = `
-      <div style="margin-top: 1.25rem; padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e4e4e7; font-size: 0.85rem;">
-        
-        <div style="color: #4b5563; line-height: 1.6;">
-          <p style="margin: 0 0 4px 0;"><strong>Nama Akun Anggota:</strong> ${p.user ? p.user.nama_lengkap : '-'}</p>
-          ${p.sender_name_detected ? `<p style="margin: 0 0 4px 0;"><strong>Nama Pengirim di Bukti:</strong> ${p.sender_name_detected}</p>` : ''}
-          <p style="margin: 0 0 8px 0;"><strong>Keterangan:</strong> ${p.ai_notes || 'Belum ada catatan verifikasi.'}</p>
-        </div>
+    body.innerHTML = `
+      ${legacyHtml}
+      <div style="padding: 1rem; background: #f8f9fa; border-radius: 8px; border: 1px solid #e4e4e7; font-size: 0.88rem; color: #4b5563; line-height: 1.7;">
+        <p style="margin: 0 0 6px 0;"><strong>Nama Anggota:</strong> ${p.user ? p.user.nama_lengkap : '-'}</p>
+        <p style="margin: 0 0 6px 0;"><strong>Order ID:</strong> ${p.order_id || '-'}</p>
+        <p style="margin: 0 0 6px 0;"><strong>Nominal Kas:</strong> Rp ${Number(p.amount).toLocaleString('id-ID')}</p>
+        <p style="margin: 0 0 6px 0;"><strong>Nominal QRIS (dengan Kode Unik):</strong> ${p.payable_amount ? `Rp ${Number(p.payable_amount).toLocaleString('id-ID')} (Kode Unik: ${p.unique_code || 0})` : '-'}</p>
+        <p style="margin: 0 0 6px 0;"><strong>Status:</strong> <strong style="color: #18181b;">${String(p.status || '').toUpperCase()}</strong></p>
+        <p style="margin: 0;"><strong>Catatan Sistem:</strong> ${p.ai_notes || '-'}</p>
         ${isBendahara && p.status === 'pending' ? `
-          <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #e4e4e7; display: flex; gap: 8px; flex-wrap: wrap;">
-            <button onclick="confirmKas(${p.id}, 'lunas'); closeAdminBuktiModal();" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Setujui Lunas</button>
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid #e4e4e7; display: flex; gap: 8px; flex-wrap: wrap;">
+            <button onclick="confirmKas(${p.id}, 'lunas'); closeAdminBuktiModal();" class="btn btn-primary btn-sm" style="background: #18181b;"><i class="fa-solid fa-check"></i> Konfirmasi Lunas Manual</button>
             <button onclick="confirmKas(${p.id}, 'ditolak'); closeAdminBuktiModal();" class="btn btn-logout btn-sm"><i class="fa-solid fa-xmark"></i> Tolak</button>
           </div>
         ` : ''}
       </div>
     `;
-
-    body.innerHTML = contentHtml + aiPanelHtml;
     modal.style.display = 'flex';
   } catch (err) {
-    console.error('Error opening bukti modal:', err);
+    console.error('Error opening detail modal:', err);
   }
 }
 
 export function closeAdminBuktiModal() {
   const modal = document.getElementById('admin-bukti-modal');
-  if (modal) {
-    modal.style.display = 'none';
-  }
-}
-
-export async function payQrisFromModal() {
-  const btn = document.getElementById('btn-modal-qris');
-  const originalText = btn.innerHTML;
-  const fileInput = document.getElementById('modal-kas-proof');
-
-  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-    alert("DITOLAK OTOMATIS: Anda wajib mengunggah file foto/screenshot bukti transfer pembayaran kas.");
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi Pembayaran dengan AI...`;
-
-  const month = new Date().getMonth() + 1;
-  const year = new Date().getFullYear();
-
-  try {
-    const formData = new FormData();
-    formData.append('month', month);
-    formData.append('year', year);
-    formData.append('payment_method', 'qris');
-    formData.append('proof_file', fileInput.files[0]);
-
-    const res = await fetchAuth(`${API_BASE}/payments`, {
-      method: 'POST',
-      body: formData
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Gagal mengirim pembayaran QRIS');
-
-    if (fileInput) fileInput.value = '';
-    alert(data.message || 'Pembayaran kas berhasil diproses.');
-
-    if (data.data && data.data.status === 'lunas') {
-      if (typeof checkKasAndUnlockAttendance === 'function') {
-        checkKasAndUnlockAttendance();
-      }
-    }
-    closeLockModalAndGoHome();
-  } catch (err) {
-    alert(`Gagal: ${err.message}`);
-  } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-    }
-  }
-}
-
-export function closeLockModalAndGoHome() {
-  const modal = document.getElementById('qris-lock-modal');
   if (modal) modal.style.display = 'none';
-  if (typeof switchNavTab === 'function') {
-    switchNavTab('overview');
-  } else if (typeof window.switchNavTab === 'function') {
-    window.switchNavTab('overview');
+}
+
+export async function loadGatewayAdminPanel() {
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/gateway/info`, { noCache: true });
+    const data = await res.json();
+    if (data.status === 'success' && data.data) {
+      const info = data.data;
+      const urlEl = document.getElementById('gw-webhook-url');
+      const secEl = document.getElementById('gw-webhook-secret-status');
+      const metaEl = document.getElementById('gw-merchant-meta');
+
+      if (urlEl) urlEl.textContent = info.webhook_url;
+      if (secEl) {
+        secEl.textContent = info.webhook_secret_configured
+          ? `Aktif (${info.webhook_secret_masked})`
+          : 'BELUM DIKONFIGURASI di .env (PAYMENT_WEBHOOK_SECRET)';
+        secEl.style.color = info.webhook_secret_configured ? '#18181b' : '#ef4444';
+      }
+      if (metaEl) {
+        metaEl.innerHTML = `
+          <strong>${info.merchant_name}</strong><br>
+          NMID: ${info.nmid}<br>
+          <span>${info.is_umi ? 'QRIS UMI (0% MDR / Tanpa Potongan)' : 'QRIS Dinamis Aktif'} | Tagihan Pending Aktif: <strong>${info.active_pending_invoices}</strong></span>
+        `;
+      }
+    }
+  } catch (err) {
+    console.error('Gagal memuat info gateway:', err);
+  }
+
+  await loadWebhookLogs();
+}
+
+export async function loadWebhookLogs() {
+  const tbody = document.getElementById('table-webhook-logs');
+  if (!tbody) return;
+  try {
+    const res = await fetchAuth(`${API_BASE}/payments/webhook/logs`, { noCache: true });
+    const data = await res.json();
+    const items = data.data || [];
+    if (items.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="text-center">Belum ada mutasi webhook yang masuk.</td></tr>`;
+    } else {
+      tbody.innerHTML = items.map(log => {
+        const dt = log.received_at ? new Date(log.received_at).toLocaleString('id-ID') : '-';
+        const amt = log.detected_amount ? `Rp ${Number(log.detected_amount).toLocaleString('id-ID')}` : '-';
+        return `
+          <tr>
+            <td><small>${dt}</small></td>
+            <td><strong>${log.source_app || '-'}</strong><br><small class="text-muted">${log.raw_text || log.raw_title || '-'}</small></td>
+            <td><strong>${amt}</strong></td>
+            <td>${log.matched_order_id || '-'}</td>
+            <td><span style="padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; background: #f4f4f5; color: #18181b;">${String(log.status).toUpperCase()}</span></td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    console.error('Gagal memuat log webhook:', err);
   }
 }
 
-export async function submitKasQris(e) {
+export async function saveQrisPayload(e) {
   e.preventDefault();
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  const fileInput = document.getElementById('kas-proof');
-  const btn = document.getElementById('btn-pay-qris');
-  const originalText = btn.innerHTML;
-
-  if (!fileInput || !fileInput.files || !fileInput.files[0]) {
-    alert("DITOLAK OTOMATIS: Anda wajib mengunggah file foto/screenshot bukti transfer pembayaran kas.");
-    return;
-  }
+  const input = document.getElementById('qris-payload-input');
+  const btn = document.getElementById('btn-save-qris-payload');
+  const orig = btn.innerHTML;
+  const payload = input ? input.value.trim() : '';
+  if (!payload) return alert('Tempel string payload QRIS terlebih dahulu.');
 
   btn.disabled = true;
-  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memverifikasi Pembayaran dengan AI...`;
+  btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Memvalidasi CRC16...`;
 
   try {
-    const formData = new FormData();
-    formData.append('month', month);
-    formData.append('year', year);
-    formData.append('payment_method', 'qris');
-    formData.append('proof_file', fileInput.files[0]);
-
-    const res = await fetchAuth(`${API_BASE}/payments`, {
+    const res = await fetchAuth(`${API_BASE}/qris/payload`, {
       method: 'POST',
-      body: formData
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ qris_payload: payload })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Gagal mengajukan kas');
-
-    if (fileInput) fileInput.value = '';
-    alert(data.message || 'Pembayaran kas berhasil diproses.');
-
-    if (data.data && data.data.status === 'lunas') {
-      if (typeof checkKasAndUnlockAttendance === 'function') {
-        checkKasAndUnlockAttendance();
-      }
-    }
-    loadAnggotaKas();
+    if (!res.ok) throw new Error(data.message || 'Gagal menyimpan payload QRIS');
+    clearApiCache('qris');
+    alert(data.message);
+    input.value = '';
+    loadQrisConfig();
+    loadGatewayAdminPanel();
   } catch (err) {
     alert(`Error: ${err.message}`);
   } finally {
-    if (btn) {
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-    }
+    btn.disabled = false;
+    btn.innerHTML = orig;
   }
 }
 
-export async function loadAnggotaKas() {
-  const monthNames = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
-  const now = new Date();
-  const periodEl = document.getElementById('kas-current-period-display');
-  if (periodEl) {
-    periodEl.textContent = `Bulan ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
-  }
+export function copyWebhookUrl() {
+  const urlEl = document.getElementById('gw-webhook-url');
+  if (!urlEl) return;
+  navigator.clipboard.writeText(urlEl.textContent).then(() => {
+    alert('URL Webhook berhasil disalin ke clipboard.');
+  }).catch(() => {
+    prompt('Salin URL Webhook ini:', urlEl.textContent);
+  });
+}
+
+export async function testGatewayWebhook() {
+  const input = prompt('Masukkan nominal mutasi simulasi (contoh: 10247) atau teks notifikasi DANA (contoh: Pembayaran QRIS sebesar Rp10.247 berhasil):');
+  if (!input || !input.trim()) return;
 
   try {
-    const res = await fetchAuth(`${API_BASE}/payments/history?limit=10`);
+    const res = await fetchAuth(`${API_BASE}/payments/webhook/test`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: input.trim() })
+    });
     const data = await res.json();
-    const tbody = document.getElementById('table-my-kas');
-    const items = data.data ? data.data.items : [];
-
-    if (items.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="3" class="text-center">Belum ada riwayat pembayaran kas.</td></tr>`;
-    } else {
-      tbody.innerHTML = items.map(p => `
-        <tr>
-          <td><strong>Bulan ${p.month} / ${p.year}</strong></td>
-          <td><strong>Rp ${Number(p.amount).toLocaleString('id-ID')}</strong></td>
-          <td>
-            <span style="padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; background: #f4f4f5; color: #18181b;">
-              ${p.status.toUpperCase()}
-            </span>
-          </td>
-        </tr>
-      `).join('');
-    }
+    if (!res.ok) throw new Error(data.message || 'Simulasi gagal');
+    clearApiCache('payments');
+    alert(data.message);
+    loadWebhookLogs();
+    loadKasReport('');
   } catch (err) {
-    console.error('Gagal memuat kas anggota:', err);
+    alert(`Error: ${err.message}`);
   }
 }
 
@@ -425,14 +727,7 @@ export async function exportKasCsv() {
       });
 
       const headers = ['No', 'Nama Anggota', 'Total Pembayaran', 'Tahun'];
-      const rows = Object.values(summary).map((data, index) => {
-        return [
-          index + 1,
-          data.nama,
-          data.totalNominal,
-          data.tahun
-        ].join(',');
-      });
+      const rows = Object.values(summary).map((d, index) => [index + 1, d.nama, d.totalNominal, d.tahun].join(','));
 
       const csvContent = [headers.join(','), ...rows].join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -456,104 +751,38 @@ export async function exportKasCsv() {
 
 export async function loadQrisConfig() {
   try {
-    const res = await fetchAuth(`${API_BASE}/qris/config`);
+    const res = await fetchAuth(`${API_BASE}/qris/config`, { noCache: true });
     const data = await res.json();
-
     if (data.status !== 'success') return;
 
     const cfg = data.data;
-    const imgHtml = cfg.is_configured
-      ? `<img src="${cfg.qris_image_url}" alt="QRIS ${cfg.merchant_name}" style="max-width: 220px; width: 100%; height: auto; border-radius: 4px;">`
-      : `<div style="padding: 2rem 1rem; text-align: center;"><i class="fa-solid fa-qrcode" style="font-size: 3rem; color: #d4d4d8; margin-bottom: 0.5rem; display: block;"></i><p style="color: #71717a; font-size: 0.85rem; margin: 0;">QRIS belum dikonfigurasi.<br>Hubungi Bendahara untuk mengunggah gambar QRIS.</p></div>`;
+    const previewSrc = cfg.qris_preview_svg || cfg.qris_image_url;
+    const imgHtml = previewSrc
+      ? `<img src="${previewSrc}" alt="QRIS ${cfg.merchant_name}" style="max-width: 220px; width: 100%; height: auto; border-radius: 4px; background: #ffffff; padding: 6px;">`
+      : `<div style="padding: 2rem 1rem; text-align: center;"><i class="fa-solid fa-qrcode" style="font-size: 3rem; color: #d4d4d8; margin-bottom: 0.5rem; display: block;"></i><p style="color: #71717a; font-size: 0.85rem; margin: 0;">QRIS belum dikonfigurasi.<br>Masukkan payload QRIS statis terlebih dahulu.</p></div>`;
 
-    const merchantInfo = cfg.is_configured
-      ? `${cfg.merchant_name} | NMID: ${cfg.nmid}`
-      : 'QRIS belum dikonfigurasi';
-
-    // 1. Preview admin (halaman pengurus tab kas)
     const adminPreview = document.getElementById('qris-preview-admin');
-    if (adminPreview) {
-      adminPreview.innerHTML = imgHtml;
-    }
-
-    // 2. Tab kas anggota
-    const kasImage = document.getElementById('qris-image-kas');
-    if (kasImage) {
-      kasImage.innerHTML = imgHtml;
-    }
-    const kasNmid = document.getElementById('qris-nmid-kas');
-    if (kasNmid) {
-      kasNmid.textContent = merchantInfo;
-    }
-
-    // 3. Modal pengunci QRIS
-    const modalImage = document.getElementById('qris-image-modal');
-    if (modalImage) {
-      modalImage.innerHTML = imgHtml;
-    }
+    if (adminPreview) adminPreview.innerHTML = imgHtml;
   } catch (err) {
     console.error('Gagal memuat konfigurasi QRIS:', err);
   }
 }
 
 export async function uploadQrisImage(e) {
-  e.preventDefault();
-  const fileInput = document.getElementById('qris-file-input');
-  const btn = document.getElementById('btn-upload-qris');
-  const originalText = btn.textContent;
-
-  if (!fileInput.files[0]) {
-    alert('Pilih file gambar QRIS terlebih dahulu.');
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Mengunggah...';
-
-  try {
-    const formData = new FormData();
-    formData.append('qris_image', fileInput.files[0]);
-
-    const res = await fetchAuth(`${API_BASE}/qris/upload`, {
-      method: 'POST',
-      body: formData
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Gagal mengunggah');
-
-    alert('Gambar QRIS Bendahara berhasil diunggah dan diaktifkan. Seluruh anggota sekarang akan melihat QRIS ini saat melakukan pembayaran kas.');
-    fileInput.value = '';
-    loadQrisConfig();
-  } catch (err) {
-    alert(`Error: ${err.message}`);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
+  if (e && e.preventDefault) e.preventDefault();
 }
 
 export async function cleanupOldProofs() {
-  if (!confirm('Bersihkan file screenshot bukti transfer bulan-bulan lalu dari server untuk menghemat kapasitas penyimpanan?\n\nCatatan: Status verifikasi lunas dan seluruh riwayat kas anggota di database tetap aman dan tidak terhapus.')) {
+  if (!confirm('Bersihkan file bukti lama dari server untuk menghemat kapasitas penyimpanan? Status lunas dan riwayat database tetap aman.')) {
     return;
   }
 
   try {
-    const res = await fetchAuth(`${API_BASE}/payments/cleanup-proofs`, {
-      method: 'POST'
-    });
+    const res = await fetchAuth(`${API_BASE}/payments/cleanup-proofs`, { method: 'POST' });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Gagal membersihkan screenshot bukti lama');
-
-    alert(`Pembersihan Berhasil: ${data.message} (${data.deletedCount || 0} file dibersihkan).`);
-    const activeBtn = document.querySelector('.filter-buttons .btn.active');
-    let filterVal = '';
-    if (activeBtn) {
-      const txt = activeBtn.textContent.toLowerCase();
-      if (txt.includes('pending')) filterVal = 'pending';
-      else if (txt.includes('lunas')) filterVal = 'lunas';
-      else if (txt.includes('ditolak')) filterVal = 'ditolak';
-    }
-    loadKasReport(filterVal);
+    if (!res.ok) throw new Error(data.message || 'Gagal membersihkan bukti lama');
+    alert(data.message);
+    loadKasReport('');
   } catch (err) {
     alert(`Error: ${err.message}`);
   }

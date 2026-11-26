@@ -149,6 +149,12 @@ pub struct PaymentRow {
     pub ai_status: Option<String>,
     pub ai_notes: Option<String>,
     pub sender_name_detected: Option<String>,
+    pub order_id: Option<String>,
+    pub unique_code: Option<i32>,
+    pub payable_amount: Option<i32>,
+    pub qris_dynamic: Option<String>,
+    pub expires_at: Option<NaiveDateTime>,
+    pub payment_channel: Option<String>,
     pub created_at: Option<NaiveDateTime>,
 }
 
@@ -167,6 +173,12 @@ impl PaymentRow {
             "ai_status": self.ai_status,
             "ai_notes": self.ai_notes,
             "sender_name_detected": self.sender_name_detected,
+            "order_id": self.order_id,
+            "unique_code": self.unique_code,
+            "payable_amount": self.payable_amount,
+            "qris_dynamic": self.qris_dynamic,
+            "expires_at": format_opt_jakarta_dt(self.expires_at),
+            "payment_channel": self.payment_channel,
             "created_at": format_opt_jakarta_dt(self.created_at),
         })
     }

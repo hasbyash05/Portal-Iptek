@@ -161,17 +161,32 @@ fn build_api_router() -> Router<AppState> {
     let payment_routes = Router::new()
         .route("/check", get(handlers::payments::check_status))
         .route("/total", get(handlers::payments::get_total_kas))
-        .route("/", post(handlers::payments::submit_payment))
+        .route(
+            "/create-invoice",
+            post(handlers::payments::create_invoice),
+        )
+        .route(
+            "/invoice/{order_id}/status",
+            get(handlers::payments::get_invoice_status),
+        )
+        .route(
+            "/webhook/mutasi",
+            post(handlers::payments::webhook_mutasi),
+        )
+        .route(
+            "/webhook/logs",
+            get(handlers::payments::get_webhook_logs),
+        )
+        .route(
+            "/webhook/test",
+            post(handlers::payments::test_webhook_mutasi),
+        )
+        .route(
+            "/gateway/info",
+            get(handlers::payments::get_gateway_info),
+        )
         .route("/history", get(handlers::payments::get_my_history))
         .route("/{id}/confirm", put(handlers::payments::confirm_payment))
-        .route(
-            "/{id}/verify-ai",
-            post(handlers::payments::verify_payment_with_ai),
-        )
-        .route(
-            "/verify-ai-all",
-            post(handlers::payments::verify_all_pending_with_ai),
-        )
         .route(
             "/cleanup-proofs",
             post(handlers::payments::cleanup_old_payment_proofs),
@@ -189,6 +204,7 @@ fn build_api_router() -> Router<AppState> {
 
     let qris_routes = Router::new()
         .route("/config", get(handlers::qris::get_config))
+        .route("/payload", post(handlers::qris::save_qris_payload))
         .route("/upload", post(handlers::qris::upload_qris));
 
     let template_routes = Router::new()

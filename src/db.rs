@@ -85,10 +85,28 @@ pub async fn ensure_tables(pool: &MySqlPool) -> Result<(), sqlx::Error> {
             `ai_status` VARCHAR(50) NULL DEFAULT NULL,
             `ai_notes` TEXT NULL DEFAULT NULL,
             `sender_name_detected` VARCHAR(255) NULL DEFAULT NULL,
+            `order_id` VARCHAR(64) NULL DEFAULT NULL,
+            `unique_code` INT NULL DEFAULT NULL,
+            `payable_amount` INT NULL DEFAULT NULL,
+            `qris_dynamic` TEXT NULL DEFAULT NULL,
+            `expires_at` DATETIME NULL DEFAULT NULL,
+            `payment_channel` VARCHAR(50) NULL DEFAULT 'qris_dynamic',
             `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY `payments_user_month_year` (`user_id`, `month`, `year`),
+            UNIQUE KEY `payments_order_id_uq` (`order_id`),
             CONSTRAINT `fk_payments_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE ON UPDATE CASCADE,
             CONSTRAINT `fk_payments_verifier` FOREIGN KEY (`confirmed_by`) REFERENCES `users`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"#,
+        r#"CREATE TABLE IF NOT EXISTS `payment_webhook_logs` (
+            `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            `source_app` VARCHAR(100) NULL,
+            `raw_title` VARCHAR(255) NULL,
+            `raw_text` TEXT NULL,
+            `detected_amount` INT NULL,
+            `matched_payment_id` INT NULL,
+            `matched_order_id` VARCHAR(64) NULL,
+            `status` VARCHAR(32) NOT NULL DEFAULT 'unmatched',
+            `received_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"#,
         r#"CREATE TABLE IF NOT EXISTS `attendance_sessions` (
             `id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -249,6 +267,25 @@ pub async fn run_startup_maintenance(pool: &MySqlPool, config: &Config) {
         _ => {}
     }
 
+    // Safe migration: add Dynamic QRIS Payment Gateway columns on payments if missing
+    match sqlx::query("SHOW COLUMNS FROM `payments` LIKE 'order_id'")
+        .fetch_all(pool)
+        .await
+    {
+        Ok(cols) if cols.is_empty() => {
+            let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `order_id` VARCHAR(64) NULL DEFAULT NULL").execute(pool).await;
+            let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `unique_code` INT NULL DEFAULT NULL").execute(pool).await;
+            let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `payable_amount` INT NULL DEFAULT NULL").execute(pool).await;
+            let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `qris_dynamic` TEXT NULL DEFAULT NULL").execute(pool).await;
+            let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `expires_at` DATETIME NULL DEFAULT NULL").execute(pool).await;
+            let _ = sqlx::query("ALTER TABLE `payments` ADD COLUMN `payment_channel` VARCHAR(50) NULL DEFAULT 'qris_dynamic'").execute(pool).await;
+            let _ = sqlx::query("ALTER TABLE `payments` ADD UNIQUE INDEX `payments_order_id_uq` (`order_id`)").execute(pool).await;
+            println!("[DB] Kolom Payment Gateway QRIS Dinamis berhasil ditambahkan ke tabel payments.");
+        }
+        Err(e) => eprintln!("[DB] Migrasi Payment Gateway payments: {}", e),
+        _ => {}
+    }
+
     // In development mode, seed if users table is empty
     if config.is_development() {
         if let Ok((user_count,)) = sqlx::query_as::<_, (i64,)>("SELECT COUNT(*) FROM users")
@@ -263,18 +300,6 @@ pub async fn run_startup_maintenance(pool: &MySqlPool, config: &Config) {
             }
         }
     } else {
-        // Production startup cleanup matching src/app.js
-        let _ = sqlx::query(
-            "UPDATE `payments`
-             SET `status` = 'ditolak',
-                 `ai_status` = 'ditolak',
-                 `ai_notes` = 'Ditolak otomatis: Tidak ada file gambar bukti pembayaran yang dilampirkan.'
-             WHERE `status` = 'pending' AND (`proof_path` IS NULL OR `proof_path` NOT LIKE '/uploads%')",
-        )
-        .execute(pool)
-        .await;
-        println!("[DB] Auto-reject pembayaran pending tanpa bukti pembayaran selesai.");
-
         let _ = cleanup_garbage_sessions_internal(pool).await;
     }
 }

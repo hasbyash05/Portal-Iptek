@@ -2,7 +2,7 @@ import { fetchAuth, logout, checkAuth } from './auth.js';
 import { loadPengurusOverview, loadAnggotaOverview, loadPengurusLaporan, loadAnggotaList } from './dashboard.js';
 import { loadAnggotaMateri, loadPengurusMateri } from './academic.js';
 import { loadAnggotaAttendance, loadSessionStatus, loadPengurusAbsensi } from './attendance.js';
-import { loadAnggotaKas, loadKasReport, loadExpenses, loadQrisConfig } from './finance.js';
+import { loadAnggotaKas, loadKasReport, loadExpenses, loadQrisConfig, loadGatewayAdminPanel, openLockModalWithInvoice } from './finance.js';
 import { loadElectionData } from './election.js';
 
 export const API_BASE = '/api';
@@ -122,6 +122,8 @@ export function switchTab(tabName, user) {
   if (tabName === 'kas') {
     loadAnggotaKas();
     if (isBendahara) {
+      loadQrisConfig();
+      loadGatewayAdminPanel();
       loadKasReport('');
       loadExpenses();
     }
@@ -156,13 +158,9 @@ export async function checkKasAndUnlockAttendance() {
       if (modal) modal.style.display = 'none';
       switchTab('absensi', user);
     } else {
-      if (modal) modal.style.display = 'flex';
-      if (statusText && data.data && data.data.payment) {
-        if (data.data.payment.status === 'pending') {
-          statusText.innerHTML = '<div class="alert alert-info" style="margin-bottom: 1rem; font-size: 0.85rem;">Pembayaran Kas Anda sedang <strong>menunggu verifikasi</strong> Bendahara.</div>';
-        } else if (data.data.payment.status === 'ditolak') {
-          statusText.innerHTML = '<div class="alert alert-danger" style="margin-bottom: 1rem; font-size: 0.85rem;">Pembayaran Kas Anda <strong>ditolak</strong>. Silakan periksa kembali.</div>';
-        }
+      if (modal) {
+        modal.style.display = 'flex';
+        openLockModalWithInvoice(false);
       }
       switchTab('absensi', user);
     }

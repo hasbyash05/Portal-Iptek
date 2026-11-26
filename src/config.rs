@@ -14,6 +14,10 @@ pub struct Config {
     pub client_origin: String,
     pub qris_merchant_name: String,
     pub qris_nmid: String,
+    pub qris_static_payload: String,
+    pub payment_webhook_secret: String,
+    pub invoice_expire_minutes: i64,
+    #[allow(dead_code)]
     pub gemini_api_key: String,
     #[allow(dead_code)]
     pub bypass_tuesday_check: bool,
@@ -43,6 +47,19 @@ impl Config {
             env::var("QRIS_MERCHANT_NAME").unwrap_or_else(|_| "Bendahara UKM IPTEK".to_string());
         let qris_nmid =
             env::var("QRIS_NMID").unwrap_or_else(|_| "BELUM_DIKONFIGURASI".to_string());
+        let qris_static_payload = env::var("QRIS_STATIC_PAYLOAD")
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let payment_webhook_secret = env::var("PAYMENT_WEBHOOK_SECRET")
+            .unwrap_or_default()
+            .trim()
+            .to_string();
+        let invoice_expire_minutes = env::var("INVOICE_EXPIRE_MINUTES")
+            .ok()
+            .and_then(|v| v.parse::<i64>().ok())
+            .filter(|v| *v >= 1 && *v <= 1440)
+            .unwrap_or(15);
         let gemini_api_key = env::var("GEMINI_API_KEY").unwrap_or_default().trim().to_string();
         let bypass_tuesday_check = env::var("BYPASS_TUESDAY_CHECK")
             .map(|v| v.eq_ignore_ascii_case("true"))
@@ -61,6 +78,9 @@ impl Config {
             client_origin,
             qris_merchant_name,
             qris_nmid,
+            qris_static_payload,
+            payment_webhook_secret,
+            invoice_expire_minutes,
             gemini_api_key,
             bypass_tuesday_check,
         }
